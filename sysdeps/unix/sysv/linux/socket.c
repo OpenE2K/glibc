@@ -26,7 +26,21 @@
 int
 __socket (int fd, int type, int domain)
 {
-#ifdef __ASSUME_SOCKET_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    /* This field stupidly ensures the proper alignment without the need to
+       use any attributes.  */
+    void *d;
+  }
+  args = {(long int) fd, (long int) type, (long int) domain, NULL};
+
+  return INLINE_SYSCALL (socketcall, 2, SOCKOP_socket, &args);
+
+#elif defined __ASSUME_SOCKET_SYSCALL
   return INLINE_SYSCALL (socket, 3, fd, type, domain);
 #else
   return SOCKETCALL (socket, fd, type, domain);

@@ -332,8 +332,13 @@ read_alias_file (const char *fname, int fname_len)
 
 			  for (i = 0; i < nmap; i++)
 			    {
-			      map[i].alias += new_pool - string_space;
-			      map[i].value += new_pool - string_space;
+			      /* REMINDER: here calculations of addresses in
+				 reallocated buffers unsafe from the point of
+				 view of PM have been fixed.  */
+			      map[i].alias
+				= &new_pool[map[i].alias - string_space];
+			      map[i].value
+				= &new_pool[map[i].value - string_space];
 			    }
 			}
 

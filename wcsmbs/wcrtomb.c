@@ -41,7 +41,11 @@ __wcrtomb (char *s, wchar_t wc, mbstate_t *ps)
   struct __gconv_step_data data;
   int status;
   size_t result;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const struct gconv_fcts *fcts;
 
   /* Set information for this step.  */

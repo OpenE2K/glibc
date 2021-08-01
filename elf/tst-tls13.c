@@ -4,11 +4,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if ! defined __ptr128__
+# define COUNT 1000
+#else /* defined __ptr128__  */
+# define COUNT 10
+#endif /* defined __ptr128__  */
+
+
 
 static int
 do_test (void)
 {
-  for (int i = 0; i < 1000;)
+  for (int i = 0; i < COUNT;)
     {
       printf ("round %d\n",++i);
 

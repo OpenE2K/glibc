@@ -15,11 +15,24 @@ static int cookieread_called;
 static ssize_t
 cookieread (void *cookie, char *buf, size_t count)
 {
+#if defined __ptr128__
+  size_t i;
+#endif /* defined __ptr128__  */
+
   printf ("`%s' called with cookie %#lx\n", __FUNCTION__,
 	  (unsigned long int) cookie);
-  if (cookie != THE_COOKIE)
+  if ((unsigned int) cookie != (unsigned int) THE_COOKIE)
     ++errors;
   cookieread_called = 1;
+
+#if defined __ptr128__
+  /* Generic glibc code is likely to touch the contents of the returned buffer
+     which may obviously result in `exc_illegal_operand' in PM if you don't
+     take care of actually setting it up.  */
+  for (i = 0; i < size; i++)
+    buf[i] = (char) i;
+#endif /* defined __ptr128__  */
+
   return 42;
 }
 

@@ -88,6 +88,10 @@ struct link_map
 
     ElfW(Addr) l_addr;		/* Difference between the address in the ELF
 				   file and the addresses in memory.  */
+#if defined __ptr128__
+    ElfW(Addr) l_code_addr;
+#endif
+
     char *l_name;		/* Absolute file name object was found in.  */
     ElfW(Dyn) *l_ld;		/* Dynamic section of the shared object.  */
     struct link_map *l_next, *l_prev; /* Chain of loaded objects.  */
@@ -138,6 +142,11 @@ enum
 struct dl_phdr_info
   {
     ElfW(Addr) dlpi_addr;
+
+#if defined __ptr128__
+    const char *dlpi_gd;
+#endif /* defined __ptr128__  */
+
     const char *dlpi_name;
     const ElfW(Phdr) *dlpi_phdr;
     ElfW(Half) dlpi_phnum;

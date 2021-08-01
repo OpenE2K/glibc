@@ -38,7 +38,10 @@ __mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
   if (offset & MMAP_OFF_LOW_MASK)
     return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
 
-#ifdef __NR_mmap2
+  /* Avoid the usage of mmap2 on E2K until Bug #92762 in the Kernel on
+     E2KT hosts is fixed and the standard LSIM is updated accordingly
+     (Bug #95236).  */
+#if defined __NR_mmap2 && ! defined __e2k__
   return (void *) MMAP_CALL (mmap2, addr, len, prot, flags, fd,
 			     offset / (uint32_t) MMAP2_PAGE_UNIT);
 #else

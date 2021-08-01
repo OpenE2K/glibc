@@ -31,7 +31,11 @@ routines = alloca_cutoff forward libc-lowlevellock libc-cancellation \
 	   libc-cleanup libc_pthread_init libc_multiple_threads \
 	   register-atfork pthread_atfork pthread_self thrd_current \
 	   thrd_equal thrd_sleep thrd_yield
+ifeq (yes,no)
+# Recall what the point in removing this setting was . . . Was this something
+# LCC-specific?
 shared-only-routines = forward
+endif
 static-only-routines = pthread_atfork
 
 # We need to provide certain routines for compatibility with existing
@@ -321,6 +325,9 @@ tests = tst-attr1 tst-attr2 tst-attr3 tst-default-attr \
 	tst-mtx-recursive tst-tss-basic tst-call-once tst-mtx-timedlock \
 	tst-rwlock-pwn
 
+# This test has been added by us due to Bug #64685.
+tests += tst-bug-64685
+
 tests-internal := tst-rwlock19 tst-rwlock20 \
 		  tst-sem11 tst-sem12 tst-sem13 \
 		  tst-barrier5 tst-signal7 tst-mutex8 tst-mutex8-static \
@@ -376,12 +383,14 @@ LDFLAGS-pthread.so = -Wl,--enable-new-dtags,-z,nodelete,-z,initfirst
 CFLAGS-tst-cleanup2.c += -fno-builtin
 CFLAGS-tst-cleanupx2.c += -fno-builtin
 
+ifneq ($(compile-with-lcc),yes)
 tests += tst-cancelx2 tst-cancelx3 tst-cancelx4 tst-cancelx5 \
 	 tst-cancelx6 tst-cancelx7 tst-cancelx8 tst-cancelx9 tst-cancelx10 \
 	 tst-cancelx11 tst-cancelx12 tst-cancelx13 tst-cancelx14 tst-cancelx15 \
 	 tst-cancelx16 tst-cancelx17 tst-cancelx18 tst-cancelx20 tst-cancelx21 \
 	 tst-cleanupx0 tst-cleanupx1 tst-cleanupx2 tst-cleanupx3 tst-cleanupx4 \
 	 tst-oncex3 tst-oncex4
+endif
 ifeq ($(build-shared),yes)
 tests += tst-atfork2 tst-tls4 tst-_res1 tst-fini1 tst-compat-forwarder \
 	 tst-audit-threads
@@ -477,6 +486,11 @@ endif
 # These tests require a C++ compiler and runtime with thread_local support.
 ifneq ($(have-cxx-thread_local),yes)
 tests-unsupported += tst-thread_local1
+endif
+
+ifeq ($(config-machine),e2k128)
+tests-unsupported += tst-context1 tst-stackguard1 tst-stackguard1-static \
+		     tst-eintr1 tst-eintr2 tst-eintr3 tst-eintr5 tst-stack4
 endif
 
 include ../Rules
@@ -710,6 +724,6 @@ $(objpfx)tst-audit-threads.out: $(objpfx)tst-audit-threads-mod1.so
 tst-audit-threads-ENV = LD_AUDIT=$(objpfx)tst-audit-threads-mod1.so
 
 # The tests here better do not run in parallel
-ifneq ($(filter %tests,$(MAKECMDGOALS)),)
-.NOTPARALLEL:
-endif
+# ifneq ($(filter %tests,$(MAKECMDGOALS)),)
+# .NOTPARALLEL:
+# endif

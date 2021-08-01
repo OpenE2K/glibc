@@ -221,7 +221,11 @@ enum nss_status								      \
 }
 
 #define KEYPRINTF(pattern, args...) snprintf (key, size, pattern ,##args)
-#define IGNOREPATTERN(pattern, arg1, args...) (char *) (uintptr_t) arg1
+#ifndef __ptr128__
+# define IGNOREPATTERN(pattern, arg1, args...) (char *) (uintptr_t) arg1
+#else /* defined __ptr128__  */
+# define IGNOREPATTERN(pattern, arg1, args...) (char *) arg1
+#endif /* defined __ptr128__  */
 
 
 

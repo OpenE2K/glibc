@@ -34,7 +34,7 @@ struct sha512_ctx
 
   union
   {
-#if defined __GNUC__ && __WORDSIZE == 64
+#if !defined __LCC__ && defined __GNUC__ && __WORDSIZE == 64
 # define USE_TOTAL128
     unsigned int total128 __attribute__ ((__mode__ (TI)));
 #endif

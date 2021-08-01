@@ -162,5 +162,6 @@ $as_echo "ok" >&6; }
 fi
 
 # We have inlined syscalls.
-$as_echo "#define HAVE_INLINED_SYSCALLS 1" >>confdefs.h
-
+# FIXME: the definition of this macro was disabled approximately 8 years ago
+# because of defective e2k32 syscalls. However, this issue must have already
+# been resolved long ago. Consider removing this hack.

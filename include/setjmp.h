@@ -31,6 +31,8 @@ libc_hidden_proto (__sigsetjmp)
 extern __typeof (__sigsetjmp) __sigsetjmp attribute_hidden;
 # endif
 
+#if ! defined __e2k__
+
 /* Check jmp_buf sizes, alignments and offsets.  */
 # include <stddef.h>
 # include <jmp_buf-macros.h>
@@ -64,6 +66,9 @@ TEST_OFFSET (struct __jmp_buf_tag, __mask_was_saved,
 	     MASK_WAS_SAVED_OFFSET);
 TEST_OFFSET (struct __jmp_buf_tag, __saved_mask,
 	     SAVED_MASK_OFFSET);
+
+#endif /* ! defined __e2k__  */
+
 #endif
 
 #endif

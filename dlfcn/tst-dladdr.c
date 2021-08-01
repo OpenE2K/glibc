@@ -53,17 +53,43 @@ do_test (void)
 
   printf ("ret = %d\n", ret);
   printf ("info.dli_fname = %p (\"%s\")\n", info.dli_fname, info.dli_fname);
-  printf ("info.dli_fbase = %p\n", info.dli_fbase);
+  printf (
+#if ! defined __ptr128__
+	  "info.dli_fbase = %p\n", info.dli_fbase
+#else /* defined __ptr128__  */
+	  "info.dli_tbase = 0x%x\n"
+	  "info.dli_dbase = 0x%x\n",
+	  info.dli_tbase, info.dli_dbase
+#endif /* defined __ptr128__  */
+	  );
   printf ("info.dli_sname = %p (\"%s\")\n", info.dli_sname, info.dli_sname);
-  printf ("info.dli_saddr = %p\n", info.dli_saddr);
+  printf (
+#if ! defined __ptr128__
+	  "info.dli_saddr = %p\n", info.dli_saddr
+#else /* defined __ptr128__  */
+	  "info.dli_saddr = 0x%x\n", info.dli_saddr
+#endif /* defined __ptr128__  */
+	  );
 
   if (info.dli_fname == NULL)
     error (EXIT_FAILURE, 0, "dli_fname is NULL");
+#if ! defined __ptr128__
   if (info.dli_fbase == NULL)
     error (EXIT_FAILURE, 0, "dli_fbase is NULL");
+#else /* defined __ptr128__  */
+  if (info.dli_tbase == 0 || info.dli_dbase == 0)
+    error (EXIT_FAILURE, 0,
+	   "either of dli_tbase or dli_dbase is 0");
+#endif /* defined __ptr128__  */
   if (info.dli_sname == NULL)
     error (EXIT_FAILURE, 0, "dli_sname is NULL");
-  if (info.dli_saddr == NULL)
+  if (
+#if ! defined __ptr128__
+      info.dli_saddr == NULL
+#else /* defined __ptr128__  */
+      info.dli_saddr == 0
+#endif /* defined __ptr128__  */
+)
     error (EXIT_FAILURE, 0, "dli_saddr is NULL");
 
   dlclose (handle);

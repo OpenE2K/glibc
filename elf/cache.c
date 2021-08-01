@@ -92,12 +92,24 @@ print_entry (const char *lib, int flag, unsigned int osversion,
     case FLAG_MIPS64_LIBN64:
       fputs (",64bit", stdout);
       break;
+#if ! defined __e2k__
     case FLAG_X8664_LIBX32:
       fputs (",x32", stdout);
       break;
     case FLAG_ARM_LIBHF:
       fputs (",hard-float", stdout);
       break;
+#else /* defined __e2k__  */
+      /* For E2K interpret this flag in e2k-specific way in spite of the fact
+	 that it has already been officially reserved by x32 so as to avoid
+	 incompatibility with prior glibc versions.  */
+    case FLAG_E2K_LIB64:
+      fputs (",64bit", stdout);
+      break;
+    case FLAG_E2K_LIB128:
+      fputs (",PM", stdout);
+      break;
+#endif /* defined __e2k__  */
     case FLAG_AARCH64_LIB64:
       fputs (",AArch64", stdout);
       break;

@@ -17,8 +17,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <fenv.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 fetestexcept (int excepts)
 {
   fenv_t tmp;

@@ -263,11 +263,11 @@ elf_machine_plt_value (struct link_map *map, const ElfW(Rela) *reloc,
 /* Perform the relocation specified by RELOC and SYM (which is fully resolved).
    MAP is the object containing the reloc.  */
 
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 		  const ElfW(Sym) *sym, const struct r_found_version *version,
-		  void *const reloc_addr_arg, int skip_ifunc)
+		  void *const reloc_addr_arg, int skip_ifunc,
+                  struct r_scope_elem *scope[], const char *strtab)
 {
   ElfW(Addr) *const reloc_addr = reloc_addr_arg;
   const unsigned long int r_type = ELFW(R_TYPE) (reloc->r_info);
@@ -521,8 +521,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
     }
 }
 
-auto inline void
-__attribute ((always_inline))
+static void
 elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
 			   void *const reloc_addr_arg)
 {
@@ -540,11 +539,11 @@ elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
     }
 }
 
-auto inline void
-__attribute ((always_inline))
+static void
 elf_machine_lazy_rel (struct link_map *map,
 		      ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
-		      int skip_ifunc)
+		      int skip_ifunc, struct r_scope_elem *scope[],
+                      const char *strtab)
 {
   ElfW(Addr) *const reloc_addr = (void *) (l_addr + reloc->r_offset);
   const unsigned long int r_type = ELFW(R_TYPE) (reloc->r_info);

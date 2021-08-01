@@ -21,7 +21,7 @@ static char rcsid[] = "$NetBSD: k_standard.c,v 1.6 1995/05/10 20:46:35 jtc Exp $
 
 #include <assert.h>
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT || defined __e2k__ || defined __sparc__
 
 # ifndef _USE_WRITE
 #  include <stdio.h>			/* fputs(), stderr */
@@ -63,6 +63,7 @@ static double zero = 0.0;	/* used as const */
  *	17-- log(x<0)
  *	18-- log10(0)
  *	19-- log10(x<0)
+ *	20-- pow(0.0,0.0)
  *	21-- pow(x,y) overflow
  *	22-- pow(x,y) underflow
  *	23-- pow(0,negative)
@@ -84,6 +85,7 @@ static double zero = 0.0;	/* used as const */
  *	39-- yn(x>X_TLOSS, n)
  *	40-- tgamma(finite) overflow
  *	41-- tgamma(-integer)
+ *	42-- pow(NaN,0.0)
  *	43-- +0**neg
  *	44-- exp2 overflow
  *	45-- exp2 underflow
@@ -462,6 +464,26 @@ __kernel_standard(double x, double y, int type)
 		  __set_errno (EDOM);
 		}
 		break;
+#if defined __e2k__ || defined __sparc__
+		/* Vlog's implementations of 'pow*' for E2K and Sparc are not
+		   capable of producing the correct result in this case unlike
+		   'pow*' for other platforms and upstream '__ieee754_pow ()'.
+		   Therefore they rely on this otherwise obsolete case.  */
+	    case 20:
+	    case 120:
+	    case 220:
+		/* pow(0.0,0.0) */
+		/* error only if _LIB_VERSION == _SVID_ */
+		exc.type = DOMAIN;
+		exc.name = CSTR ("pow");
+		exc.retval = zero;
+		if (_LIB_VERSION != _SVID_) exc.retval = 1.0;
+		else if (!matherr(&exc)) {
+			(void) WRITE2("pow(0,0): DOMAIN error\n", 23);
+			__set_errno (EDOM);
+		}
+		break;
+#endif /* __e2k__ || __sparc__  */
 	    case 21:
 	    case 121:
 	    case 221:
@@ -832,6 +854,23 @@ __kernel_standard(double x, double y, int type)
 		  __set_errno (EDOM);
 		}
 		break;
+#if defined __e2k__ || defined __sparc__
+		/* For E2K and Sparc-specific cases see my comment above.  */
+	    case 42:
+	    case 142:
+	    case 242:
+		/* pow(NaN,0.0) */
+		/* error only if _LIB_VERSION == _SVID_ & _XOPEN_ */
+		exc.type = DOMAIN;
+		exc.name = CSTR ("pow");
+		exc.retval = x;
+		if (_LIB_VERSION == _IEEE_ ||
+		    _LIB_VERSION == _POSIX_) exc.retval = 1.0;
+		else if (!matherr(&exc)) {
+			__set_errno (EDOM);
+		}
+		break;
+#endif /* __e2k__ || __sparc__  */
 
 	    case 44:
 	    case 144:

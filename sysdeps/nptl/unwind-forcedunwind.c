@@ -24,6 +24,11 @@
 #include <gnu/lib-names.h>
 #include <unwind-resume.h>
 
+#if defined __ptr128__
+# define PTR_MANGLE(var)
+# define PTR_DEMANGLE(var)
+#endif
+
 static void *libgcc_s_handle;
 void (*__libgcc_s_resume) (struct _Unwind_Exception *exc)
   attribute_hidden __attribute__ ((noreturn));
@@ -32,14 +37,27 @@ static _Unwind_Reason_Code (*libgcc_s_forcedunwind)
   (struct _Unwind_Exception *, _Unwind_Stop_Fn, void *);
 static _Unwind_Word (*libgcc_s_getcfa) (struct _Unwind_Context *);
 
+#ifdef __e2k__
+static _Unwind_Word (*libgcc_s_getpcsp) (struct _Unwind_Context *);
+#endif /* __e2k__  */
+
 void
 __attribute_noinline__
 pthread_cancel_init (void)
 {
+  /* LCC makes use of legacy implementation of `pthread_cancel ()' meanwhile,
+     which doesn't depend on libgcc_s.so (libunwind).  */
+#if defined __LCC_SJLJ_EXCEPTIONS__
+  return;
+#else /* ! defined __LCC__  */
+
   void *resume;
   void *personality;
   void *forcedunwind;
   void *getcfa;
+#ifdef __e2k__
+  void *getpcsp;
+#endif /* __e2k__  */
   void *handle;
 
   if (__glibc_likely (libgcc_s_handle != NULL))
@@ -58,6 +76,9 @@ pthread_cancel_init (void)
       || (forcedunwind = __libc_dlsym (handle, "_Unwind_ForcedUnwind"))
 	 == NULL
       || (getcfa = __libc_dlsym (handle, "_Unwind_GetCFA")) == NULL
+#ifdef __e2k__
+      || (getpcsp = __libc_dlsym (handle, "_Unwind_GetPCSP")) == NULL
+#endif /* __e2k__  */
 #ifdef ARCH_CANCEL_INIT
       || ARCH_CANCEL_INIT (handle)
 #endif
@@ -72,11 +93,17 @@ pthread_cancel_init (void)
   libgcc_s_forcedunwind = forcedunwind;
   PTR_MANGLE (getcfa);
   libgcc_s_getcfa = getcfa;
+#ifdef __e2k__
+  PTR_MANGLE (getpcsp);
+  libgcc_s_getpcsp = getpcsp;
+#endif /* __e2k__  */
   /* Make sure libgcc_s_handle is written last.  Otherwise,
      pthread_cancel_init might return early even when the pointer the
      caller is interested in is not initialized yet.  */
   atomic_write_barrier ();
   libgcc_s_handle = handle;
+
+#endif /* ! defined __LCC__  */
 }
 
 /* Register for cleanup in libpthread.so.  */
@@ -147,3 +174,20 @@ _Unwind_GetCFA (struct _Unwind_Context *context)
   PTR_DEMANGLE (getcfa);
   return getcfa (context);
 }
+
+#ifdef __e2k__
+_Unwind_Word
+_Unwind_GetPCSP (struct _Unwind_Context *context)
+{
+  /* As for me, the multiplication of the underlying code in numerous wrappers
+     of `libgcc_s's methods looks bogus.  */
+  if (__glibc_unlikely (libgcc_s_handle == NULL))
+    pthread_cancel_init ();
+  else
+    atomic_read_barrier ();
+
+  _Unwind_Word (*getpcsp) (struct _Unwind_Context *) = libgcc_s_getpcsp;
+  PTR_DEMANGLE (getpcsp);
+  return getpcsp (context);
+}
+#endif /* __e2k__  */

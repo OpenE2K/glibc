@@ -130,10 +130,23 @@ type-double-routines := branred doasin dosincos mpa mpatan2	\
 		       sincostab math_err e_exp_data e_log_data	\
 		       e_log2_data e_pow_log_data
 
+ifeq ($(base-machine),sparc)
+# There are files in `sysdeps/sparc/fpu' implemented by <vlog@mcst.ru>
+# providing these functions.
+type-double-routines += k_sin k_cos
+endif
+
 # float support
 type-float-suffix := f
 type-float-routines := math_errf e_exp2f_data e_logf_data	\
 		       e_log2f_data e_powf_log2_data s_sincosf_data
+
+ifeq ($(base-machine),sparc)
+# `sysdeps/ieee754/flt-32/{e,k}_rem_pio2f.c' have been kept because of a
+# number of functions in `sysdeps/sparc/fpu' implemented by <vlog@mcst.ru>.
+type-float-routines += e_rem_pio2f k_rem_pio2f
+endif
+
 
 # _Float128 support
 type-float128-suffix := f128
@@ -406,6 +419,9 @@ CFLAGS-test-tgmath.c += -fno-builtin
 # while to compile it. See: http://llvm.org/bugs/show_bug.cgi?id=14106 and
 # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=54402
 CFLAGS-test-tgmath2.c += -fno-builtin
+ifeq ($(compile-with-lcc),yes)
+CFLAGS-test-tgmath2.c += -O0 -D__OPTIMIZE__
+endif
 CFLAGS-test-tgmath-ret.c += -fno-builtin
 CFLAGS-test-powl.c += -fno-builtin
 

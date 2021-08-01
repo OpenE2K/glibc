@@ -61,5 +61,5 @@ libc_hidden_def (__fxstatat)
 #if XSTAT_IS_XSTAT64
 # undef __fxstatat64
 strong_alias (__fxstatat, __fxstatat64);
-libc_hidden_def (__fxstatat64)
+hidden_ver (__fxstatat, __fxstatat64)
 #endif

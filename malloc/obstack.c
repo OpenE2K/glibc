@@ -102,6 +102,10 @@ int obstack_exit_failure = EXIT_FAILURE;
 #  define obstack_exit_failure exit_failure
 # endif
 
+#ifndef __LCC__
+/* LCC can't apply symver to COMMON (#31768). Because this is required only
+   for compatibility with glibc-2.0, this has been removed from our glibc.  */
+
 # ifdef _LIBC
 #  if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_3_4)
 /* A looong time ago (before 1994, anyway; we're not sure) this global variable
@@ -111,6 +115,8 @@ struct obstack *_obstack_compat = 0;
 compat_symbol (libc, _obstack_compat, _obstack, GLIBC_2_0);
 #  endif
 # endif
+
+#endif /* __LCC__ */
 
 /* Define a macro that either calls functions with the traditional malloc/free
    calling interface, or calls functions with the mmalloc/mfree interface

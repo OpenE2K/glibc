@@ -24,8 +24,26 @@ include ../Makeconfig
 
 headers	:= setjmp.h bits/setjmp.h bits/setjmp2.h
 
-routines	:= setjmp sigjmp bsd-setjmp bsd-_setjmp \
-		   longjmp __longjmp jmp-unwind
+routines	:= setjmp sigjmp bsd-setjmp bsd-_setjmp
+
+ifeq ($(config-machine),e2k128)
+# Adding routines to static-only-routines places them to libc_nonshared.a
+# instead of libc.so and libc.a. See Bug #94897 for why this is crucial in
+# Protected Mode.
+static-only-routines	:= $(routines)
+# However, because they are used within libc.so and ld.so internally, add them
+# to shared-only-routines using different names. (In fact `shared-*' files just
+# include their ordinary counterparts. TODO: find out if the same names may be
+# present both in `{static,shared}-only-routines'.) Taking into account that
+# all these functions are declared as hidden now, this shouldn't result in any
+# conflicts.
+shared-only-routines	:= shared-setjmp shared-sigjmp shared-bsd-_setjmp
+# Functions from `{static,shared}-only-routines' lists should be specified in
+# `routines' too!
+routines		+= $(shared-only-routines)
+endif
+
+routines	+= longjmp __longjmp jmp-unwind
 
 tests		:= tst-setjmp jmpbug bug269-setjmp tst-setjmp-fp \
 		   tst-sigsetjmp tst-setjmp-static

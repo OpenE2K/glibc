@@ -213,8 +213,13 @@ __pthread_mutex_trylock (pthread_mutex_t *mutex)
 	if (robust)
 	  /* Note: robust PI futexes are signaled by setting bit 0.  */
 	  THREAD_SETMEM (THREAD_SELF, robust_head.list_op_pending,
+#if ! defined __ptr128__
 			 (void *) (((uintptr_t) &mutex->__data.__list.__next)
-				   | 1));
+				   | 1)
+#else /* defined __ptr128__  */
+			 (void *) ((char *) &mutex->__data.__list.__next + 1)
+#endif /* defined __ptr128__  */
+			 );
 
 	oldval = mutex->__data.__lock;
 

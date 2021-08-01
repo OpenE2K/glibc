@@ -326,14 +326,14 @@ for linking")
 #ifdef __ASSEMBLER__
 # define declare_symbol_alias_1(symbol, original, type, size) \
    strong_alias (original, symbol); \
-   .type C_SYMBOL_NAME (symbol), %##type; \
+   .type C_SYMBOL_NAME (symbol), @##type; \
    .size C_SYMBOL_NAME (symbol), size
 #else /* Not __ASSEMBLER__.  */
 # define declare_symbol_alias_1(symbol, original, type, size) \
    asm (".globl " __SYMBOL_PREFIX #symbol \
 	"\n\t" declare_symbol_alias_1_alias (symbol, original) \
 	"\n\t.type " __SYMBOL_PREFIX #symbol ", " \
-	"%" #type \
+	"@" #type \
 	"\n\t.size " __SYMBOL_PREFIX #symbol ", " #size);
 # ifdef HAVE_ASM_SET_DIRECTIVE
 #  define declare_symbol_alias_1_alias(symbol, original) \
@@ -441,7 +441,7 @@ for linking")
 
 /* Used to disable stack protection in sensitive places, like ifunc
    resolvers and early static TLS init.  */
-#ifdef HAVE_CC_NO_STACK_PROTECTOR
+#if defined HAVE_CC_NO_STACK_PROTECTOR && ! defined __LCC__
 # define inhibit_stack_protector \
     __attribute__ ((__optimize__ ("-fno-stack-protector")))
 #else
@@ -1039,7 +1039,9 @@ for linking")
 #else
 # define inhibit_loop_to_libcall
 #endif
+/*
 
+*/
 /* These macros facilitate sharing source files with gnulib.
 
    They are here instead of sys/cdefs.h because they should not be

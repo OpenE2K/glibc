@@ -69,7 +69,7 @@ void *_dl_random attribute_relro = NULL;
   do {									      \
     void **_tmp;							      \
     (argc) = *(long int *) cookie;					      \
-    (argv) = (char **) ((long int *) cookie + 1);			      \
+    (argv) = (char **) ((void **) cookie + 1);				      \
     (envp) = (argv) + (argc) + 1;					      \
     for (_tmp = (void **) (envp); *_tmp; ++_tmp)			      \
       continue;								      \
@@ -120,7 +120,23 @@ _dl_sysdep_start (void **start_argptr,
     switch (av->a_type)
       {
       case AT_PHDR:
+#if defined __e2k__ && defined __ptr128__
+	/* Does this AUXV entry actually describe program headers of ld.so? With
+	   the latest Kernel including my patch this should be the case both if
+	   it's started explicitly as a program and implicitly as an
+	   interpreter.  */
+	phdr = ({
+	    const void *res;
+	    const void *gd;
+	    __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+	    __asm__ ("gdtoap %1, %0\n\t"
+		     : "=r" (res)
+		     : "r" (av->a_un.a_val - (uintptr_t) gd));
+	    res;
+	  });
+#else
 	phdr = (void *) av->a_un.a_val;
+#endif
 	break;
       case AT_PHNUM:
 	phnum = av->a_un.a_val;
@@ -235,6 +251,7 @@ _dl_sysdep_start (void **start_argptr,
   if (GLRO(dl_platform) != NULL)
     GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
 
+#if ! defined __ptr128__
   if (__sbrk (0) == _end)
     /* The dynamic linker was run as a program, and so the initial break
        starts just after our bss, at &_end.  The malloc in dl-minimal.c
@@ -243,6 +260,7 @@ _dl_sysdep_start (void **start_argptr,
        will see this new value and not clobber our data.  */
     __sbrk (GLRO(dl_pagesize)
 	    - ((_end - (char *) 0) & (GLRO(dl_pagesize) - 1)));
+#endif
 
   /* If this is a SUID program we make sure that FDs 0, 1, and 2 are
      allocated.  If necessary we are doing it ourself.  If it is not

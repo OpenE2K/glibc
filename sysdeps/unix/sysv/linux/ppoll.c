@@ -36,6 +36,14 @@ ppoll (struct pollfd *fds, nfds_t nfds, const struct timespec *timeout,
       timeout = &tval;
     }
 
+#if defined __ptr128__ && ! defined __ptr128_new_abi__
+  /* FIXME: the arguments to ppoll () are passed entirely on registers, which
+     has been achieved by passing NFDS first and excluding the trailing `_NSIG
+     / 8', which SHOULD be passed to the Kernel in fact. Consider packing them
+     into a struct instead.  */
+  return SYSCALL_CANCEL (ppoll, nfds, fds, timeout, sigmask);
+#else /* ! defined __ptr128__ ||  defined __ptr128_new_abi__  */
   return SYSCALL_CANCEL (ppoll, fds, nfds, timeout, sigmask, _NSIG / 8);
+#endif /* ! defined __ptr128__ ||  defined __ptr128_new_abi__  */
 }
 libc_hidden_def (ppoll)

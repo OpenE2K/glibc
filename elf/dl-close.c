@@ -278,11 +278,28 @@ _dl_close_worker (struct link_map *map, bool force)
 
 	      if (imap->l_info[DT_FINI_ARRAY] != NULL)
 		{
-		  ElfW(Addr) *array =
+#if ! defined __ptr128__
+		  ElfW(Addr)
+#else
+		  fini_t
+#endif
+		    *array =
+#if ! defined __ptr128__
 		    (ElfW(Addr) *) (imap->l_addr
 				    + imap->l_info[DT_FINI_ARRAY]->d_un.d_ptr);
+#else
+		  (fini_t *) (imap->l_gd
+			      + get_offset (imap,
+					    imap->l_info[DT_FINI_ARRAY]->d_un.d_ptr));
+#endif
 		  unsigned int sz = (imap->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
-				     / sizeof (ElfW(Addr)));
+				     / sizeof (
+#if ! defined __ptr128__
+					       ElfW(Addr)
+#else
+					       fini_t
+#endif
+					       ));
 
 		  while (sz-- > 0)
 		    ((fini_t) array[sz]) ();
@@ -290,8 +307,17 @@ _dl_close_worker (struct link_map *map, bool force)
 
 	      /* Next try the old-style destructor.  */
 	      if (imap->l_info[DT_FINI] != NULL)
-		DL_CALL_DT_FINI (imap, ((void *) imap->l_addr
-			 + imap->l_info[DT_FINI]->d_un.d_ptr));
+		DL_CALL_DT_FINI (imap, (
+#if ! defined __ptr128__
+					/* What's the point in this idiotic cast
+					   inappropriate for PM-specific
+					   implementation of DL_CALL_DT_FINI?
+					   It's not used when invoking this
+					   macro from `elf/dl-fini.c'. */
+					(void *)
+#endif
+					imap->l_addr
+					+ imap->l_info[DT_FINI]->d_un.d_ptr));
 	    }
 
 #ifdef SHARED

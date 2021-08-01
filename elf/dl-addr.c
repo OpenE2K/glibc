@@ -28,7 +28,12 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
 {
   /* Now we know what object the address lies in.  */
   info->dli_fname = match->l_name;
+#if !defined __ptr128__
   info->dli_fbase = (void *) match->l_map_start;
+#else /* defined __ptr128__  */
+  info->dli_tbase = match->l_text_start;
+  info->dli_dbase = match->l_data_start;
+#endif /* defined __ptr128__  */
 
   /* If this is the main program the information is incomplete.  */
   if (__builtin_expect (match->l_name[0], 'a') == '\0'
@@ -110,13 +115,21 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
       lookup_t matchl = LOOKUP_VALUE (match);
 
       info->dli_sname = strtab + matchsym->st_name;
-      info->dli_saddr = DL_SYMBOL_ADDRESS (matchl, matchsym);
+      info->dli_saddr = (
+#if defined __ptr128__
+			 (ElfW(Addr))
+#endif
+			 DL_SYMBOL_ADDRESS (matchl, matchsym));
     }
   else
     {
       /* No symbol matches.  We return only the containing object.  */
       info->dli_sname = NULL;
-      info->dli_saddr = NULL;
+      info->dli_saddr = (
+#if defined __ptr128__
+			 (ElfW(Addr))
+#endif
+			 NULL);
     }
 }
 

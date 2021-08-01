@@ -18,7 +18,8 @@
 # License along with the GNU C Library; if not, see
 # <http://www.gnu.org/licenses/>.
 
-sysdep-CFLAGS += -Wa,-Av9a -mvis
+# FIXME: these hardcoded CFLAGS break `lcc -mcpu=r1000' glibc builds.
+# sysdep-CFLAGS += -Wa,-Av9a -mvis
 
 ifeq ($(subdir),string)
 sysdep_routines += align-cpy

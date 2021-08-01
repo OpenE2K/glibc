@@ -59,6 +59,11 @@ BEGIN {
     kernel_version_code = kernel_major * 65536 + kernel_minor * 256;
     print "#define __GLIBC_LINUX_VERSION_CODE " kernel_version_code;
     print "";
+    if (extra != "") {
+      print extra;
+      print "";
+    }
+    print "";
     next;
 }
 

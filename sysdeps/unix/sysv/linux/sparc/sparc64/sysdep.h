@@ -116,15 +116,81 @@ ENTRY(name);					\
 
 #else  /* __ASSEMBLER__ */
 
+#define __LOAD_ARGS_0                                                   \
+  "mov %2, %%g1;"
+
+#define __LOAD_ARGS_1                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"
+
+#define __LOAD_ARGS_2                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"                                                     \
+  "ldx [%3 + 8], %%o1;"
+
+#define __LOAD_ARGS_3                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"                                                     \
+  "ldx [%3 + 8], %%o1;"                                                 \
+  "ldx [%3 + 16], %%o2;"
+
+#define __LOAD_ARGS_4                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"                                                     \
+  "ldx [%3 + 8], %%o1;"                                                 \
+  "ldx [%3 + 16], %%o2;"                                                \
+  "ldx [%3 + 24], %%o3;"
+
+#define __LOAD_ARGS_5                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"                                                     \
+  "ldx [%3 + 8], %%o1;"                                                 \
+  "ldx [%3 + 16], %%o2;"                                                \
+  "ldx [%3 + 24], %%o3;"                                                \
+  "ldx [%3 + 32], %%o4;"
+
+#define __LOAD_ARGS_5_FOR_CLONE                                         \
+  "mov %3, %%g1;"                                                       \
+  "ldx [%4], %%o0;"                                                     \
+  "ldx [%4 + 8], %%o1;"                                                 \
+  "ldx [%4 + 16], %%o2;"                                                \
+  "ldx [%4 + 24], %%o3;"                                                \
+  "ldx [%4 + 32], %%o4;"
+
+#define __LOAD_ARGS_6                                                   \
+  "mov %2, %%g1;"                                                       \
+  "ldx [%3], %%o0;"                                                     \
+  "ldx [%3 + 8], %%o1;"                                                 \
+  "ldx [%3 + 16], %%o2;"                                                \
+  "ldx [%3 + 24], %%o3;"                                                \
+  "ldx [%3 + 32], %%o4;"                                                \
+  "ldx [%3 + 40], %%o5;"
+        
+
 #define __SYSCALL_STRING						\
 	"ta	0x6d;"							\
 	"bcc,pt	%%xcc, 1f;"						\
 	" mov	0, %%g1;"						\
 	"sub	%%g0, %%o0, %%o0;"					\
 	"mov	1, %%g1;"						\
-	"1:"
+	"1:"								\
+	"mov	%%g1, %0;"						\
+	"mov	%%o0, %1;"
+
+#define __SYSCALL_STRING_FOR_CLONE					\
+	"ta	0x6d;"							\
+	"bcc,pt	%%xcc, 1f;"						\
+	" mov	0, %%g1;"						\
+	"sub	%%g0, %%o0, %%o0;"					\
+	"mov	1, %%g1;"						\
+	"1:"								\
+	"mov	%%g1, %0;"						\
+	"mov	%%o0, %1;"						\
+	"mov	%%o1, %2;"
 
 #define __SYSCALL_CLOBBERS						\
+	"o0", "o1", "o2", "o3", "o4", "o5",				\
+	"g1", "g2", "g3", "g4", "g5", "g6",				\
 	"f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",			\
 	"f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15",		\
 	"f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",		\

@@ -32,6 +32,113 @@ _dl_map_segments (struct link_map *l, int fd,
                   const size_t maplength, bool has_holes,
                   struct link_map *loader)
 {
+#if defined __ptr128__
+  mdd_t mdd;
+  int residue = fd;
+  char fdstr[10];
+  char buf[14 + sizeof (fdstr) + 1] = "/proc/self/fd/";
+  int i, cnt = 0;
+  const char *name;
+  const struct loadcmd *c = loadcmds;
+
+  do
+    {
+      char digit = residue % 10;
+      fdstr[cnt++] = '0' + digit;
+      residue = (residue - digit) / 10;
+    }
+  while (residue != 0 && cnt < sizeof (fdstr));
+
+  /* This should  be impossible on practice. Just return the most general error
+     code if this manages to happen somehow. */
+  if (residue != 0)
+    return DL_MAP_SEGMENTS_ERROR_MAP_SEGMENT;
+
+  for (i = 0; i < cnt; i++)
+    buf[14 + i] = fdstr[cnt - 1 - i];
+
+  buf[14 + i] = '\0';
+  name = buf;
+
+  if (INLINE_SYSCALL_CALL (newuselib, name, &mdd) != 0)
+    /* This one of the standard DL_MAP_SEGMENTS_ERROR_* codes seems to be the
+       most relevant to the situation, though not quite perfect.  */
+    return DL_MAP_SEGMENTS_ERROR_MAP_SEGMENT;
+
+  /* Let it initialize itself as soon as possible.  */
+  mdd.selfinit ();
+
+  l->l_gd = mdd.gd;
+
+  /* FIXME: I thought of explicitly setting `l_addr' to zero since it should
+     play no role in PM, but it turns out to be that for the main executable's
+     link_map it's likely to be re-set in `dl_main ()' after we have returned
+     from this function. (I guess this is done because there's no other way to
+     obtain `l_addr' in ordinary modes if the main executable has been loaded
+     by the Kernel, which happens if ld.so is started implicitly or, in other
+     words, as an interpreter. Shouldn't I eventually eliminate that code for
+     PM?) Therefore, for symmetry with other `link_map's set it here to its
+     actual value which is the data segment base address. Note that it may be
+     required for (PM-specific) interface with GDB.  */
+  l->l_addr = (ElfW(Addr)) l->l_gd;
+  l->l_code_addr = (unsigned long) mdd.selfinit;
+
+  /* `l_map_start' and `l_text_end' are used in `_dl_check_caller ()' (see
+     `__check_caller (args->caller_dl_open, . . .)') to check if the `_dl_open
+     ()' caller's %pc belongs to one of the allowed libraries. Set them more or
+     less by analogy with ordinary modes below. FIXME: consider implementing
+     this code more symmetrically to the underlying one and in particular the
+     use of `_dl_postprocess_loadcmd ()' responsible for setting `l_text_end'
+     in non-Protected modes.  */
+  l->l_text_start = (unsigned int) -1;
+  l->l_text_end = 0;
+  l->l_data_start = (unsigned int) -1;
+  l->l_data_end = 0;
+  for (c = loadcmds; c < &loadcmds[nloadcmds]; ++c)
+    {
+      if (c->prot & PROT_EXEC)
+	{
+	  if (l->l_text_start > c->mapstart + l->l_code_addr)
+	    l->l_text_start = c->mapstart + l->l_code_addr;
+
+	  /* This matches the way they set `l_text_end' in `_dl_postprocess_
+	     loadcmd ()': the last page mapped on file gives contribution to
+	     `[l_text_start; l_text_end)', while the `.bss'-like portion of the
+	     last executable Program Header is excluded.  */
+	  if (l->l_text_end < c->mapend + l->l_code_addr)
+	    l->l_text_end = c->mapend + l->l_code_addr;
+	}
+      else
+	{
+	  if (l->l_data_start > c->mapstart + l->l_addr)
+	    l->l_data_start = c->mapstart + l->l_addr;
+
+	  /* I'm incapable of setting this value by analogy with l_map_end in
+	     ordinary modes below because I make no use of maplength parameter.
+	     Moreover, this probably makes little sense. However, I believe that
+	     the `.bss' portion of the last data Program Header SHOULD be taken
+	     into account here unlike l_text_end above.  */
+	  if (l->l_data_end < (ALIGN_UP (c->allocend, GLRO (dl_pagesize))
+			       + l->l_addr))
+	    l->l_data_end = (ALIGN_UP (c->allocend, GLRO (dl_pagesize))
+			     + l->l_addr);
+	}
+    }
+
+  /* If we are unable to get any info either on code or data Program Headers
+     believe that the corresponding segments are of zero length. This should
+     prevent us from associating any address or symbol with them.  */
+     
+  if (l->l_text_start == (unsigned int) -1)
+    l->l_text_start = l->l_text_end = l->l_code_addr;
+
+  if (l->l_data_start == (unsigned int) -1)
+    l->l_data_start = l->l_data_end = l->l_addr;
+
+  return NULL;
+
+#else /* ! defined __ptr128__  */
+
   const struct loadcmd *c = loadcmds;
 
   if (__glibc_likely (type == ET_DYN))
@@ -154,4 +261,6 @@ _dl_map_segments (struct link_map *l, int fd,
   ELF_FIXED_ADDRESS (loader, c->mapstart);
 
   return NULL;
+
+#endif /* ! defined __ptr128__  */
 }

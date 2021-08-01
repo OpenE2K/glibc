@@ -18,8 +18,9 @@
 
 #include <fenv.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __feupdateenv (const fenv_t *envp)
 {
   fexcept_t tmp;

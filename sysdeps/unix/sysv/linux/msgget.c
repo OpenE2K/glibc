@@ -27,7 +27,20 @@
 int
 msgget (key_t key, int msgflg)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ptr128__ && ! defined __ptr128_new_abi__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+  }
+  args = {(long int) key, (long int) msgflg, (long int) 0,
+	  (void *) NULL};
+
+  return INLINE_SYSCALL_CALL (ipc, IPCOP_msgget, &args);
+
+#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (msgget, key, msgflg);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgget, key, msgflg, 0, NULL);

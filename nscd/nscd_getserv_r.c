@@ -110,7 +110,13 @@ nscd_getserv_r (const char *crit, size_t critlen, const char *proto,
   const uint32_t *aliases_len = NULL;
   const char *aliases_list = NULL;
   int retval = -1;
-  const char *recend = (const char *) ~UINTMAX_C (0);
+  const char *recend = (const char *) ~
+#if ! defined __LCC__
+    UINTMAX_C (0)
+#else
+    (unsigned long) (0)
+#endif
+    ;
   int sock = -1;
   serv_response_header serv_resp;
 

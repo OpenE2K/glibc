@@ -260,3 +260,9 @@
 #define CAN_USE_REGISTER_ASM_EBP 0
 
 #endif
+
+/* Define when configured with `--with-sys-atomic'.  */
+#undef SUPPORT_SYS_ATOMIC
+
+/* Define when configured with `--with-bug-75842'.  */
+#undef WITH_BUG_75842

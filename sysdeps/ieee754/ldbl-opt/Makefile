@@ -51,6 +51,8 @@ libnldbl-inhibit-o = $(object-suffixes)
 libnldbl-static-only-routines = $(libnldbl-routines)
 extra-objs += $(addsuffix .oS, $(libnldbl-routines))
 
+ifeq (1, 0)
+
 CFLAGS-nldbl-acos.c = -fno-builtin-acosl
 CFLAGS-nldbl-acosh.c = -fno-builtin-acoshl
 CFLAGS-nldbl-asin.c = -fno-builtin-asinl
@@ -171,6 +173,8 @@ CFLAGS-nldbl-ufromfpx.c = -fno-builtin-ufromfpxl
 CFLAGS-nldbl-y0.c = -fno-builtin-y0l
 CFLAGS-nldbl-y1.c = -fno-builtin-y1l
 CFLAGS-nldbl-yn.c = -fno-builtin-ynl
+
+endif # 1 == 0
 
 tests += test-narrow-macros-ldbl-64 test-nldbl-redirect
 CFLAGS-test-narrow-macros-ldbl-64.c += -mlong-double-64

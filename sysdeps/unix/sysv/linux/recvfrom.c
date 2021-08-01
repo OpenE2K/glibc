@@ -23,7 +23,22 @@ ssize_t
 __libc_recvfrom (int fd, void *buf, size_t len, int flags,
 		 __SOCKADDR_ARG addr, socklen_t *addrlen)
 {
-#ifdef __ASSUME_RECVFROM_SYSCALL
+#if defined __ptr128__ // && ! defined __ptr128_new_abi__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+    long int d;
+    void *e;
+    void *f;
+  }
+  args = {(long int) fd, (void *) buf, (long int) len, (long int) flags,
+	  (void *) addr.__sockaddr__, (void *) addrlen};
+  
+  return SYSCALL_CANCEL (socketcall, SOCKOP_recvfrom, &args);
+
+#elif defined __ASSUME_RECVFROM_SYSCALL
   return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, addr.__sockaddr__,
                          addrlen);
 #else

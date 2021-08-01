@@ -46,7 +46,11 @@ __mbsnrtowcs (wchar_t *dst, const char **src, size_t nmc, size_t len,
   size_t result;
   int status;
   struct __gconv_step *towc;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const struct gconv_fcts *fcts;
 
   /* Tell where we want the result.  */

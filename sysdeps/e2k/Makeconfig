@@ -1,0 +1,3 @@
+# Filter out the annoying `manual' and `po' subdirs which
+# spoil the source tree during the build process.
+all-subdirs := $(filter-out manual po,$(all-subdirs))

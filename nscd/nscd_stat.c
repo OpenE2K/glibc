@@ -213,7 +213,11 @@ receive_print_stats (void)
   if (TEMP_FAILURE_RETRY (read (fd, &data, sizeof (data))) != sizeof (data)
       || (data.version != STATDATA_VERSION_FULL
 	  /* Yes, this is an assignment!  */
-	  && (errno = EINVAL)))
+	  && (errno = EINVAL
+#if defined __LCC__
+	      , errno == EINVAL
+#endif
+	      )))
     {
       /* Not the right version.  */
       int err = errno;

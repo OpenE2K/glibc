@@ -29,6 +29,20 @@ semop (int semid, struct sembuf *sops, size_t nsops)
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (semop, semid, sops, nsops);
 #else
+# if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+  }
+  args = {(long int) semid, (long int) nsops, (long int) 0,
+	  (void *) sops};
+
+  return INLINE_SYSCALL_CALL (ipc, IPCOP_semop, &args);
+# else  /* ! defined __ptr128__  */
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semop, semid, nsops, 0, sops);
+# endif /* ! defined __ptr128__  */
 #endif
 }

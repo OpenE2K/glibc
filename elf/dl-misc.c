@@ -182,8 +182,20 @@ _dl_debug_vdprintf (int fd, int tag_p, const char *fmt, va_list arg)
 		/* We use alloca() to allocate the buffer with the most
 		   pessimistic guess for the size.  Using alloca() allows
 		   having more than one integer formatting in a call.  */
-		char *buf = (char *) alloca (3 * sizeof (unsigned long int));
-		char *endp = &buf[3 * sizeof (unsigned long int)];
+		char *buf = (char *) alloca (
+#if ! defined __ptr128__
+					     3
+#else
+					     6
+#endif
+					     * sizeof (unsigned long int));
+		char *endp = &buf[
+#if ! defined __ptr128__
+				  3
+#else
+				  6
+#endif
+				  * sizeof (unsigned long int)];
 		char *cp = _itoa (num, endp, *fmt == 'x' ? 16 : 10, 0);
 
 		/* Pad to the width the user specified.  */

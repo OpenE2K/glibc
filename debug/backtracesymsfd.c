@@ -75,17 +75,29 @@ __backtrace_symbols_fd (void *const *array, int size, int fd)
 		   address.  The use of these addresses is to calculate an
 		   address in the ELF file, so its prelinked bias is not
 		   something we want to subtract out.  */
-		info.dli_saddr = (void *) map->l_addr;
+		info.dli_saddr = (
+#ifndef __ptr128__
+				  (void *)
+#endif
+				  map->l_addr);
 
 	      if (array[cnt] >= (void *) info.dli_saddr)
 		{
 		  iov[last].iov_base = (void *) "+0x";
-		  diff = array[cnt] - info.dli_saddr;
+		  diff = (
+#if defined __ptr128__
+			  (size_t)
+#endif
+			  array[cnt] - info.dli_saddr);
 		}
 	      else
 		{
 		  iov[last].iov_base = (void *) "-0x";
-		  diff = info.dli_saddr - array[cnt];
+		  diff = (info.dli_saddr -
+#if defined __ptr128__
+			  (size_t)
+#endif			  
+			  array[cnt]);
 		}
 	      iov[last].iov_len = 3;
 	      ++last;
@@ -101,6 +113,20 @@ __backtrace_symbols_fd (void *const *array, int size, int fd)
 	      ++last;
 	    }
 	}
+
+#if defined __e2k__
+      if (array[cnt] == (void *) -1UL)
+        {
+          const char signal_handler_called[] = "<signal handler called>\n";
+          iov[last].iov_base = (void *) signal_handler_called;
+          /* Don't take the trailing '\0' into account.  */
+          iov[last].iov_len = sizeof (signal_handler_called) - 1;
+          ++last;
+
+          __writev (fd, iov, last);
+          continue;
+        }
+#endif /* __e2k__  */
 
       iov[last].iov_base = (void *) "[0x";
       iov[last].iov_len = 3;

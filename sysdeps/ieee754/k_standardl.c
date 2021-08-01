@@ -38,7 +38,7 @@
 #include <errno.h>
 
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT || defined __e2k__ || defined __sparc__
 
 static double zero = 0.0;
 

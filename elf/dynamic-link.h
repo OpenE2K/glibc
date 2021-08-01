@@ -58,33 +58,44 @@ int _dl_try_allocate_static_tls (struct link_map *map) attribute_hidden;
    copying memory, breaking the very code written to handle the
    unaligned cases.  */
 # if ! ELF_MACHINE_NO_REL
-auto inline void __attribute__((always_inline))
+static void __attribute__((always_inline))
 elf_machine_rel (struct link_map *map, const ElfW(Rel) *reloc,
 		 const ElfW(Sym) *sym, const struct r_found_version *version,
-		 void *const reloc_addr, int skip_ifunc);
-auto inline void __attribute__((always_inline))
+		 void *const reloc_addr, int skip_ifunc,
+                 struct r_scope_elem *scope[], const char *strtab);
+static void __attribute__((always_inline))
 elf_machine_rel_relative (ElfW(Addr) l_addr, const ElfW(Rel) *reloc,
 			  void *const reloc_addr);
 # endif
 # if ! ELF_MACHINE_NO_RELA
-auto inline void __attribute__((always_inline))
+static void
 elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 		  const ElfW(Sym) *sym, const struct r_found_version *version,
-		  void *const reloc_addr, int skip_ifunc);
-auto inline void __attribute__((always_inline))
+		  void *const reloc_addr, int skip_ifunc,
+                  struct r_scope_elem *scope[], const char *strtab
+#  if (defined RESOLVE_CONFLICT_FIND_MAP        \
+       && ((defined __powerpc__                 \
+            && !defined __powerpc64__)          \
+           || defined __arm__))
+                  , struct link_map **resolve_conflict_map
+#  endif
+                  );
+static void
 elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
 			   void *const reloc_addr);
 # endif
 # if ELF_MACHINE_NO_RELA || defined ELF_MACHINE_PLT_REL
-auto inline void __attribute__((always_inline))
+static void
 elf_machine_lazy_rel (struct link_map *map,
 		      ElfW(Addr) l_addr, const ElfW(Rel) *reloc,
-		      int skip_ifunc);
+		      int skip_ifunc, struct r_scope_elem *scope[],
+                      const char *strtab);
 # else
-auto inline void __attribute__((always_inline))
+static void
 elf_machine_lazy_rel (struct link_map *map,
 		      ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
-		      int skip_ifunc);
+		      int skip_ifunc, struct r_scope_elem *scope[],
+                      const char *strtab);
 # endif
 #endif
 
@@ -92,7 +103,12 @@ elf_machine_lazy_rel (struct link_map *map,
 
 #include "get-dynamic-info.h"
 
-#ifdef RESOLVE_MAP
+/* The underlying macros along with static functions fetched from my version of
+   `elf/do-rel.h' are not actually used when compiling `elf/dl-conflict.c'. To
+   avoid the need for another hack of `elf/do-rel.h', taking the extra
+   powerpc32-specific `resolve_conflict_map' parameter of `elf_machine_rela ()'
+   into account, just omit this useless piece of code.  */
+#if defined RESOLVE_MAP && ! defined RESOLVE_CONFLICT_FIND_MAP
 
 # if defined RTLD_BOOTSTRAP || defined STATIC_PIE_BOOTSTRAP
 #  define ELF_DURING_STARTUP (1)
@@ -113,11 +129,26 @@ elf_machine_lazy_rel (struct link_map *map,
    consumes precisely the very end of the DT_REL*, or DT_JMPREL and DT_REL*
    are completely separate and there is a gap between them.  */
 
-# define _ELF_DYNAMIC_DO_RELOC(RELOC, reloc, map, do_lazy, skip_ifunc, test_rel) \
+# define _ELF_DYNAMIC_DO_RELOC(RELOC, reloc, map, do_lazy, skip_ifunc, scope, strtab, test_rel) \
   do {									      \
-    struct { ElfW(Addr) start, size;					      \
+    struct { void *start; ElfW(Addr) size;				\
 	     __typeof (((ElfW(Dyn) *) 0)->d_un.d_val) nrelative; int lazy; }  \
-      ranges[2] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };			      \
+    ranges[2];                                                          \
+    /* For `ranges[2] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };' LCCS requires \
+       a relative relocation within GOT against some const obj which hasn't \
+       been processed by the time ld.so starts relocating itself. FIXME: \
+       this hack is required for Sparc only, for E2k there is no need for \
+       relative relocation against const obj in GOT. Find out why.  */  \
+    {                                                                   \
+      int i;                                                            \
+      for (i = 0; i < 2; i++)                                           \
+        {                                                               \
+         ranges[i].start = 0;                                           \
+         ranges[i].size = 0;                                            \
+         ranges[i].nrelative = 0;                                       \
+         ranges[i].lazy = 0;                                            \
+        }                                                               \
+    }                                                                   \
 									      \
     if ((map)->l_info[DT_##RELOC])					      \
       {									      \
@@ -130,7 +161,7 @@ elf_machine_lazy_rel (struct link_map *map,
     if ((map)->l_info[DT_PLTREL]					      \
 	&& (!test_rel || (map)->l_info[DT_PLTREL]->d_un.d_val == DT_##RELOC)) \
       {									      \
-	ElfW(Addr) start = D_PTR ((map), l_info[DT_JMPREL]);		      \
+	void *start = D_PTR ((map), l_info[DT_JMPREL]);		      \
 	ElfW(Addr) size = (map)->l_info[DT_PLTRELSZ]->d_un.d_val;	      \
 									      \
 	if (ranges[0].start + ranges[0].size == (start + size))		      \
@@ -152,7 +183,7 @@ elf_machine_lazy_rel (struct link_map *map,
 									      \
     if (ELF_DURING_STARTUP)						      \
       elf_dynamic_do_##reloc ((map), ranges[0].start, ranges[0].size,	      \
-			      ranges[0].nrelative, 0, skip_ifunc);	      \
+			      ranges[0].nrelative, 0, skip_ifunc, scope, strtab); \
     else								      \
       {									      \
 	int ranges_index;						      \
@@ -162,7 +193,9 @@ elf_machine_lazy_rel (struct link_map *map,
 				  ranges[ranges_index].size,		      \
 				  ranges[ranges_index].nrelative,	      \
 				  ranges[ranges_index].lazy,		      \
-				  skip_ifunc);				      \
+				  skip_ifunc,                           \
+                                  scope,                                \
+                                  strtab);                              \
       }									      \
   } while (0)
 
@@ -174,29 +207,29 @@ elf_machine_lazy_rel (struct link_map *map,
 
 # if ! ELF_MACHINE_NO_REL
 #  include "do-rel.h"
-#  define ELF_DYNAMIC_DO_REL(map, lazy, skip_ifunc) \
-  _ELF_DYNAMIC_DO_RELOC (REL, Rel, map, lazy, skip_ifunc, _ELF_CHECK_REL)
+#  define ELF_DYNAMIC_DO_REL(map, lazy, skip_ifunc, scope, strtab)             \
+    _ELF_DYNAMIC_DO_RELOC (REL, Rel, map, lazy, skip_ifunc, scope, strtab, _ELF_CHECK_REL)
 # else
-#  define ELF_DYNAMIC_DO_REL(map, lazy, skip_ifunc) /* Nothing to do.  */
+#  define ELF_DYNAMIC_DO_REL(map, lazy, skip_ifunc, scope, strtab) /* Nothing to do.  */
 # endif
 
 # if ! ELF_MACHINE_NO_RELA
 #  define DO_RELA
 #  include "do-rel.h"
-#  define ELF_DYNAMIC_DO_RELA(map, lazy, skip_ifunc) \
-  _ELF_DYNAMIC_DO_RELOC (RELA, Rela, map, lazy, skip_ifunc, _ELF_CHECK_REL)
+#  define ELF_DYNAMIC_DO_RELA(map, lazy, skip_ifunc, scope, strtab)            \
+    _ELF_DYNAMIC_DO_RELOC (RELA, Rela, map, lazy, skip_ifunc, scope, strtab, _ELF_CHECK_REL)
 # else
-#  define ELF_DYNAMIC_DO_RELA(map, lazy, skip_ifunc) /* Nothing to do.  */
+#  define ELF_DYNAMIC_DO_RELA(map, lazy, skip_ifunc, scope, strtab) /* Nothing to do.  */
 # endif
 
 /* This can't just be an inline function because GCC is too dumb
    to inline functions containing inlines themselves.  */
-# define ELF_DYNAMIC_RELOCATE(map, lazy, consider_profile, skip_ifunc) \
+# define ELF_DYNAMIC_RELOCATE(map, lazy, consider_profile, skip_ifunc, scope, strtab) \
   do {									      \
     int edr_lazy = elf_machine_runtime_setup ((map), (lazy),		      \
 					      (consider_profile));	      \
-    ELF_DYNAMIC_DO_REL ((map), edr_lazy, skip_ifunc);			      \
-    ELF_DYNAMIC_DO_RELA ((map), edr_lazy, skip_ifunc);			      \
+    ELF_DYNAMIC_DO_REL ((map), edr_lazy, skip_ifunc, scope, strtab);    \
+    ELF_DYNAMIC_DO_RELA ((map), edr_lazy, skip_ifunc, scope, strtab);   \
   } while (0)
 
 #endif

@@ -8,9 +8,10 @@
 # in /lib and /etc.
 test -n "$libc_cv_slibdir" ||
 case "$prefix" in
-/usr | /usr/)
-  libc_cv_slibdir='/lib'
-  libc_cv_rtlddir='/lib'
+*/usr | */usr/)
+  prefix_wo_usr=`echo "$prefix" | sed 's/\(.*\)\/usr.*/\1/'`
+  libc_cv_slibdir=${prefix_wo_usr}'/lib'
+  libc_cv_rtlddir=${prefix_wo_usr}'/lib'
   if test "$libdir" = '${exec_prefix}/lib'; then
     libdir='${exec_prefix}/lib';
     # Locale data can be shared between 32-bit and 64-bit libraries.
@@ -19,19 +20,19 @@ case "$prefix" in
   ;;
 esac
 case "$prefix" in
-/usr | /usr/)
+*/usr | */usr/)
   # Allow the user to override the path with --sysconfdir.
   if test "$sysconfdir" = '${prefix}/etc'; then
-    libc_cv_sysconfdir=/etc
+    libc_cv_sysconfdir=${prefix_wo_usr}/etc
   else
     libc_cv_sysconfdir=$sysconfdir
    fi
   # Allow the user to override the path with --localstatedir.
   if test "$localstatedir" = '${prefix}/var'; then
-    libc_cv_localstatedir=/var
+    libc_cv_localstatedir=${prefix_wo_usr}/var
   else
     libc_cv_localstatedir=$localstatedir
    fi
-  libc_cv_rootsbindir=/sbin
+  libc_cv_rootsbindir=${prefix_wo_usr}/sbin
   ;;
 esac

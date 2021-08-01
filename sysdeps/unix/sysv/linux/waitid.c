@@ -26,7 +26,11 @@ __waitid (idtype_t idtype, id_t id, siginfo_t *infop, int options)
 {
   /* The unused fifth argument is a `struct rusage *' that we could
      pass if we were using waitid to simulate wait3/wait4.  */
+#if defined __ptr128__ && ! defined __ptr128_new_abi__
+  return SYSCALL_CANCEL (waitid, idtype, id, options, infop, NULL);
+#else /* ! (defined __ptr128__ && ! defined __ptr128_new_abi__)  */
   return SYSCALL_CANCEL (waitid, idtype, id, infop, options, NULL);
+#endif /* ! (defined __ptr128__ && ! defined __ptr128_new_abi__)  */
 }
 weak_alias (__waitid, waitid)
 strong_alias (__waitid, __libc_waitid)

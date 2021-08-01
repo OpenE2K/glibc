@@ -190,7 +190,11 @@ gethostbyname3_multi (FILE * stream, const char *name, int af,
 	      LOOKUP_NAME_CASE (h_name, h_aliases)
 		result = old_result;
 	    }
-	  while ((matches = 0));
+	  while ((matches = 0
+#if defined __LCC__
+		  , matches != 0
+#endif
+		  ));
 
 	  /* If the line matches, we need to copy the addresses and
 	     aliases, so that we can reuse tmp_buffer for the next

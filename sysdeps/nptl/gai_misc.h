@@ -70,10 +70,14 @@
   } while (0)
 
 
+#if !IS_IN (libc)
+
 #define gai_start_notify_thread __gai_start_notify_thread
 #define gai_create_helper_thread __gai_create_helper_thread
 
-extern inline void
+static void __gai_start_notify_thread (void) __attribute__ ((unused));
+
+static void
 __gai_start_notify_thread (void)
 {
   sigset_t ss;
@@ -83,7 +87,11 @@ __gai_start_notify_thread (void)
   assert_perror (sigerr);
 }
 
-extern inline int
+static int __gai_create_helper_thread
+(pthread_t *threadp, void *(*tf) (void *), void *arg)
+  __attribute__ ((unused));
+
+static int
 __gai_create_helper_thread (pthread_t *threadp, void *(*tf) (void *),
 			    void *arg)
 {
@@ -116,5 +124,7 @@ __gai_create_helper_thread (pthread_t *threadp, void *(*tf) (void *),
   (void) pthread_attr_destroy (&attr);
   return ret;
 }
+
+#endif /* ! IS_IN (libc)  */
 
 #include_next <gai_misc.h>

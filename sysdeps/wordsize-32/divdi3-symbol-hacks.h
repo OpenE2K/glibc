@@ -24,8 +24,11 @@
    Note: in_divdi3_c is only used to avoid symbol alias on divdi3
    build itself.  */
 #if !defined __ASSEMBLER__ && !defined in_divdi3_c && IS_IN (libc) && defined SHARED
+#if ! defined __LCC__
+/* Avoid this trick as LCC shouldn't emit these calls.  */
 asm ("__divdi3 = __divdi3_internal");
 asm ("__udivdi3 = __udivdi3_internal");
 asm ("__moddi3 = __moddi3_internal");
 asm ("__umoddi3 = __umoddi3_internal");
+#endif /* ! defined __LCC__  */
 #endif

@@ -469,7 +469,14 @@ load_shobj (const char *name)
     printf ("load addr: %0#*" PRIxPTR "\n"
 	    "lower bound PC: %0#*" PRIxPTR "\n"
 	    "upper bound PC: %0#*" PRIxPTR "\n",
-	    __ELF_NATIVE_CLASS == 32 ? 10 : 18, map->l_addr,
+	    __ELF_NATIVE_CLASS == 32 ? 10 : 18,
+#if defined __ptr128__
+	    /* `uintptr_t' assumed by PRIxPTR format specifier doesn't coincide
+	       with the `Elf32_Addr' type of `l_addr' in Protected Mode, which
+	       is why this cast is required.  */
+	    (uintptr_t)
+#endif
+	    map->l_addr,
 	    __ELF_NATIVE_CLASS == 32 ? 10 : 18, result->lowpc,
 	    __ELF_NATIVE_CLASS == 32 ? 10 : 18, result->highpc);
 
@@ -541,7 +548,12 @@ load_shobj (const char *name)
   /* Now we have to load the symbol table.
 
      First load the section header table.  */
+#if ! defined __ptr128__
   ehdr = (ElfW(Ehdr) *) map->l_map_start;
+#else /* defined __ptr128__  */
+  /* FIXME: I wonder if this is going to be workable in PM . . .  */
+  ehdr = (ElfW(Ehdr) *) (map->l_gd + (map->l_data_start - map->l_addr));
+#endif /* defined __ptr128__  */
 
   /* Make sure we are on the right party.  */
   if (ehdr->e_shentsize != sizeof (ElfW(Shdr)))

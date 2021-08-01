@@ -645,6 +645,8 @@ check_stacksize_attr (size_t st)
   return EINVAL;
 }
 
+#if ! defined __ptr128__
+
 #define ASSERT_TYPE_SIZE(type, size) 					\
   _Static_assert (sizeof (type) == size,				\
 		  "sizeof (" #type ") != " #size)
@@ -658,5 +660,14 @@ check_stacksize_attr (size_t st)
   _Static_assert (offsetof (type, member) == offset,			\
 		  "offset of " #member " field of " #type " != "	\
 		  ASSERT_PTHREAD_STRING (offset))
+
+#else /* defined __ptr128__  */
+
+#define ASSERT_TYPE_SIZE(type, size)
+#define ASSERT_PTHREAD_INTERNAL_SIZE(type, internal)
+#define ASSERT_PTHREAD_STRING(x)
+#define ASSERT_PTHREAD_INTERNAL_OFFSET(type, member, offset)
+
+#endif /* defined __ptr128__  */
 
 #endif	/* pthreadP.h */

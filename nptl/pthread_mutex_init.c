@@ -23,7 +23,10 @@
 #include <kernel-features.h>
 #include "pthreadP.h"
 #include <atomic.h>
+
+#if ! defined __ptr128__
 #include <pthread-offsets.h>
+#endif /* ! defined __ptr128__  */
 
 #include <stap-probe.h>
 
@@ -58,6 +61,8 @@ __pthread_mutex_init (pthread_mutex_t *mutex,
 {
   const struct pthread_mutexattr *imutexattr;
 
+#if ! defined __ptr128__
+
   ASSERT_TYPE_SIZE (pthread_mutex_t, __SIZEOF_PTHREAD_MUTEX_T);
 
   ASSERT_PTHREAD_INTERNAL_OFFSET (pthread_mutex_t, __data.__nusers,
@@ -72,6 +77,8 @@ __pthread_mutex_init (pthread_mutex_t *mutex,
 #endif
   ASSERT_PTHREAD_INTERNAL_OFFSET (pthread_mutex_t, __data.__list,
 				  __PTHREAD_MUTEX_LIST_OFFSET);
+
+#endif /* ! defined __ptr128__  */
 
   imutexattr = ((const struct pthread_mutexattr *) mutexattr
 		?: &default_mutexattr);

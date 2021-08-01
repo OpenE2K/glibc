@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#ifdef DONT_USE_FAST_DRAND48 /* erand48 sources in erand48_r.c */
+
 #include <stdlib.h>
 
 
@@ -28,3 +30,5 @@ erand48 (unsigned short int xsubi[3])
 
   return result;
 }
+
+#endif

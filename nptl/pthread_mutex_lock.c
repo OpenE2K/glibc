@@ -365,8 +365,13 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 	  {
 	    /* Note: robust PI futexes are signaled by setting bit 0.  */
 	    THREAD_SETMEM (THREAD_SELF, robust_head.list_op_pending,
+#if ! defined __ptr128__
 			   (void *) (((uintptr_t) &mutex->__data.__list.__next)
-				     | 1));
+				     | 1)
+#else /* defined __ptr128__  */
+			   (void *) ((char *) &mutex->__data.__list.__next + 1)
+#endif /* defined __ptr128__  */
+			   );
 	    /* We need to set op_pending before starting the operation.  Also
 	       see comments at ENQUEUE_MUTEX.  */
 	    __asm ("" ::: "memory");

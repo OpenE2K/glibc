@@ -47,6 +47,16 @@ typedef uintptr_t uatomicptr_t;
 typedef intmax_t atomic_max_t;
 typedef uintmax_t uatomic_max_t;
 
+#ifndef __LCC__
+#define CHECK_SIZE(mem)                         \
+  if (sizeof (*mem) != 4)                       \
+    abort ()
+#else
+#define CHECK_SIZE(mem)                         \
+  if (sizeof (*mem) != 4)                       \
+    *((int *) 0) = 0
+#endif
+
 #define __HAVE_64B_ATOMICS 0
 #define USE_ATOMIC_COMPILER_BUILTINS 0
 
@@ -115,7 +125,7 @@ volatile unsigned char __sparc32_atomic_locks[64]
 
 
 #ifndef SHARED
-# define __v9_compare_and_exchange_val_32_acq(mem, newval, oldval) \
+# define __v9_compare_and_exchange_val_32(mem, newval, oldval) \
 ({union { __typeof (oldval) a; uint32_t v; } oldval_arg = { .a = (oldval) };  \
   union { __typeof (newval) a; uint32_t v; } newval_arg = { .a = (newval) };  \
   register uint32_t __acev_tmp __asm ("%g6");			              \
@@ -130,6 +140,48 @@ volatile unsigned char __sparc32_atomic_locks[64]
 		    : "r" (__acev_oldval), "m" (*__acev_mem),		      \
 		      "r" (__acev_mem) : "memory");			      \
   (__typeof (oldval)) __acev_tmp; })
+
+#define __v9_compare_and_exchange_val_32_acq(mem, newval, oldval) \
+({ \
+  __typeof (*(mem)) __a; \
+  __a = __v9_compare_and_exchange_val_32(mem, newval, oldval); \
+  atomic_read_barrier(); \
+  __a; \
+})
+
+#define __v9_compare_and_exchange_val_32_rel(mem, newval, oldval) \
+({ \
+  atomic_write_barrier();\
+  __v9_compare_and_exchange_val_32(mem, newval, oldval); \
+})
+
+#endif
+
+#ifdef SUPPORT_SYS_ATOMIC
+#define __e90_compare_and_exchange_val_32_acq(mem, newval, oldval)      \
+({                                                                      \
+  __typeof (*(mem)) __acev_old;                                         \
+  __typeof (mem) __acev_mem = (mem);                                    \
+  __asm __volatile ("mov 0x1f3, %%g1;"                                  \
+                    "mov 0x1, %%o0;"                                    \
+                    "mov 0x4, %%o1;"                                    \
+                    "mov %2, %%o2;"                                     \
+                    "mov %3, %%o3;"                                     \
+                    "mov %4, %%o4;"                                     \
+                    "mov %5, %%o5;"                                     \
+                    "ta 0x10"                                           \
+                    : "=m" (__acev_old), "=m" (*__acev_mem)             \
+                    : "r" (__acev_mem), "r" (oldval),                   \
+                    "r" (newval), "r" (&__acev_old),                    \
+                    "m" (__acev_old), "m" (*__acev_mem)                 \
+                    : "o0", "o1", "o2", "o3", "o4", "o5",               \
+                    "g1", "g2", "g3", "g4", "g5", "g6",                 \
+                    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",     \
+                    "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15", \
+                    "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23", \
+                    "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31", \
+                    "cc", "memory");                                    \
+  __acev_old; })
 #endif
 
 /* The only basic operation needed is compare and exchange.  */
@@ -207,41 +259,183 @@ volatile unsigned char __sparc32_atomic_locks[64]
      __asm __volatile ("" ::: "memory");			      \
      __acev_ret; })
 
+
+
+#ifdef SUPPORT_SYS_ATOMIC
+/* Kernel atomic ops may be either present or not at V8 and we
+   should be able to support them both in static and dynamic
+   libraries (see Bug #54479 at the end of Comment #15). Therefore
+   `__atomic_is_e90'  is defined both for if(n)def SHARED below
+   though in a different way.  */
+# define __ATOMIC_HWCAP_SPARC_SYS_ATOMIC        0x10000000
+#endif /* SUPPORT_SYS_ATOMIC  */
+
+
 #ifdef SHARED
 
 /* When dynamically linked, we assume pre-v9 libraries are only ever
    used on pre-v9 CPU.  */
 # define __atomic_is_v9 0
 
-# define atomic_compare_and_exchange_val_acq(mem, newval, oldval) \
+
+# ifndef SUPPORT_SYS_ATOMIC
+
+#  define atomic_compare_and_exchange_val_acq(mem, newval, oldval) \
   __v7_compare_and_exchange_val_acq (mem, newval, oldval)
 
-# define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
   __v7_compare_and_exchange_bool_acq (mem, newval, oldval)
 
-# define atomic_exchange_acq(mem, newval) \
+#  define atomic_exchange_acq(mem, newval) \
   __v7_exchange_acq (mem, newval)
 
-# define atomic_exchange_and_add(mem, value) \
+#  define atomic_exchange_and_add(mem, value) \
   __v7_exchange_and_add (mem, value)
 
-# define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
-  ({								      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
-     __v7_compare_and_exchange_val_24_acq (mem, newval, oldval); })
+#  define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval)  \
+  ({                                                                   \
+    CHECK_SIZE (mem);                                                  \
+    __v7_compare_and_exchange_val_24_acq (mem, newval, oldval); })
 
-# define atomic_exchange_24_rel(mem, newval) \
+#  define atomic_exchange_24_rel(mem, newval) \
   ({								      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
-     __v7_exchange_24_rel (mem, newval); })
+    CHECK_SIZE (mem);                                                 \
+    __v7_exchange_24_rel (mem, newval); })
 
+# else /* SUPPORT_SYS_ATOMIC  */
+
+/* They don't want to include <ldsodefs.h> here. But I really need
+   to know where to find `_rtld_{global,local}_ro._dl_hwcap' in
+   ld.so . . . If I am not mistaken, it has offset 64 in bytes from
+   the start of the structure.  */
+#  if !IS_IN (rtld)
+extern uint64_t _rtld_global_ro_arr[]
+__attribute__((section(".data.rel.ro"))) __asm__ ("_rtld_global_ro");
+
+/* Hosts with the atomic ops implemented inside the Kernel are rare
+   (see Bug #54479). Libraries configured with `--with-sys-atomic'
+   may very well be installed to a host where this feature is not
+   enabled. Therefore specify `0' in the second `__builtin_expect ()'.  */
+# define __atomic_is_e90 \
+  (__builtin_expect (_rtld_global_ro_arr[8] & __ATOMIC_HWCAP_SPARC_SYS_ATOMIC, \
+                     0))
+#  else
+extern uint64_t _rtld_local_ro_arr[]
+__attribute__ ((section (".data.rel.ro")))
+__attribute__ ((visibility ("hidden"))) __asm__ ("_rtld_local_ro");
+
+# define __atomic_is_e90 \
+  (__builtin_expect (_rtld_local_ro_arr[8] & __ATOMIC_HWCAP_SPARC_SYS_ATOMIC,  \
+                     0))
+#  endif
+
+
+
+#  define atomic_compare_and_exchange_val_acq(mem, newval, oldval)      \
+  ({                                                                    \
+    __typeof (*mem) __acev_wret;                                        \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_e90)                                                \
+      __acev_wret                                                       \
+        = __e90_compare_and_exchange_val_32_acq (mem, newval,           \
+                                                 oldval);               \
+    else                                                                \
+      __acev_wret                                                       \
+        = __v7_compare_and_exchange_val_acq (mem, newval,               \
+                                             oldval);                   \
+    __acev_wret; })
+
+#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+  ({                                                                  \
+  int __acev_wret;						      \
+  CHECK_SIZE (mem);                                                   \
+  if (__atomic_is_e90)                                                \
+    {                                                                 \
+      __typeof (oldval) __acev_woldval = (oldval);		      \
+      __acev_wret						      \
+        = __e90_compare_and_exchange_val_32_acq (mem, newval,         \
+                                                 __acev_woldval)      \
+        != __acev_woldval;					      \
+    }                                                                 \
+  else                                                                \
+    __acev_wret                                                       \
+      =  __v7_compare_and_exchange_bool_acq (mem, newval, oldval);    \
+  __acev_wret; })
+
+#  define atomic_exchange_acq(mem, newval) \
+  ({								      \
+    __typeof (*mem) __acev_wret;				      \
+    CHECK_SIZE (mem);                                                 \
+    if (__atomic_is_e90)					      \
+      {                                                               \
+        __typeof (mem) __acev_wmemp = (mem);			      \
+        __typeof (*(mem)) __acev_wval = (newval);		      \
+        do							      \
+          __acev_wret = *__acev_wmemp;				      \
+        while (__builtin_expect                                       \
+               (__e90_compare_and_exchange_val_32_acq (__acev_wmemp,  \
+                                                       __acev_wval,   \
+                                                       __acev_wret)   \
+                != __acev_wret, 0));				      \
+       }							      \
+     else							      \
+       __acev_wret = __v7_exchange_acq (mem, newval);                 \
+     __acev_wret; })
+
+#  define atomic_exchange_and_add(mem, value) \
+  ({                                                                    \
+    __typeof (*mem) __acev_wret;                                        \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_e90)                                                \
+      {                                                                 \
+        __typeof (mem) __acev_wmemp = (mem);                            \
+        __typeof (*(mem)) __acev_wval = (value);                        \
+        do                                                              \
+          __acev_wret = *__acev_wmemp;                                  \
+        while (__builtin_expect                                         \
+               (__e90_compare_and_exchange_val_32_acq (__acev_wmemp,    \
+                                                       (__acev_wret     \
+                                                        + __acev_wval), \
+                                                       __acev_wret)     \
+                != __acev_wret, 0));                                    \
+      }                                                                 \
+    else                                                                \
+      __acev_wret = __v7_exchange_and_add (mem, value);                 \
+    __acev_wret; })
+
+
+#  define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
+  ({                                                                    \
+    __typeof (*mem) __acev_wret;                                        \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_e90)                                                \
+      __acev_wret                                                       \
+        = __e90_compare_and_exchange_val_32_acq (mem, newval,           \
+                                                 oldval);               \
+    else                                                                \
+      __acev_wret                                                       \
+        = __v7_compare_and_exchange_val_24_acq (mem, newval, oldval);   \
+    __acev_wret; })
+
+#  define atomic_exchange_24_rel(mem, newval)                           \
+  ({                                                                    \
+    __typeof (*mem) __acev_w24ret;                                      \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_e90)                                                \
+      __acev_w24ret = atomic_exchange_rel (mem, newval);                \
+    else                                                                \
+      __acev_w24ret = __v7_exchange_24_rel (mem, newval);               \
+    __acev_w24ret; })
+
+# endif /* SUPPORT_SYS_ATOMIC  */
+
+/* Do we need anything special for e90 with sys_atomic support here?  */
 # define atomic_full_barrier() __asm ("" ::: "memory")
 # define atomic_read_barrier() atomic_full_barrier ()
 # define atomic_write_barrier() atomic_full_barrier ()
 
-#else
+
+#else /* SHARED  */
 
 /* In libc.a/libpthread.a etc. we don't know if we'll be run on
    pre-v9 or v9 CPU.  To be interoperable with dynamically linked
@@ -253,24 +447,24 @@ extern uint64_t _dl_hwcap __attribute__((weak));
   (__builtin_expect (&_dl_hwcap != 0, 1) \
    && __builtin_expect (_dl_hwcap & HWCAP_SPARC_V9, HWCAP_SPARC_V9))
 
-# define atomic_compare_and_exchange_val_acq(mem, newval, oldval) \
-  ({								      \
-     __typeof (*mem) __acev_wret;				      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
-     if (__atomic_is_v9)					      \
-       __acev_wret						      \
-	 = __v9_compare_and_exchange_val_32_acq (mem, newval, oldval);\
-     else							      \
-       __acev_wret						      \
-	 = __v7_compare_and_exchange_val_acq (mem, newval, oldval);   \
-     __acev_wret; })
+# ifndef SUPPORT_SYS_ATOMIC
 
-# define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+#  define atomic_compare_and_exchange_val_acq(mem, newval, oldval)       \
+  ({                                                                    \
+    __typeof (*mem) __acev_wret;                                        \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_v9)                                                 \
+      __acev_wret                                                       \
+        = __v9_compare_and_exchange_val_32_acq (mem, newval, oldval);   \
+    else                                                                \
+      __acev_wret                                                       \
+        = __v7_compare_and_exchange_val_acq (mem, newval, oldval);      \
+    __acev_wret; })
+
+#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
   ({								      \
      int __acev_wret;						      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
+     CHECK_SIZE (mem);                                                \
      if (__atomic_is_v9)					      \
        {							      \
 	 __typeof (oldval) __acev_woldval = (oldval);		      \
@@ -284,11 +478,10 @@ extern uint64_t _dl_hwcap __attribute__((weak));
 	 = __v7_compare_and_exchange_bool_acq (mem, newval, oldval);  \
      __acev_wret; })
 
-# define atomic_exchange_rel(mem, newval) \
+#  define atomic_exchange_rel(mem, newval) \
   ({								      \
      __typeof (*mem) __acev_wret;				      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
+     CHECK_SIZE (mem);                                                \
      if (__atomic_is_v9)					      \
        {							      \
 	 __typeof (mem) __acev_wmemp = (mem);			      \
@@ -296,7 +489,7 @@ extern uint64_t _dl_hwcap __attribute__((weak));
 	 do							      \
 	   __acev_wret = *__acev_wmemp;				      \
 	 while (__builtin_expect				      \
-		  (__v9_compare_and_exchange_val_32_acq (__acev_wmemp,\
+		  (__v9_compare_and_exchange_val_32_rel (__acev_wmemp,\
 							 __acev_wval, \
 							 __acev_wret) \
 		   != __acev_wret, 0));				      \
@@ -305,11 +498,10 @@ extern uint64_t _dl_hwcap __attribute__((weak));
        __acev_wret = __v7_exchange_acq (mem, newval);		      \
      __acev_wret; })
 
-# define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
+#  define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
   ({								      \
      __typeof (*mem) __acev_wret;				      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
+     CHECK_SIZE (mem);                                                \
      if (__atomic_is_v9)					      \
        __acev_wret						      \
 	 = __v9_compare_and_exchange_val_32_acq (mem, newval, oldval);\
@@ -318,17 +510,126 @@ extern uint64_t _dl_hwcap __attribute__((weak));
 	 = __v7_compare_and_exchange_val_24_acq (mem, newval, oldval);\
      __acev_wret; })
 
-# define atomic_exchange_24_rel(mem, newval) \
+#  define atomic_exchange_24_rel(mem, newval) \
   ({								      \
      __typeof (*mem) __acev_w24ret;				      \
-     if (sizeof (*mem) != 4)					      \
-       abort ();						      \
-     if (__atomic_is_v9)					      \
+     CHECK_SIZE (mem);                                                \
+     if (__atomic_is_v9)                                              \
        __acev_w24ret = atomic_exchange_rel (mem, newval);	      \
      else							      \
        __acev_w24ret = __v7_exchange_24_rel (mem, newval);	      \
      __acev_w24ret; })
 
+
+# else /* SUPPORT_SYS_ATOMIC  */
+
+# define __atomic_is_e90 \
+  (__builtin_expect (&_dl_hwcap != 0, 1) \
+   && __builtin_expect (_dl_hwcap & __ATOMIC_HWCAP_SPARC_SYS_ATOMIC, \
+                        0))
+
+
+#  define atomic_compare_and_exchange_val_acq(mem, newval, oldval)       \
+  ({                                                                    \
+    __typeof (*mem) __acev_wret;                                        \
+    CHECK_SIZE (mem);                                                   \
+    if (__atomic_is_v9)                                                 \
+      __acev_wret                                                       \
+        = __v9_compare_and_exchange_val_32_acq (mem, newval, oldval);   \
+    else if (__atomic_is_e90)                                           \
+      __acev_wret                                                       \
+        = __e90_compare_and_exchange_val_32_acq (mem, newval, oldval);  \
+    else                                                                \
+      __acev_wret                                                       \
+        = __v7_compare_and_exchange_val_acq (mem, newval, oldval);      \
+    __acev_wret; })
+
+#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+  ({								      \
+     int __acev_wret;						      \
+     CHECK_SIZE (mem);                                                \
+     if (__atomic_is_v9)					      \
+       {							      \
+	 __typeof (oldval) __acev_woldval = (oldval);		      \
+	 __acev_wret						      \
+	   = __v9_compare_and_exchange_val_32_acq (mem, newval,	      \
+						   __acev_woldval)    \
+	     != __acev_woldval;					      \
+       }							      \
+     else if (__atomic_is_e90)					      \
+       {							      \
+	 __typeof (oldval) __acev_woldval = (oldval);		      \
+	 __acev_wret						      \
+	   = __e90_compare_and_exchange_val_32_acq (mem, newval,      \
+                                                    __acev_woldval)   \
+	     != __acev_woldval;					      \
+       }							      \
+     else							      \
+       __acev_wret						      \
+	 = __v7_compare_and_exchange_bool_acq (mem, newval, oldval);  \
+     __acev_wret; })
+
+#  define atomic_exchange_rel(mem, newval) \
+  ({								      \
+     __typeof (*mem) __acev_wret;				      \
+     CHECK_SIZE (mem);                                                \
+     if (__atomic_is_v9)					      \
+       {							      \
+	 __typeof (mem) __acev_wmemp = (mem);			      \
+	 __typeof (*(mem)) __acev_wval = (newval);		      \
+	 do							      \
+	   __acev_wret = *__acev_wmemp;				      \
+	 while (__builtin_expect				      \
+		  (__v9_compare_and_exchange_val_32_rel (__acev_wmemp,\
+							 __acev_wval, \
+							 __acev_wret) \
+		   != __acev_wret, 0));				      \
+       }							      \
+     else if (__atomic_is_e90)					      \
+       {							      \
+	 __typeof (mem) __acev_wmemp = (mem);			      \
+	 __typeof (*(mem)) __acev_wval = (newval);		      \
+	 do							      \
+	   __acev_wret = *__acev_wmemp;				      \
+	 while (__builtin_expect				      \
+                (__e90_compare_and_exchange_val_32_acq (__acev_wmemp, \
+                                                        __acev_wval,  \
+                                                        __acev_wret)  \
+                 != __acev_wret, 0));				      \
+       }							      \
+     else							      \
+       __acev_wret = __v7_exchange_acq (mem, newval);		      \
+     __acev_wret; })
+
+#  define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
+  ({								      \
+     __typeof (*mem) __acev_wret;				      \
+     CHECK_SIZE (mem);                                                \
+     if (__atomic_is_v9)					      \
+       __acev_wret						      \
+	 = __v9_compare_and_exchange_val_32_acq (mem, newval, oldval);\
+     else if (__atomic_is_e90)                                        \
+       __acev_wret                                                    \
+         = __e90_compare_and_exchange_val_32_acq (mem, newval,        \
+                                                  oldval);            \
+     else							      \
+       __acev_wret						      \
+	 = __v7_compare_and_exchange_val_24_acq (mem, newval, oldval);\
+     __acev_wret; })
+
+#  define atomic_exchange_24_rel(mem, newval) \
+  ({								      \
+     __typeof (*mem) __acev_w24ret;				      \
+     CHECK_SIZE (mem);                                                \
+     if (__atomic_is_v9 || __atomic_is_e90)                           \
+       __acev_w24ret = atomic_exchange_rel (mem, newval);	      \
+     else							      \
+       __acev_w24ret = __v7_exchange_24_rel (mem, newval);	      \
+     __acev_w24ret; })
+
+# endif /* SUPPORT_SYS_ATOMIC  */
+
+/* Do we need anything special for e90 with sys_atomic support here?  */
 #define atomic_full_barrier()						\
   do {									\
      if (__atomic_is_v9)						\
@@ -356,7 +657,7 @@ extern uint64_t _dl_hwcap __attribute__((weak));
        __asm __volatile ("" : : : "memory");				\
   } while (0)
 
-#endif
+#endif /* SHARED  */
 
 #include <sysdep.h>
 

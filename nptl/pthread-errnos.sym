@@ -2,12 +2,29 @@
 
 -- These errno codes are used by some assembly code.
 
+-- integer
 EAGAIN		EAGAIN
+
+-- integer
 EBUSY		EBUSY
+
+-- integer
 EDEADLK		EDEADLK
+
+-- integer
 EINTR		EINTR
+
+-- integer
 EINVAL		EINVAL
+
+-- integer
 ENOSYS		ENOSYS
+
+-- integer
 EOVERFLOW	EOVERFLOW
+
+-- integer
 ETIMEDOUT	ETIMEDOUT
+
+-- integer
 EWOULDBLOCK	EWOULDBLOCK

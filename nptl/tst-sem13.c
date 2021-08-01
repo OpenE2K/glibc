@@ -33,7 +33,7 @@ do_test (void)
       perror ("sem_timedwait did not fail with EINVAL");
       return 1;
     }
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   unsigned int nwaiters = (u.ns.data >> SEM_NWAITERS_SHIFT);
 #else
   unsigned int nwaiters = u.ns.nwaiters;
@@ -57,7 +57,7 @@ do_test (void)
       perror ("2nd sem_timedwait did not fail with ETIMEDOUT");
       return 1;
     }
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   nwaiters = (u.ns.data >> SEM_NWAITERS_SHIFT);
 #else
   nwaiters = u.ns.nwaiters;

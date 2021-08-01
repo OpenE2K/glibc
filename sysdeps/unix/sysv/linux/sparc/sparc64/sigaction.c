@@ -22,7 +22,15 @@
 #include <syscall.h>
 #include <sysdep.h>
 
+#ifndef __LCC__
 static void __rt_sigreturn_stub (void);
+#else
+/* If `__rt_sigreturn_stub' is declared as static, LCC won't recognize its
+   definition in a global `__asm__ ()' below (it's implemented this way
+   because of Bug #44986) and the compilation will fail. `hidden' ensures
+   that no dynamic relocations are created against this function.  */
+extern void __rt_sigreturn_stub (void) __attribute__ ((visibility ("hidden")));
+#endif
 
 #define STUB(act, sigsetsize) \
   (((unsigned long) &__rt_sigreturn_stub) - 8),	\
@@ -30,13 +38,37 @@ static void __rt_sigreturn_stub (void);
 
 #include <sysdeps/unix/sysv/linux/sigaction.c>
 
+#ifndef __LCC__
+
 static
 inhibit_stack_protector
 void
 __rt_sigreturn_stub (void)
 {
   __asm__ ("mov %0, %%g1\n\t"
-	   "ta	0x6d\n\t"
-	   : /* no outputs */
-	   : "i" (__NR_rt_sigreturn));
+           "ta  0x6d\n\t"
+           : /* no outputs */
+           : "i" (__NR_rt_sigreturn));
 }
+
+#else /* __LCC__ */
+
+#undef STR
+#undef _STR
+
+#define STR(x) _STR(x)
+#define _STR(x) #x
+
+__asm__ ("\n\t.section \".text\""
+         "\n\t.align 32"
+         "\n\t.type __rt_sigreturn_stub, #function"
+         "\n\t.hidden __rt_sigreturn_stub"
+         "\n\t.local __rt_sigreturn_stub"
+         "\n\t__rt_sigreturn_stub:"
+         "\n\tmov "STR (__NR_rt_sigreturn)", %g1"
+         "\n\tta 0x6d"
+         "\n\tjmp %o7+8"
+	 "\n\tnop"
+         "\n\t.size __rt_sigreturn_stub, .-__rt_sigreturn_stub");
+
+#endif /* __LCC__ */

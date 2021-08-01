@@ -22,7 +22,19 @@
 ssize_t
 __libc_recv (int fd, void *buf, size_t len, int flags)
 {
-#ifdef __ASSUME_RECV_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+    long int d;
+  }
+  args = {(long int) fd, (void *) buf, (long int) len, (long int) flags};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_recv, &args);
+
+#elif defined __ASSUME_RECV_SYSCALL
   return SYSCALL_CANCEL (recv, fd, buf, len, flags);
 #elif defined __ASSUME_RECVFROM_SYSCALL
   return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);

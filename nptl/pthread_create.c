@@ -525,8 +525,8 @@ START_THREAD_DEFN
 
 	      do
 		pd->nextevent = __nptl_last_event;
-	      while (atomic_compare_and_exchange_bool_acq (&__nptl_last_event,
-							   pd, pd->nextevent));
+	      while (atomic_compare_and_exchange_ptr_bool_acq (&__nptl_last_event,
+							       pd, pd->nextevent));
 	    }
 
 	  /* Now call the function which signals the event.  See
@@ -573,8 +573,10 @@ START_THREAD_DEFN
     }
 #endif
 
+#if ! defined __ptr128__
   advise_stack_range (pd->stackblock, pd->stackblock_size, (uintptr_t) pd,
 		      pd->guardsize);
+#endif /* ! defined __ptr128__  */
 
   /* If the thread is detached free the TCB.  */
   if (IS_DETACHED (pd))
@@ -813,8 +815,8 @@ __pthread_create_2_1 (pthread_t *newthread, const pthread_attr_t *attr,
 	  /* Enqueue the descriptor.  */
 	  do
 	    pd->nextevent = __nptl_last_event;
-	  while (atomic_compare_and_exchange_bool_acq (&__nptl_last_event,
-						       pd, pd->nextevent)
+	  while (atomic_compare_and_exchange_ptr_bool_acq (&__nptl_last_event,
+							   pd, pd->nextevent)
 		 != 0);
 
 	  /* Now call the function which signals the event.  See

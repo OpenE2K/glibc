@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
 
 static int
 do_test (void)
@@ -67,9 +68,9 @@ do_test (void)
       return 1;
     }
 
-  s = (pthread_spinlock_t *) (((uintptr_t) mem
-			       + __alignof (pthread_spinlock_t))
-			      & ~(__alignof (pthread_spinlock_t) - 1));
+  s = (pthread_spinlock_t *) ADJUST_PTR ((mem
+					  + __alignof (pthread_spinlock_t)), &,
+					 ~(__alignof (pthread_spinlock_t) - 1));
   p = (char *) (s + 1);
 
   if (pthread_spin_init (s, PTHREAD_PROCESS_SHARED) != 0)

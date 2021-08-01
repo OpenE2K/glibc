@@ -332,7 +332,18 @@ __ieee754_ynl (int n, _Float128 x)
   if (x <= 0)
     {
       if (x == 0)
-	return ((n < 0 && (n & 1) != 0) ? 1 : -1) / L(0.0);
+	{
+#if defined __LCC__
+	  _Float128 z = L(0.0);
+#endif
+	return ((n < 0 && (n & 1) != 0) ? 1 : -1) /
+#if defined __LCC__
+	  z
+#else
+	  L(0.0)
+#endif
+	  ;
+	}
       if (se & 0x80000000)
 	return zero / (zero * x);
     }

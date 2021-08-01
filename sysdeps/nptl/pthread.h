@@ -529,7 +529,16 @@ typedef struct
     int __mask_was_saved;
   } __cancel_jmp_buf[1];
   void *__pad[4];
-} __pthread_unwind_buf_t __attribute__ ((__aligned__));
+} __pthread_unwind_buf_t
+  /* `lccs_il -m32' emits a warning that the alignment of an object of a type
+     with `__attribute__ ((__aligned__))' allocated on stack has been reduced
+     to 8 in spite of the fact that this attribute is unlikely to enforce a
+     larger alignment, but just asks the compiler to align the type to the
+     maximal useful alignment! Shut it up this way for now.  */
+#if !defined __sparc__ && !defined __LCC__
+__attribute__ ((__aligned__))
+#endif
+;
 
 /* No special attributes by default.  */
 #ifndef __cleanup_fct_attribute
@@ -546,7 +555,9 @@ struct __pthread_cleanup_frame
   int __cancel_type;
 };
 
-#if defined __GNUC__ && defined __EXCEPTIONS
+/* Implement pthread_cancel for E2K and Sparc via longjmp due to missing
+   libunwind when compiling with LCC.  */
+#if !(defined __e2k__ || (defined __LCC__ && defined __sparc__)) && defined __GNUC__ && defined __EXCEPTIONS
 # ifdef __cplusplus
 /* Class to handle cancellation handler invocation.  */
 class __pthread_cleanup_class
@@ -654,7 +665,7 @@ __pthread_cleanup_routine (struct __pthread_cleanup_frame *__frame)
   } while (0)
 #  endif
 # endif
-#else
+#else /* defined __e2k__ || (defined __LCC__ && defined __sparc__) */
 /* Install a cleanup handler: ROUTINE will be called with arguments ARG
    when the thread is canceled or calls pthread_exit.  ROUTINE will also
    be called with arguments ARG when the matching pthread_cleanup_pop

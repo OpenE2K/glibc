@@ -67,7 +67,11 @@ __wcsrtombs (char *dst, const wchar_t **src, size_t len, mbstate_t *ps)
       unsigned char buf[256];		/* Just an arbitrary value.  */
       const wchar_t *srcend = *src + __wcslen (*src) + 1;
       const unsigned char *inbuf = (const unsigned char *) *src;
-      size_t dummy;
+      size_t dummy
+#if defined __ptr128__
+	= 0
+#endif /* defined __ptr128__  */
+	;
 
       temp_state = *data.__statep;
       data.__statep = &temp_state;
@@ -102,7 +106,11 @@ __wcsrtombs (char *dst, const wchar_t **src, size_t len, mbstate_t *ps)
 	 multi-byte encodings use the NUL byte only to mark the end
 	 of the string.  */
       const wchar_t *srcend = *src + __wcsnlen (*src, len) + 1;
-      size_t dummy;
+      size_t dummy
+#if defined __ptr128__
+	= 0
+#endif /* defined __ptr128__  */
+	;
 
       data.__outbuf = (unsigned char *) dst;
       data.__outbufend = (unsigned char *) dst + len;

@@ -38,9 +38,11 @@ chmod a-w$(patsubst %,$(comma)a+x,$(filter .,$(@D))) $@.new
 mv -f $@.new $@
 endef
 
+ifeq ($(maintainer-mode),yes)
 configure: configure.ac aclocal.m4; $(autoconf-it)
 %/configure: %/configure.ac aclocal.m4; $(autoconf-it)
 %/preconfigure: %/preconfigure.ac aclocal.m4; $(autoconf-it)
+endif
 
 endif # $(AUTOCONF) = no
 
@@ -87,7 +89,12 @@ endif
 install: subdir_install
 
 # Explicit dependency so that `make install-headers' works
+
+# Create a temporary version of gnu/stubs.h needed when
+# building libgcc_eh.a during bootstrap. It is to be
+# replaced during `make install'.
 install-headers: install-headers-nosubdir
+	touch $(inst_includedir)/gnu/stubs.h
 
 # Make sure that the dynamic linker is installed before libc.
 $(inst_slibdir)/libc-$(version).so: elf/ldso_install
@@ -357,7 +364,10 @@ endef
 # (which we do not build) that GCC-compiled programs depend on.
 
 
-ifeq (,$(CXX))
+# The original `ifeq (,$(CXX))' isn't adequate here if glibc is made as a part
+# of self-consistent toolchain created from scratch in which case libstdc++
+# headers and libraries are not available yet.
+ifneq (,$(no_cxx_headers))
 LINKS_DSO_PROGRAM = links-dso-program-c
 else
 LINKS_DSO_PROGRAM = links-dso-program

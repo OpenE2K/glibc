@@ -45,12 +45,14 @@ handler (int sig)
   for (i = 0; i < N; ++i)
     if (ti[i].s == self)
       {
+#if ! defined __ptr128__
 	if ((uintptr_t) ti[i].p <= (uintptr_t) &self
 	    && (uintptr_t) ti[i].p + 2 * MINSIGSTKSZ > (uintptr_t) &self)
 	  {
 	    puts ("alt stack not used");
 	    exit (1);
 	  }
+#endif /* ! defined __ptr128__  */
 
 	printf ("thread %zu used alt stack for signal %d\n", i, sig);
 
@@ -99,11 +101,14 @@ tf (void *arg)
   s.ss_sp = p;
   s.ss_size = 2 * MINSIGSTKSZ;
   s.ss_flags = 0;
+  /* FIXME: sigaltstack ()' is currently unsupported in PM.  */
+#if ! defined __ptr128__
   if (sigaltstack (&s, NULL) != 0)
     {
       puts ("tf: sigaltstack failed");
       exit (1);
     }
+#endif /* ! defined __ptr128__  */
 
   ti[nr].p = p;
   ti[nr].s = pthread_self ();

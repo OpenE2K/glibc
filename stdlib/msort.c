@@ -57,6 +57,7 @@ msort_with_tmp (const struct msort_param *p, void *b, size_t n)
   const size_t s = p->s;
   __compar_d_fn_t cmp = p->cmp;
   void *arg = p->arg;
+
   switch (p->var)
     {
     case 0:
@@ -136,6 +137,28 @@ msort_with_tmp (const struct msort_param *p, void *b, size_t n)
 	  tmp += sizeof (void *);
 	}
       break;
+
+/* It's added to sort of array of pointers in PM only */
+#if defined __ptr128__
+    case 5:
+      while (n1 > 0 && n2 > 0)
+	{
+	  if ((*cmp) (b1, b2, arg) <= 0)
+	    {
+	      *(void **) tmp = *(void **) b1;
+	      b1 += sizeof (void *);
+	      --n1;
+	    }
+	  else
+	    {
+	      *(void **) tmp = *(void * *) b2;
+	      b2 += sizeof (void *);
+	      --n2;
+	    }
+	  tmp += sizeof (void *);
+	}
+      break;
+#endif /* defined __ptr128__  */
     default:
       while (n1 > 0 && n2 > 0)
 	{
@@ -289,10 +312,20 @@ __qsort_r (void *b, size_t n, size_t s, __compar_d_fn_t cmp, void *arg)
 	  else if (s == sizeof (uint64_t)
 		   && ((char *) b - (char *) 0) % __alignof__ (uint64_t) == 0)
 	    p.var = 1;
+/* It's added to sort of array of pointers in PM only. And prevent from copying
+ * another sufficiently aligned data as an array of longs instead of `memcpy ()' use.
+ * This has already resulted in the loss of external tags when `qsort ()'ing
+ * `struct alias_map's containing a pair of `AP's. */
+#if defined __ptr128__
+	  else if (s == sizeof (void *)
+		   && ((char *) b - (char *) 0) % __alignof__ (void *) == 0)
+	    p.var = 5;
+#else /* defined __ptr128__  */
 	  else if ((s & (sizeof (unsigned long) - 1)) == 0
 		   && ((char *) b - (char *) 0)
 		      % __alignof__ (unsigned long) == 0)
 	    p.var = 2;
+#endif /* defined __ptr128__  */
 	}
       msort_with_tmp (&p, b, n);
     }

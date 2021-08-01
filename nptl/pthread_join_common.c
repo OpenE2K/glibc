@@ -27,7 +27,7 @@ cleanup (void *arg)
      fail for any reason but the thread not having done that yet so
      there is no reason for a loop.  */
   struct pthread *self = THREAD_SELF;
-  atomic_compare_exchange_weak_acquire (&arg, &self, NULL);
+  atomic_compare_exchange_ptr_weak_acquire (&arg, &self, NULL);
 }
 
 int
@@ -68,9 +68,9 @@ __pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
 
   /* Wait for the thread to finish.  If it is already locked something
      is wrong.  There can only be one waiter.  */
-  else if (__glibc_unlikely (atomic_compare_exchange_weak_acquire (&pd->joinid,
-								   &self,
-								   NULL)))
+  else if (__glibc_unlikely (atomic_compare_exchange_ptr_weak_acquire (&pd->joinid,
+								       &self,
+								       NULL)))
     /* There is already somebody waiting for the thread.  */
     return EINVAL;
 

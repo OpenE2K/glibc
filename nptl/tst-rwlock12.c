@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
 
 static int
 do_test (void)
@@ -69,8 +70,8 @@ do_test (void)
       return 1;
     }
 
-  r = (pthread_rwlock_t *) (((uintptr_t) mem + __alignof (pthread_rwlock_t))
-			    & ~(__alignof (pthread_rwlock_t) - 1));
+  r = (pthread_rwlock_t *) ADJUST_PTR ((mem + __alignof (pthread_rwlock_t)),
+				       &, ~(__alignof (pthread_rwlock_t) - 1));
   /* The following assumes alignment for a mutex is at least as high
      as that for a rwlock.  Which is true in our case.  */
   m = (pthread_mutex_t *) (r + 1);

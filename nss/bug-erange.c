@@ -11,6 +11,9 @@
 int
 main (void)
 {
+  /* This test is likely to be unworkable at MCST because we are behind the
+     proxy server. Try setting this variable to "localhost" instead to make
+     it work somehow.  */
   const char *host = "www.gnu.org";
 
   /* This code approximates the example code in the library manual.  */

@@ -17,8 +17,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <fenv.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __feholdexcept (fenv_t *envp)
 {
   fenv_t tmp;

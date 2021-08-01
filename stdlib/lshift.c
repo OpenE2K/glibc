@@ -21,6 +21,15 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, see
 #include <gmp.h>
 #include "gmp-impl.h"
 
+/* This lets us inhibit assert () below in this file for the sake of
+   performance. For additional explanations see Bug #89674.  */
+#if defined __e2k__ && defined __LCC__
+#ifndef NDEBUG
+# define NDEBUG			/* Undefine this for debugging assertions.  */
+#endif
+#endif /* defined __e2k__ && defined __LCC__  */
+#include <assert.h>
+
 /* Shift U (pointed to by UP and USIZE digits long) CNT bits to the left
    and store the USIZE least significant digits of the result at WP.
    Return the bits shifted out from the most significant digit.
@@ -40,10 +49,7 @@ mpn_lshift (register mp_ptr wp,
   register mp_size_t i;
   mp_limb_t retval;
 
-#ifdef DEBUG
-  if (usize == 0 || cnt == 0)
-    abort ();
-#endif
+  assert (usize != 0 && cnt != 0);
 
   sh_1 = cnt;
 #if 0
@@ -66,6 +72,9 @@ mpn_lshift (register mp_ptr wp,
   low_limb = up[i];
   retval = low_limb >> sh_2;
   high_limb = low_limb;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
   while (--i >= 0)
     {
       low_limb = up[i];

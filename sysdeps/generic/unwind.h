@@ -36,9 +36,18 @@ typedef signed _Unwind_Sword __attribute__((__mode__(__unwind_word__)));
 #if defined(__ia64__) && defined(__hpux__)
 typedef unsigned _Unwind_Ptr __attribute__((__mode__(__word__)));
 #else
-typedef unsigned _Unwind_Ptr __attribute__((__mode__(__pointer__)));
+typedef unsigned _Unwind_Ptr
+#if ! defined __e2k__ || ! defined __ptr128__
+ __attribute__((__mode__(__pointer__)))
 #endif
-typedef unsigned _Unwind_Internal_Ptr __attribute__((__mode__(__pointer__)));
+;
+#endif
+
+typedef unsigned _Unwind_Internal_Ptr
+#if ! defined __e2k__ || ! defined __ptr128__
+__attribute__((__mode__(__pointer__)))
+#endif
+;
 
 /* @@@ The IA-64 ABI uses a 64-bit word to identify the producer and
    consumer of an exception.  We'll go along with this for now even on
@@ -77,8 +86,15 @@ struct _Unwind_Exception
 {
   _Unwind_Exception_Class exception_class;
   _Unwind_Exception_Cleanup_Fn exception_cleanup;
+  
+#if ! defined __ptr128__
   _Unwind_Word private_1;
   _Unwind_Word private_2;
+#else /* defined __ptr128__  */
+  void *private_1;
+  void *private_2;
+#endif /* defined __ptr128__  */
+
 
   /* @@@ The IA-64 ABI says that this structure must be double-word aligned.
      Taking that literally does not make much sense generically.  Instead we
@@ -143,6 +159,12 @@ extern void _Unwind_SetIP (struct _Unwind_Context *, _Unwind_Ptr);
 
 /* @@@ Retrieve the CFA of the given context.  */
 extern _Unwind_Word _Unwind_GetCFA (struct _Unwind_Context *);
+
+#ifdef __e2k__
+/* @@@ Retrieve the PCSP of the context preceding the given one.  */
+extern _Unwind_Word _Unwind_GetPCSP (struct _Unwind_Context *);
+#endif /* __e2k__  */
+  
 
 extern void *_Unwind_GetLanguageSpecificData (struct _Unwind_Context *);
 

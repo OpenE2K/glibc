@@ -53,9 +53,21 @@ test (FILE *out, int a)
 	  fprintf (out, "fname %s sname %s\n", info.dli_fname, info.dli_sname);
 	  exit (1);
 	}
-      if (info.dli_saddr != (void *) test2)
+      if (
+#if ! defined __ptr128__
+	  info.dli_saddr != (void *) test2
+#else /* defined __ptr128__  */
+	  info.dli_saddr != (unsigned int) test2
+#endif /* defined __ptr128__  */
+	  )
 	{
-	  fprintf (out, "saddr %p != test %p\n", info.dli_saddr, test2);
+	  fprintf (out,
+#if !defined __ptr128__
+		   "saddr %p != test %p\n",
+#else /* defined __ptr128__  */
+		   "saddr 0x%x != test %p\n",
+#endif /* defined __ptr128__  */
+		   info.dli_saddr, test2);
 	  exit (1);
 	}
     }
@@ -76,9 +88,21 @@ test (FILE *out, int a)
 	  fprintf (out, "fname %s sname %s\n", info.dli_fname, info.dli_sname);
 	  exit (1);
 	}
-      if (info.dli_saddr != (void *) test2)
+      if (
+#if ! defined __ptr128__
+	  info.dli_saddr != (void *) test2
+#else /* defined __ptr128__  */
+	  info.dli_saddr != (unsigned int) test2
+#endif /* defined __ptr128__  */
+)
 	{
-	  fprintf (out, "saddr %p != test %p\n", info.dli_saddr, test2);
+	  fprintf (out,
+#if ! defined __ptr128__
+		   "saddr %p != test %p\n",
+#else /* defined __ptr128__  */
+		   "saddr 0x%x != test %p\n",
+#endif /* defined __ptr128__  */
+		   info.dli_saddr, test2);
 	  exit (1);
 	}
       sym = symp;
@@ -198,9 +222,21 @@ test (FILE *out, int a)
 	  fprintf (out, "fname %s sname %s\n", info.dli_fname, info.dli_sname);
 	  exit (1);
 	}
-      if (info.dli_saddr != (void *) test4)
+      if (
+#if ! defined __ptr128__
+	  info.dli_saddr != (void *) test4
+#else /* defined __ptr128__  */
+	  info.dli_saddr != (unsigned int) test4
+#endif /* defined __ptr128__  */
+)
 	{
-	  fprintf (out, "saddr %p != test %p\n", info.dli_saddr, test4);
+	  fprintf (out,
+#if ! defined __ptr128__
+		   "saddr %p != test %p\n",
+#else /* defined __ptr128__  */
+		   "saddr 0x%x != test %p\n",
+#endif /* defined __ptr128__  */
+		   info.dli_saddr, test4);
 	  exit (1);
 	}
       sym = symp;

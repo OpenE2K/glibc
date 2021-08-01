@@ -25,7 +25,9 @@
 int
 __signbitf128 (_Float128 x)
 {
-#if __GNUC_PREREQ (6, 0)
+  /* __builtin_signbit () is currently broken in LCC in gcc-7.3.0 compatibility
+     mode (Bug #105547).  */
+#if __GNUC_PREREQ (6, 0) && ! defined __LCC__
   return __builtin_signbit (x);
 #else
   int64_t e;

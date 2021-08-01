@@ -65,10 +65,19 @@ __ieee754_atanhf (float x)
     t = 0.5f * __log1pf ((xa + xa) / (1.0f - xa));
   else
     {
+#if defined __LCC__
+      float z = 0.0f;
+#endif
       if (isgreater (xa, 1.0f))
 	return (x - x) / (x - x);
 
-      return x / 0.0f;
+      return x /
+#if defined __LCC__
+	z
+#else
+	0.0f
+#endif
+	;
     }
 
   return copysignf (t, x);

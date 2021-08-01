@@ -85,6 +85,13 @@ extern double ____strtod_l_internal (const char *, char **, int, locale_t);
 #include "longlong.h"
 #include "fpioconst.h"
 
+/* This lets us inhibit assert () below in this file for the sake of
+   performance. For additional explanations see Bug #89674.  */
+#if defined __e2k__ && defined __LCC__
+# ifndef NDEBUG
+#  define NDEBUG			/* Undefine this for debugging assertions.  */
+# endif
+#endif /* defined __e2k__ && defined __LCC__  */
 #include <assert.h>
 
 
@@ -216,7 +223,7 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 {
   int mode = get_rounding_mode ();
 
-  if (exponent < MIN_EXP - 1)
+  if (__glibc_unlikely (exponent < MIN_EXP - 1))
     {
       if (exponent < MIN_EXP - 1 - MANT_DIG)
 	return underflow_value (negative);
@@ -305,12 +312,17 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 	      || (round_limb & ((((mp_limb_t) 1) << round_bit) - 1)) != 0))
 	{
 	  __set_errno (ERANGE);
+#ifndef __LCC__
 	  FLOAT force_underflow = MIN_VALUE * MIN_VALUE;
+#else
+          volatile FLOAT min_value = MIN_VALUE;
+          FLOAT force_underflow = min_value * min_value;
+#endif
 	  math_force_eval (force_underflow);
 	}
     }
 
-  if (exponent >= MAX_EXP)
+  if (__glibc_unlikely (exponent >= MAX_EXP))
     goto overflow;
 
   bool half_bit = (round_limb & (((mp_limb_t) 1) << round_bit)) != 0;
@@ -335,15 +347,16 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 	  retval[RETURN_LIMB_SIZE - 1]
 	    |= ((mp_limb_t) 1) << ((MANT_DIG - 1) % BITS_PER_MP_LIMB);
 	}
-      else if (exponent == DENORM_EXP
-	       && (retval[RETURN_LIMB_SIZE - 1]
-		   & (((mp_limb_t) 1) << ((MANT_DIG - 1) % BITS_PER_MP_LIMB)))
-	       != 0)
+      else if (__glibc_unlikely
+	       (exponent == DENORM_EXP
+		&& ((retval[RETURN_LIMB_SIZE - 1]
+		     & (((mp_limb_t) 1) << ((MANT_DIG - 1) % BITS_PER_MP_LIMB)))
+		    != 0)))
 	  /* The number was denormalized but now normalized.  */
 	exponent = MIN_EXP - 1;
     }
 
-  if (exponent >= MAX_EXP)
+  if (__glibc_unlikely (exponent >= MAX_EXP))
   overflow:
     return overflow_value (negative);
 
@@ -377,6 +390,9 @@ str_to_mpn (const STRING_TYPE *str, int digcnt, mp_limb_t *n, mp_size_t *nsize,
 
   *nsize = 0;
   assert (digcnt > 0);
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (15)
+#endif /* defined __e2k__ && defined __LCC__  */
   do
     {
       if (cnt == MAX_DIG_PER_LIMB)
@@ -407,10 +423,10 @@ str_to_mpn (const STRING_TYPE *str, int digcnt, mp_limb_t *n, mp_size_t *nsize,
 	 format of the number is correct and we have an exact number
 	 of characters to read.  */
 #ifdef USE_WIDE_CHAR
-      if (*str < L'0' || *str > L'9')
+      if (__glibc_unlikely (*str < L'0' || *str > L'9'))
 	++str;
 #else
-      if (*str < '0' || *str > '9')
+      if (__glibc_unlikely (*str < '0' || *str > '9'))
 	{
 	  int inner = 0;
 	  if (thousands != NULL && *str == *thousands
@@ -469,7 +485,21 @@ str_to_mpn (const STRING_TYPE *str, int digcnt, mp_limb_t *n, mp_size_t *nsize,
   do									\
     {									\
       mp_limb_t *__ptr = (ptr);						\
-      if (__builtin_constant_p (count) && count == BITS_PER_MP_LIMB)	\
+      if (__builtin_constant_p (count) && count == BITS_PER_MP_LIMB     \
+	  /* This macro may not be invoked with a variable `count'      \
+	     equal to BITS_PER_MP_LIMB. The additional test overcomes	\
+	     the unworkable `__builtin_constant_p ()' in non-optimizing \
+	     compilers (both LCC and GCC) and thus prevents an		\
+	     invocation	of   `__mpn_ lshift ()' with the unacceptable   \
+	     argument (see lshift.c). FIXME: ideally this hack should	\
+	     be enabled when compiling with a non-optimizing compiler	\
+	     only.  */							\
+                                                                        \
+          /* They say that now that `__mpn_lshift_1' is implemented as	\
+	     a macro __builtin_constant_p () should be recognized even	\
+	     when compiling with `-O0'. Therefore, this additional      \
+	     check may probably be removed.  */				\
+          || count == BITS_PER_MP_LIMB)                                 \
 	{								\
 	  mp_size_t i;							\
 	  for (i = (size) - 1; i > 0; --i)				\
@@ -606,6 +636,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
      characters of the integer part, the fractional part and the exponent.  */
   cp = nptr - 1;
   /* Ignore leading white space.  */
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
   do
     c = *++cp;
   while (ISSPACE (c));
@@ -629,16 +662,19 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	 the code correctly.  */
     }
 #else
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
   for (cnt = 0; decimal[cnt] != '\0'; ++cnt)
     if (cp[cnt] != decimal[cnt])
       break;
-  if (decimal[cnt] == '\0' && cp[cnt] >= '0' && cp[cnt] <= '9')
+  if (__glibc_unlikely (decimal[cnt] == '\0' && cp[cnt] >= '0' && cp[cnt] <= '9'))
     {
       /* We accept it.  This funny construct is here only to indent
 	 the code correctly.  */
     }
 #endif
-  else if (c < L_('0') || c > L_('9'))
+  else if (__glibc_unlikely (c < L_('0') || c > L_('9')))
     {
       /* Check for `INF' or `INFINITY'.  */
       CHAR_TYPE lowc = TOLOWER_C (c);
@@ -702,10 +738,16 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 
   /* Ignore leading zeroes.  This helps us to avoid useless computations.  */
 #ifdef USE_WIDE_CHAR
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
   while (c == L'0' || ((wint_t) thousands != L'\0' && c == (wint_t) thousands))
     c = *++cp;
 #else
   if (__glibc_likely (thousands == NULL))
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
     while (c == '0')
       c = *++cp;
   else
@@ -736,7 +778,11 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 #ifdef USE_WIDE_CHAR
 	    c == (wint_t) decimal
 #else
-	    ({ for (cnt = 0; decimal[cnt] != '\0'; ++cnt)
+	    ({
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
+	      for (cnt = 0; decimal[cnt] != '\0'; ++cnt)
 		 if (decimal[cnt] != cp[cnt])
 		   break;
 	       decimal[cnt] == '\0'; })
@@ -770,6 +816,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
      decimal point, exponent character or any non-FP number character.  */
   startp = cp;
   dig_no = 0;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (10)
+#endif /* defined __e2k__ && defined __LCC__  */
   while (1)
     {
       if ((c >= L_('0') && c <= L_('9'))
@@ -852,7 +901,11 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 #ifdef USE_WIDE_CHAR
       c == (wint_t) decimal
 #else
-      ({ for (cnt = 0; decimal[cnt] != '\0'; ++cnt)
+      ({
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
+	for (cnt = 0; decimal[cnt] != '\0'; ++cnt)
 	   if (decimal[cnt] != cp[cnt])
 	     break;
 	 decimal[cnt] == '\0'; })
@@ -861,6 +914,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
     {
       cp += decimal_len;
       c = *cp;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (6)
+#endif /* defined __e2k__ && defined __LCC__  */
       while ((c >= L_('0') && c <= L_('9')) ||
 	     (base == 16 && ({ CHAR_TYPE lo = TOLOWER (c);
 			       lo >= L_('a') && lo <= L_('f'); })))
@@ -892,7 +948,7 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
       else if (c == L_('+'))
 	c = *++cp;
 
-      if (c >= L_('0') && c <= L_('9'))
+      if (__glibc_likely (c >= L_('0') && c <= L_('9')))
 	{
 	  intmax_t exp_limit;
 
@@ -963,6 +1019,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	  if (exp_limit < 0)
 	    exp_limit = 0;
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
 	  do
 	    {
 	      if (__builtin_expect ((exponent > exp_limit / 10
@@ -1012,6 +1071,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
   /* We don't want to have to work with trailing zeroes after the radix.  */
   if (dig_no > int_no)
     {
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (3)
+#endif /* defined __e2k__ && defined __LCC__  */
       while (expp[-1] == L_('0'))
 	{
 	  --expp;
@@ -1086,8 +1148,14 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
       int pos = (MANT_DIG - 1) % BITS_PER_MP_LIMB;
       mp_limb_t val;
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
       while (!ISXDIGIT (*startp))
 	++startp;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
       while (*startp == L_('0'))
 	++startp;
       if (ISDIGIT (*startp))
@@ -1120,6 +1188,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 				     : (INTMAX_MAX - exponent - bits + 1) / 4));
       exponent += bits - 1 + ((intmax_t) int_no - 1) * 4;
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (6)
+#endif /* defined __e2k__ && defined __LCC__  */
       while (--dig_no > 0 && idx >= 0)
 	{
 	  if (!ISXDIGIT (*startp))
@@ -1141,6 +1212,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	      if (idx < 0)
 		{
 		  int rest_nonzero = 0;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (5)
+#endif /* defined __e2k__ && defined __LCC__  */
 		  while (--dig_no > 0)
 		    {
 		      if (*startp != L_('0'))
@@ -1209,6 +1283,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	  int expbit = 1;
 	  const struct mp_power *ttab = &_fpioconst_pow10[0];
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (5)
+#endif /* defined __e2k__ && defined __LCC__  */
 	  do
 	    {
 	      if ((exponent & expbit) != 0)
@@ -1271,6 +1348,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 		    RETURN_LIMB_SIZE * sizeof (mp_limb_t));
 	  else
 	    {
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
 	      for (i = least_idx; i < numsize - 1; ++i)
 		retval[i - least_idx] = (num[i] >> least_bit)
 					| (num[i + 1]
@@ -1412,6 +1492,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
     /* Construct the denominator.  */
     densize = 0;
     expbit = 1;
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (3)
+#endif /* defined __e2k__ && defined __LCC__  */
     do
       {
 	if ((neg_exp & expbit) != 0)
@@ -1465,7 +1548,7 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 
     count_leading_zeros (cnt, den[densize - 1]);
 
-    if (cnt > 0)
+    if (__glibc_likely (cnt > 0))
       {
 	/* Don't call `mpn_shift' with a count of zero since the specification
 	   does not allow this.  */
@@ -1495,6 +1578,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	  d = den[0];
 	  assert (numsize == 1 && n < d);
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (1)
+#endif /* defined __e2k__ && defined __LCC__  */
 	  do
 	    {
 	      udiv_qrnnd (quot, n, n, 0, d);

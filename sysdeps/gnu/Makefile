@@ -15,6 +15,7 @@
 # License along with the GNU C Library; if not, see
 # <http://www.gnu.org/licenses/>.
 
+ifeq ($(maintainer-mode),yes)
 # Generate the list of strings for errno codes from the section of the
 # manual which documents the codes.
 
@@ -24,6 +25,7 @@ $(..)sysdeps/gnu/errlist.c: $(..)sysdeps/gnu/errlist.awk \
 # Make it unwritable so noone will edit it by mistake.
 	-chmod a-w $@-tmp
 	mv -f $@-tmp $@
+endif # maintainer-mode
 
 ifeq ($(subdir),stdio-common)
 
@@ -40,7 +42,7 @@ $(objpfx)errlist-compat.c: $(errlist-c) $(..)sysdeps/gnu/errlist-compat.awk \
 endif
 	$(make-target-directory)
 	$(AWK) -v maxerr=`\
-	  $(CC) -S $(CPPFLAGS) $(CFLAGS) -DEMIT_ERR_MAX $< -o - \
+	  $(CC) $(mno-asm-inline) -S $(CPPFLAGS) $(CFLAGS) -DEMIT_ERR_MAX $< -o - \
 	  | sed -n 's/^.*@@@[^0-9]*\([0-9]*\)[^0-9]*@@@.*$$/\1/p'` \
 	       -f $(..)sysdeps/gnu/errlist-compat.awk \
 	       $(wildcard $(sysdirs:=/Versions)) > $@T

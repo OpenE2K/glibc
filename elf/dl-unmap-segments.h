@@ -29,7 +29,13 @@
 static __always_inline void
 _dl_unmap_segments (struct link_map *l)
 {
+  /* FIXME: do we have any counterpart for `uselib' syscall for releasing
+     link_map on the Kernel side?  */
+#if ! defined __ptr128__
   __munmap ((void *) l->l_map_start, l->l_map_end - l->l_map_start);
+#elif /* defined __ptr128__ &&  */ defined __ptr128_new_abi__
+  INLINE_SYSCALL_CALL (unuselib, l->l_gd);
+#endif /* defined __ptr128__ && defined __ptr128_new_abi__  */
 }
 
 #endif  /* dl-unmap-segments.h */

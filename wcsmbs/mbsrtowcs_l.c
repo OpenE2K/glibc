@@ -44,7 +44,11 @@ __mbsrtowcs_l (wchar_t *dst, const char **src, size_t len, mbstate_t *ps,
   size_t result;
   int status;
   struct __gconv_step *towc;
-  size_t non_reversible;
+  size_t non_reversible
+#if defined __ptr128__
+    = 0;
+#endif
+    ;
   const struct gconv_fcts *fcts;
 
   /* Tell where we want the result.  */

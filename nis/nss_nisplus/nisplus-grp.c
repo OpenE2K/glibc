@@ -69,7 +69,7 @@ _nss_grp_create_tablename (int *errnop)
 
       atomic_write_barrier ();
 
-      if (atomic_compare_and_exchange_bool_acq (&grp_tablename_val, p, NULL))
+      if (atomic_compare_and_exchange_ptr_bool_acq (&grp_tablename_val, p, NULL))
 	{
 	  /* Another thread already installed the value.  */
 	  free (p);

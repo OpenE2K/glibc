@@ -35,8 +35,15 @@
 #define FLAG_POWERPC_LIB64		0x0500
 #define FLAG_MIPS64_LIBN32		0x0600
 #define FLAG_MIPS64_LIBN64		0x0700
+#if ! defined __e2k__
 #define FLAG_X8664_LIBX32		0x0800
 #define FLAG_ARM_LIBHF			0x0900
+#else /* defined __e2k__  */
+/* Unfortunately the flag conventionally used to mark 64-bit E2K libraries in
+   ld.so.cache has already been officially reserved by x32.  */
+#define FLAG_E2K_LIB64			0x0800
+#define FLAG_E2K_LIB128			0x0900
+#endif /* defined __e2k__  */
 #define FLAG_AARCH64_LIB64		0x0a00
 #define FLAG_ARM_LIBSF			0x0b00
 #define FLAG_MIPS_LIB32_NAN2008		0x0c00

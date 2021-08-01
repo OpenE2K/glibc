@@ -35,5 +35,9 @@ __libc_thread_freeres (void)
 
   /* This should come last because it shuts down malloc for this
      thread and the other shutdown functions might well call free.  */
+#if !defined __ptr128__
+  /* Arenas are not currently used in PM which is why we haven't got this
+     function to release the related resources.  */
   call_function_static_weak (__malloc_arena_thread_freeres);
+#endif /* ! defined __ptr128__  */
 }

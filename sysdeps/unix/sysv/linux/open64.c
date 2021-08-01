@@ -45,8 +45,12 @@ __libc_open64 (const char *file, int oflag, ...)
       va_end (arg);
     }
 
+#if ! defined __e2k__
   return SYSCALL_CANCEL (openat, AT_FDCWD, file, oflag | EXTRA_OPEN_FLAGS,
 			 mode);
+#else
+  return SYSCALL_CANCEL (open, file, oflag | EXTRA_OPEN_FLAGS, mode);
+#endif
 }
 
 strong_alias (__libc_open64, __open64)

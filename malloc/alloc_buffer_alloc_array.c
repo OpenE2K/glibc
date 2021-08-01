@@ -23,7 +23,7 @@ void *
 __libc_alloc_buffer_alloc_array (struct alloc_buffer *buf, size_t element_size,
                                  size_t align, size_t count)
 {
-  size_t current = buf->__alloc_buffer_current;
+  size_t current = (size_t) buf->__alloc_buffer_current;
   /* The caller asserts that align is a power of two.  */
   size_t aligned = ALIGN_UP (current, align);
   size_t size;
@@ -32,10 +32,20 @@ __libc_alloc_buffer_alloc_array (struct alloc_buffer *buf, size_t element_size,
   if (!overflow                /* Multiplication did not overflow.  */
       && aligned >= current    /* No overflow in align step.  */
       && new_current >= size   /* No overflow in size computation.  */
-      && new_current <= buf->__alloc_buffer_end) /* Room in buffer.  */
+      && new_current <= (size_t) buf->__alloc_buffer_end) /* Room in buffer.  */
     {
+#if ! defined __ptr128__
       buf->__alloc_buffer_current = new_current;
       return (void *) aligned;
+#else /* defined __ptr128__  */
+      {
+	void *res = (void *) (buf->__alloc_buffer_current
+			      + (aligned - current));
+	buf->__alloc_buffer_current += new_current - current;
+	return res;
+      }
+#endif /* defined __ptr128__  */
+
     }
   else
     {

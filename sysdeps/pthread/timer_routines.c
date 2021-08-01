@@ -348,7 +348,10 @@ thread_expire_timer (struct thread_node *self, struct timer_node *timer)
    timers in chronological order as close to their scheduled time as
    possible.  */
 static void
+#if ! defined __LCC__
+/* FIXME: LCC barfs on `__attribute__ ((noreturn))' on this function.  */
 __attribute__ ((noreturn))
+#endif /* ! defined __LCC__  */
 thread_func (void *arg)
 {
   struct thread_node *self = arg;

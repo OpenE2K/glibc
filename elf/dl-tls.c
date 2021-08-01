@@ -364,9 +364,15 @@ _dl_allocate_tls_storage (void)
      TLS block alignment, and not just the TLS blocks after it.  This
      can leave an unused alignment gap between the TCB and the TLS
      blocks.  */
+#if ! defined __ptr128__
   result = (void *) roundup
     (sizeof (void *) + TLS_PRE_TCB_SIZE + (uintptr_t) allocated,
      alignment);
+#else
+  result = allocated + sizeof (void *) + TLS_PRE_TCB_SIZE;
+  uintptr_t lres = roundup ((uintptr_t) result, alignment);
+  result += lres - (unsigned long) result;
+#endif
 
   /* Clear the TCB data structure and TLS_PRE_TCB_SIZE bytes before
      it.  We can't ask the caller (i.e. libpthread) to do it, because
@@ -596,7 +602,12 @@ allocate_dtv_entry (size_t alignment, size_t size)
     return (struct dtv_pointer) {};
 
   /* Find the aligned position within the larger allocation.  */
+#if ! defined __ptr128__
   void *aligned = (void *) roundup ((uintptr_t) start, alignment);
+#else /* defined __ptr128__  */
+  uintptr_t aligned_addr = roundup ((uintptr_t) start, alignment);
+  void *aligned = start + (aligned_addr - (uintptr_t) start);
+#endif /* defined __ptr128__  */
 
   return (struct dtv_pointer) { .val = aligned, .to_free = start };
 }

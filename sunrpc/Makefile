@@ -186,7 +186,7 @@ include $(patsubst %,$(..)libof-iterator.mk,$(cpp-srcs-left))
 # Setting CPP tells it how to run the C preprocessor correctly.  Note
 # that $(built-program-file) requires that the just-built cross-rpcgen
 # binary be the second dependency listed in each rule using rpcgen-cmd.
-rpcgen-cmd = CPP='$(CC) -E -x c-header' $(built-program-file) -Y ../scripts
+rpcgen-cmd = CPP='$(CC) -E -x c' $(built-program-file) -Y ../scripts
 
 # Install the rpc data base file.
 $(inst_sysconfdir)/rpc: etc.rpc $(+force)

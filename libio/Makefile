@@ -235,3 +235,12 @@ $(objpfx)tst-fopenloc-mem.out: $(objpfx)tst-fopenloc.out
 $(objpfx)tst-bz22415-mem.out: $(objpfx)tst-bz22415.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz22415.mtrace > $@; \
 	$(evaluate-test)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+CFLAGS-fputc.o = $(extra-optimizations)
+CFLAGS-fputc.os = $(extra-optimizations)
+
+endif # Check for extra optimizations

@@ -129,11 +129,26 @@ _dl_fini (void)
 		      /* First see whether an array is given.  */
 		      if (l->l_info[DT_FINI_ARRAY] != NULL)
 			{
-			  ElfW(Addr) *array =
+#if ! defined __ptr128__
+			  ElfW(Addr) *
+#else
+			  fini_t *
+#endif
+			    array =
+#if ! defined __ptr128__
 			    (ElfW(Addr) *) (l->l_addr
 					    + l->l_info[DT_FINI_ARRAY]->d_un.d_ptr);
+#else
+			  (fini_t *) (l->l_gd + get_offset (l, l->l_info[DT_FINI_ARRAY]->d_un.d_ptr));
+#endif
 			  unsigned int i = (l->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
-					    / sizeof (ElfW(Addr)));
+					    / sizeof (
+#if ! defined __ptr128__
+						      ElfW(Addr)
+#else
+						      fini_t
+#endif
+							   ));
 			  while (i-- > 0)
 			    ((fini_t) array[i]) ();
 			}

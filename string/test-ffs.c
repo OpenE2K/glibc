@@ -27,6 +27,19 @@ do_test (void)
   int failures = 0;
   int i;
 
+#if defined (__LCC__)
+#define try(_name, _param, _value, _expected)                           \
+  ({                                                                    \
+    if (_value != _expected)                                            \
+      {                                                                 \
+        printf ("%s(%#llx) expected %d got %d\n",                       \
+                _name, _param, _expected, _value);                      \
+        ++failures;                                                     \
+      }                                                                 \
+    else                                                                \
+      printf ("%s(%#llx) as expected %d\n", _name, _param, _value);     \
+  })
+#else /* __LCC__ */
   auto void try (const char *name, long long int param, int value,
 		 int expected);
 
@@ -41,6 +54,7 @@ do_test (void)
       else
 	printf ("%s(%#llx) as expected %d\n", name, param, value);
     }
+#endif /* __LCC__ */
 
 #define TEST(fct, type) \
   try (#fct, 0, fct ((type) 0), 0);					      \

@@ -80,7 +80,7 @@ allocate_once (void **__place, void *(*__allocate) (void *__closure),
 {
   /* Synchronizes with the release MO CAS in
      __allocate_once_slow.  */
-  void *__result = atomic_load_acquire (__place);
+  void *__result = atomic_load_ptr_acquire (__place);
   if (__result != NULL)
     return __result;
   else

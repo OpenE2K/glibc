@@ -22,7 +22,11 @@
 #define _TUNABLES_H_
 
 #if !HAVE_TUNABLES
-static inline void
+static
+#ifndef __LCC__
+inline
+#endif
+void
 __always_inline
 __tunables_init (char **unused __attribute__ ((unused)))
 {
@@ -113,7 +117,11 @@ rtld_hidden_proto (__tunable_get_val)
 # define TUNABLES_FRONTEND_yes TUNABLES_FRONTEND_valstring
 
 /* Compare two name strings, bounded by the name hardcoded in glibc.  */
-static inline bool
+static
+#ifndef __LCC__
+inline
+#endif
+bool
 __always_inline
 tunable_is_name (const char *orig, const char *envname)
 {

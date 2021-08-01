@@ -78,7 +78,7 @@
    requirement because the semaphore must not be destructed while any sem_wait
    is still executing.  */
 
-#if !__HAVE_64B_ATOMICS
+#if !__HAVE_64B_ATOMICS || defined __NEW_SEM_ALIGN_32
 static void
 __sem_wait_32_finish (struct new_sem *sem);
 #endif
@@ -88,7 +88,7 @@ __sem_wait_cleanup (void *arg)
 {
   struct new_sem *sem = (struct new_sem *) arg;
 
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   /* Stop being registered as a waiter.  See below for MO.  */
   atomic_fetch_add_relaxed (&sem->data, -((uint64_t) 1 << SEM_NWAITERS_SHIFT));
 #else
@@ -107,7 +107,7 @@ do_futex_wait (struct new_sem *sem, const struct timespec *abstime)
 {
   int err;
 
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   err = futex_abstimed_wait_cancelable (
       (unsigned int *) &sem->data + SEM_VALUE_OFFSET, 0, abstime,
       sem->private);
@@ -131,7 +131,7 @@ __new_sem_wait_fast (struct new_sem *sem, int definitive_result)
      synchronize memory); thus, relaxed MO is sufficient for the initial load
      and the failure path of the CAS.  If the weak CAS fails and we need a
      definitive result, retry.  */
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   uint64_t d = atomic_load_relaxed (&sem->data);
   do
     {
@@ -164,7 +164,7 @@ __new_sem_wait_slow (struct new_sem *sem, const struct timespec *abstime)
 {
   int err = 0;
 
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   /* Add a waiter.  Relaxed MO is sufficient because we can rely on the
      ordering provided by the RMW operations we use.  */
   uint64_t d = atomic_fetch_add_relaxed (&sem->data,
@@ -311,7 +311,7 @@ error:
 }
 
 /* Stop being a registered waiter (non-64b-atomics code only).  */
-#if !__HAVE_64B_ATOMICS
+#if !__HAVE_64B_ATOMICS || defined __NEW_SEM_ALIGN_32
 static void
 __sem_wait_32_finish (struct new_sem *sem)
 {

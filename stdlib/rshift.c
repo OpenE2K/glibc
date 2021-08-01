@@ -21,6 +21,13 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, see
 #include <gmp.h>
 #include "gmp-impl.h"
 
+/* This lets us inhibit assert () below in this file for the sake of
+   performance. For additional explanations see Bug #89674.  */
+#if defined __e2k__ && defined __LCC__
+#ifndef NDEBUG
+# define NDEBUG			/* Undefine this for debugging assertions.  */
+#endif
+#endif /* defined __e2k__ && defined __LCC__  */
 #include <assert.h>
 
 /* Shift U (pointed to by UP and USIZE limbs long) CNT bits to the right
@@ -66,6 +73,9 @@ mpn_rshift (register mp_ptr wp,
   retval = high_limb << sh_2;
   low_limb = high_limb;
 
+#if defined __e2k__ && defined __LCC__
+#pragma loop count (2)
+#endif /* defined __e2k__ && defined __LCC__  */
   for (i = 1; i < usize; i++)
     {
       high_limb = up[i];

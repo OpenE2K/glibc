@@ -105,7 +105,11 @@ __wcsnrtombs (char *dst, const wchar_t **src, size_t nwc, size_t len,
       /* This code is based on the safe assumption that all internal
 	 multi-byte encodings use the NUL byte only to mark the end
 	 of the string.  */
-      size_t dummy;
+      size_t dummy
+#if defined __ptr128__
+	= 0
+#endif /* defined __ptr128__  */
+	;
 
       data.__outbuf = (unsigned char *) dst;
       data.__outbufend = (unsigned char *) dst + len;

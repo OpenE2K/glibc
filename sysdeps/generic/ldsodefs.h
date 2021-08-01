@@ -28,6 +28,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#if defined __LCC__
+#include <stdarg.h>
+#endif
+
 #include <elf.h>
 #include <dlfcn.h>
 #include <fpu_control.h>
@@ -57,10 +61,16 @@ __BEGIN_DECLS
   have to be accessed via the D_PTR macro.  The macro is needed since for
   most architectures the entry is already relocated - but for some not
   and we need to relocate at access time.  */
-#ifdef DL_RO_DYN_SECTION
-# define D_PTR(map, i) ((map)->i->d_un.d_ptr + (map)->l_addr)
+/* FIXME: `DL_RO_DYN_SECTION' defined in `sysdeps/e2k/e2k128/dl-machine.h'
+   doesn't take effect here.  */
+#if defined DL_RO_DYN_SECTION || defined __ptr128__
+#if defined __ptr128__
+# define D_PTR(map, i) ((map)->l_gd + get_offset (map, (map)->i->d_un.d_ptr))
 #else
-# define D_PTR(map, i) (map)->i->d_un.d_ptr
+# define D_PTR(map, i) (void *) ((map)->i->d_un.d_ptr + (map)->l_addr)
+#endif /* ! defined __ptr128__  */
+#else
+# define D_PTR(map, i) (void *) (map)->i->d_un.d_ptr
 #endif
 
 /* Result of the lookup functions and how to retrieve the base address.  */
@@ -713,6 +723,9 @@ extern void _dl_dprintf (int fd, const char *fmt, ...)
      __attribute__ ((__format__ (__printf__, 2, 3)))
      attribute_hidden;
 #else
+
+# if ! defined __LCC__
+
 __attribute__ ((always_inline, __format__ (__printf__, 2, 3)))
 static inline void
 _dl_dprintf (int fd, const char *fmt, ...)
@@ -721,6 +734,30 @@ _dl_dprintf (int fd, const char *fmt, ...)
   extern int __dprintf(int fd, const char *format, ...) attribute_hidden;
   __dprintf (fd, fmt, __builtin_va_arg_pack ());
 }
+
+# else /* defined __LCC__  */
+/* Take care of eliminating a warning if this function turns out to be
+   unused.  */
+static void _dl_dprintf (int fd, const char *fmt, ...)
+  __attribute__ ((unused));
+
+static void
+_dl_dprintf (int fd, const char *fmt, ...)
+{
+  /* Use local declaration to avoid including <stdio.h>. Note that plain
+     `vdprintf ()' can't be used here since in such a case it would become local
+     to libc.so because of `attribute_hidden' (Bug #90463).  */
+  extern int __vdprintf_internal (int d, const char *format, va_list ap,
+				  unsigned int mode_flags) attribute_hidden;
+
+  va_list ap;
+  va_start (ap, fmt);
+  __vdprintf_internal (fd, fmt, ap, 0);
+  va_end (ap);
+}
+
+# endif /* defined __LCC__  */
+
 #endif
 
 /* Write a message on the specified descriptor standard output.  The

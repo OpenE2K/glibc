@@ -50,7 +50,13 @@ elf_irela (const Elf64_Rela *reloc)
     {
       Elf64_Addr *const reloc_addr = (void *) reloc->r_offset;
       Elf64_Addr value = elf_ifunc_invoke(reloc->r_addend);
-      struct link_map map = { .l_addr = 0 };
+      struct link_map map
+#ifndef __LCC__
+        = { .l_addr = 0 };
+#else /* __LCC__  */
+      ;
+      map.l_addr = 0;
+#endif /* __LCC__  */
 
       /* 'high' is always zero, for large PLT entries the linker
 	 emits an R_SPARC_IRELATIVE.  */

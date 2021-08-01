@@ -179,6 +179,10 @@ do_test (void)
 	      exit (1);
 	    }
 
+#if defined __ptr128__
+	  printf ("After kill () #%d\n", i);
+#endif
+
 	  if (TEMP_FAILURE_RETRY (sem_wait (&s)) != 0)
 	    {
 	      puts ("sem_wait failed");

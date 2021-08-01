@@ -126,6 +126,7 @@ do_test (void)
   setitimer (ITIMER_REAL, &it, NULL);
 
   clobber_lots_of_regs ();
+  /* FIXME: we are likely to "pause" here forever in PM.  */
   pause ();
 
   memset (&it, 0, sizeof (it));

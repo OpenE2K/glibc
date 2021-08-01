@@ -189,11 +189,14 @@ do_test (void)
     }
   ss.ss_flags = 0;
   ss.ss_size = 2 * SIGSTKSZ;
+
+#ifndef __ptr128__
   if (sigaltstack (&ss, NULL) < 0)
     {
       printf ("sigaltstack failed %m\n");
       return 1;
     }
+#endif
 
   if (pthread_barrier_init (&b, NULL, 2) != 0)
     {

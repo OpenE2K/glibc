@@ -19,7 +19,9 @@
 
 	.text
 ENTRY(pthread_spin_lock)
-1:	ldstub		[%o0], %g1
+1:	/* This is a Bug #116578 workaround in r2000 (see Bug #118662).  */
+	mov		0xff, %g1
+	ldstub		[%o0], %g1
 	brnz,pn		%g1, 2f
 	 membar		#StoreLoad | #StoreStore
 	retl

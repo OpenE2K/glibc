@@ -100,7 +100,13 @@ nscd_getgr_r (const char *key, size_t keylen, request_type type,
   const char *gr_name = NULL;
   size_t gr_name_len = 0;
   int retval = -1;
-  const char *recend = (const char *) ~UINTMAX_C (0);
+  const char *recend = (const char *) ~
+#if ! defined __LCC__
+    UINTMAX_C (0)
+#else
+    (unsigned long) (0)
+#endif
+    ;
   gr_response_header gr_resp;
 
   if (mapped != NO_MAPPING)

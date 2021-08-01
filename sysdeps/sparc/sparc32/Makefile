@@ -23,6 +23,9 @@ endif	# gnulib
 # so as to avoid the need for a functioning m4 to build the library.
 divrem := sdiv udiv rem urem
 
+
+ifeq ($(maintainer-mode),yes)
+
 +divrem-NAME-sdiv := div
 +divrem-NAME-udiv := udiv
 +divrem-NAME-rem := rem
@@ -47,6 +50,8 @@ $(divrem:%=$(sysdep_dir)/sparc/sparc32/%.S): $(sysdep_dir)/sparc/sparc32/divrem.
 	mv -f $@-tmp $@
 
 sysdep-realclean := $(sysdep-realclean) $(divrem:%=sysdeps/sparc/sparc32/%.S)
+
+endif # maintainer-mode
 
 # libgcc __divdi3 and __moddi3 uses .udiv and since it is also exported by
 # libc.so linker will create PLTs for the symbol.  To avoid it we strong alias

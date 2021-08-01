@@ -33,6 +33,16 @@
 #ifndef SOFT_FP_OP_2_H
 #define SOFT_FP_OP_2_H	1
 
+#if defined __LCC__
+/* Suppress `ec_negative_shift_count' and . . .  */
+# pragma diag_suppress 62
+/* . . . `ec_shift_count_too_large' warnings when compiling files including
+   this header with LCC, as EDG turns out to be incapable of recognizing the
+   case when these shifts belong to dead execution branches and inhibiting
+   these warnings itself by analogy with GCC.  */
+# pragma diag_suppress 63
+#endif
+
 #define _FP_FRAC_DECL_2(X)				\
   _FP_W_TYPE X##_f0 _FP_ZERO_INIT, X##_f1 _FP_ZERO_INIT
 #define _FP_FRAC_COPY_2(D, S)	(D##_f0 = S##_f0, D##_f1 = S##_f1)
