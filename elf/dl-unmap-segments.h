@@ -33,9 +33,9 @@ _dl_unmap_segments (struct link_map *l)
      link_map on the Kernel side?  */
 #if ! defined __ptr128__
   __munmap ((void *) l->l_map_start, l->l_map_end - l->l_map_start);
-#elif /* defined __ptr128__ &&  */ defined __ptr128_new_abi__
+#else /* defined __ptr128__  */
   INLINE_SYSCALL_CALL (unuselib, l->l_gd);
-#endif /* defined __ptr128__ && defined __ptr128_new_abi__  */
+#endif /* defined __ptr128__  */
 }
 
 #endif  /* dl-unmap-segments.h */

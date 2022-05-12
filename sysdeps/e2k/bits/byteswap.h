@@ -29,14 +29,14 @@
 
 /* Swap bytes in 16 bit value.  */
 #define __bswap_constant_16(x) \
-     ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8))
+     ((unsigned short int) ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)))
 
 #ifdef __GNUC__
 # if __GNUC__ >= 2
 
 # define __bswap_16(x)                                                        \
      (__extension__                                                           \
-      ({ register unsigned short int __v, __x = (x);                          \
+      ({ register unsigned short int __v = 0, __x = (unsigned short int) (x); \
          if (__builtin_constant_p (__x))                                      \
            __v = __bswap_constant_16 (__x);                                   \
          else                                                                 \
@@ -47,7 +47,7 @@
 /* This is better than nothing.  */
 #  define __bswap_16(x) \
      (__extension__							      \
-      ({ register unsigned short int __x = (x); __bswap_constant_16 (__x); }))
+      ({ register unsigned short int __x = (unsigned short int) (x); __bswap_constant_16 (__x); }))
 # endif
 #else
 static __inline unsigned short int
@@ -67,7 +67,7 @@ __bswap_16 (unsigned short int __bsx)
 
 # define __bswap_32(x)						              \
      (__extension__                                                           \
-      ({ register unsigned int __v, __x = (x);                                \
+      ({ register unsigned int __v = 0, __x = (x);			      \
          if (__builtin_constant_p (__x))                                      \
            __v = __bswap_constant_32 (__x);                                   \
          else                                                                 \
@@ -102,7 +102,7 @@ __bswap_32 (unsigned int __bsx)
 
 # define __bswap_64(x)                                                        \
      (__extension__                                                           \
-      ({ register __uint64_t __v, __x = (x);				      \
+      ({ register __uint64_t __v = 0, __x = (x);			      \
          if (__builtin_constant_p (__x))                                      \
            __v = __bswap_constant_64 (__x);                                   \
         else                                                                  \

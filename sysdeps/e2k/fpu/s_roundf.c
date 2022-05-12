@@ -15,26 +15,26 @@
 FL __roundf (FL X)
 {
   _type_float_bits res, tmp;
+  FL absx = ffabs (X);
 
   tmp.value = X;
-
-# if __iset__ <= 2
-
-  FL absx = ffabs (X);
+  tmp.int0 &= 0x80000000;
+  res.int0 = tmp.int0 | 0x3f000000; /* 0.5 со знаком X */
+  res.value += X;
 
   /* большие по модулю числа и так целые */
   if (!(absx < DVAIN23))
     return X;
 
-  res.value = (FL) (int) (absx + 0x1.fffffep-2f); /* |x| + почти 0.5 */
-  res.int0 |= tmp.int0 & 0x80000000;
+  if (absx < 0.5f) /* для X, равным почти 0.5 нельзя добавлять 0.5 */
+    return tmp.value;
+
+# if __iset__ <= 2
+
+  res.value = (FL) (int) res.value;
 
 # else /* __iset__ <= 2 */
 
-  res.value = 0x1.fffffep-2f;        /* почти 0.5 */
-  res.int0 |= tmp.int0 & 0x80000000;
-
-  res.value += X;
 #pragma asm_inline
   __asm ("fstoifs 0x3,%0,%0" : "+r" (res.value)); /* отбрасывание дробной части */
 

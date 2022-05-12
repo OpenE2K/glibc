@@ -31,7 +31,7 @@ renameat2 (int oldfd, const char *old, int newfd, const char *new,
     return __renameat (oldfd, old, newfd, new);
   /* __NR_renameat2 isn't currently supported in PM both on the kernel side and
      in glibc in fact.  */
-# if defined __NR_renameat2 && ! (defined __e2k__ && defined __ptr128__)
+# ifdef __NR_renameat2
   /* For non-zero flags, try the renameat2 system call.  */
   int ret = INLINE_SYSCALL_CALL (renameat2, oldfd, old, newfd, new, flags);
   if (ret != -1 || errno != ENOSYS)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
  * @(#) $Id: strlen.c 2068 2014-04-23 11:56:36Z vlog $
  */
@@ -151,8 +151,8 @@ strlen (const char *str)
     }
     /* next 3 qwords */
     __CMP (mask1, qword_ptr[1]);
-    __CMP (mask2, qword_ptr[2]);
-    __CMP (mask3, qword_ptr[3]);
+    __CMP (mask2, __builtin_e2k_ld_128_cleartag (qword_ptr, 32));
+    __CMP (mask3, __builtin_e2k_ld_128_cleartag (qword_ptr, 48));
     mask2 |= mask3 << 16;
     mask = (mask2 << 16) | mask1;
 

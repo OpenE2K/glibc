@@ -52,8 +52,8 @@ extern int __have_atfcts attribute_hidden;
     case F_GETPIPE_SZ:							\
       /* In `man 2 fcntl' `F{GET,ADD}_SEALS' are said to be available since \
 	 linux-3.17, but their definitions turn out to be missing from glibc \
-	 for some reason . . .						\
-	 case F_GET_SEALS:  */						\
+	 for some reason . . .  */					\
+    case F_GET_SEALS:							\
       arg = NULL;							\
       break;								\
       									\
@@ -66,9 +66,9 @@ extern int __have_atfcts attribute_hidden;
     case F_SETLEASE:				\
     case F_NOTIFY:				\
     case F_SETPIPE_SZ:				\
-      /* See above.				\
-	 case F_ADD_SEALS: */			\
-      arg = (void *) va_arg (ap, int);		\
+      /* See above.  */				\
+    case F_ADD_SEALS:				\
+      arg = (void *) (unsigned long) va_arg (ap, unsigned int);	\
       break;					\
       						\
     default:					\

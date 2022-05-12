@@ -15,26 +15,11 @@ int
 __mount (const char *source, const char *target, const char *filesystemtype,
          unsigned long mountflags, const void *data)
 {
-#if ! defined __ptr128_new_abi__
-
-  struct
-  {
-    const char *a;
-    const char *b;
-    const char *c;
-    unsigned long d;
-    const void *e;
-  }
-  args = {source, target, filesystemtype, mountflags, data};
-
-  return INLINE_SYSCALL (mount, 1, &args);
-
-#else /* defined __ptr128_new_abi__  */
-
+  /* Now that only the new PM ABI is supported, consider getting rid of
+     this file in favour of generic one which may probably be expected
+     to do the right thing.  */
   return INLINE_SYSCALL (mount, 5, source, target, filesystemtype,
 			 mountflags, data);
-
-#endif /* defined __ptr128_new_abi__  */
 }
 
 /* FIXME: this magic has stupidly been borrowed from many other files like

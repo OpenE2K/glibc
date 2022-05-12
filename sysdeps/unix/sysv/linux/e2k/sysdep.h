@@ -96,13 +96,13 @@
 
 #define __SYS_CALL_ERROR_RETURN_VALUE -1
 
-#ifdef __ptr128_new_abi__
+#ifdef __ptr128__
 # define WSZ 0x10
 # define WBS 0x8
-#else /* ! defined __ptr128_new_abi__  */
+#else /* ! defined __ptr128__  */
 # define WSZ 0x9
 # define WBS 0x5
-#endif /* ! defined __ptr128_new_abi__  */
+#endif /* ! defined __ptr128__  */
 
 #define __SET_ERRNO \
     adds   0x0, %b[0], %r7 ? %pred0 ; \

@@ -14,7 +14,6 @@ futex (void *uaddr, int futex_op, int val, ...)
     {
       va_list ap;
       void *timeout;
-      int res;
 
       va_start (ap, val);
       timeout = va_arg (ap, void *);

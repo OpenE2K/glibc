@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2019 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016-2021 ZAO "MCST". All rights reserved. */
 
 #ifndef _MATH_H
 # error "Never use <bits/mathinline.h> directly; include <math.h> instead."
@@ -438,41 +438,65 @@ __NTH (llrintf (float __x))
 __MATH_INLINE long int
 __NTH (lround (double __x))
 {
-  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __con;
+  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __res;
+  double __absx = __builtin_fabs (__x);
 
-  __con.__f = 0x1.fffffffffffffp-2; /* almost (nearest in direction to zero) 0.5 */
-  __con.__i |= __xx.__i & 0x8000000000000000LL;
-  return (long int) (__xx.__f + __con.__f);
+  if (!(__absx < 4.503599627370496e15 /* 2 ^ 52 */))
+    return (long int) __x;
+
+  if (__absx < 0.5) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return 0;
+
+  __res.__i = (__xx.__i & 0x8000000000000000LL) | 0x3fe0000000000000LL; /* 0.5 with sign(__x) */
+  return (long int) (__xx.__f + __res.__f);
 }
 
 __MATH_INLINE long long int
 __NTH (llround (double __x))
 {
-  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __con;
+  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __res;
+  double __absx = __builtin_fabs (__x);
 
-  __con.__f = 0x1.fffffffffffffp-2; /* almost (nearest in direction to zero) 0.5 */
-  __con.__i |= __xx.__i & 0x8000000000000000LL;
-  return (long long int) (__xx.__f + __con.__f);
+  if (!(__absx < 4.503599627370496e15 /* 2 ^ 52 */))
+    return (long long int) __x;
+
+  if (__absx < 0.5) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return 0;
+
+  __res.__i = (__xx.__i & 0x8000000000000000LL) | 0x3fe0000000000000LL; /* 0.5 with sign(__x) */
+  return (long long int) (__xx.__f + __res.__f);
 }
 
 __MATH_INLINE long int
 __NTH (lroundf (float __x))
 {
-  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __con;
+  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __res;
+  float __absx = __builtin_fabsf (__x);
 
-  __con.__f = 0x1.fffffep-2f; /* almost (nearest in direction to zero) 0.5 */
-  __con.__i |= __xx.__i & 0x80000000;
-  return (long int) (__xx.__f + __con.__f);
+  if (!(__absx < 8388608.0F /* 2 ^ 23 */))
+    return (long int) __x;
+
+  if (__absx < 0.5f) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return 0;
+
+  __res.__i = (__xx.__i & 0x80000000) | 0x3f000000; /* 0.5 with sign(__x) */
+  return (long int) (__xx.__f + __res.__f);
 }
 
 __MATH_INLINE long long int
 __NTH (llroundf (float __x))
 {
-  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __con;
+  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __res;
+  float __absx = __builtin_fabsf (__x);
 
-  __con.__f = 0x1.fffffep-2f; /* almost (nearest in direction to zero) 0.5 */
-  __con.__i |= __xx.__i & 0x80000000;
-  return (long long int) (__xx.__f + __con.__f);
+  if (!(__absx < 8388608.0F /* 2 ^ 23 */))
+    return (long long int) __x;
+
+  if (__absx < 0.5f) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return 0;
+
+  __res.__i = (__xx.__i & 0x80000000) | 0x3f000000; /* 0.5 with sign(__x) */
+  return (long long int) (__xx.__f + __res.__f);
 }
 
 # if __iset__ >= 4
@@ -659,18 +683,19 @@ __NTH (trunc (double __x))
 __MATH_INLINE double
 __NTH (round (double __x))
 {
+  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __res;
   double __absx = __builtin_fabs (__x);
-  __extension__ union { double __f; long long __i; } __xx = { __f: __x };
-  long long sign = __xx.__i & 0x8000000000000000LL;
+
+  __xx.__i &= 0x8000000000000000LL;
+  __res.__i = __xx.__i | 0x3fe0000000000000LL; /* 0.5 with sign(__x) */
 
   if (!(__absx < 4.503599627370496e15 /* 2 ^ 52 */))
     return __x;
-  __absx += 0x1.fffffffffffffp-2; /* |x| + almost (nearest in direction to zero) 0.5 */
 
-  __xx.__f = (double) (long long) __absx;
+  if (__absx < 0.5) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return __xx.__f;
 
-  __xx.__i |= sign;
-  return __xx.__f;
+  return (double) (long long) (__x + __res.__f);
 }
 # endif /* ! defined psrmode  */
 
@@ -704,14 +729,22 @@ _Pragma ("asm_inline")                      \
 __MATH_INLINE double
 __NTH (round (double __x))
 {
-  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, con;
+  __extension__ union { double __f; long long __i; } __xx = { __f: __x }, __res;
+  double __absx = __builtin_fabs (__x);
 
-  con.__f = 0x1.fffffffffffffp-2; /* almost (nearest in direction to zero) 0.5 */
-  con.__i |= __xx.__i & 0x8000000000000000LL;
-  __xx.__f += con.__f;
+  __xx.__i &= 0x8000000000000000LL;
+  __res.__i = __xx.__i | 0x3fe0000000000000LL; /* 0.5 with sign(__x) */
+
+  if (!(__absx < 4.503599627370496e15 /* 2 ^ 52 */))
+    return __x;
+
+  if (__absx < 0.5) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return __xx.__f;
+
+  __res.__f += __x;
 #pragma asm_inline
-  __asm ("fdtoifd 0x3,%0,%0" : "+r" (__xx.__f)); /* truncating of a fractional part */
-  return __xx.__f;
+  __asm ("fdtoifd 0x3,%0,%0" : "+r" (__res.__f)); /* truncating of a fractional part */
+  return __res.__f;
 }
 # endif /* ! defined psrmode  */
 
@@ -780,15 +813,19 @@ __NTH (truncf (float __x))
 __MATH_INLINE float
 __NTH (roundf (float __x))
 {
+  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __res;
   float __absx = __builtin_fabsf (__x);
-  __extension__ union { float __f; int __i; } __xx = { __f: __x };
-  int sign = __xx.__i & 0x80000000;
+
+  __xx.__i &= 0x80000000;
+  __res.__i = __xx.__i | 0x3f000000; /* 0.5 with sign(__x) */
 
   if (!(__absx < 8388608.0F /* 2 ^ 23 */))
     return __x;
-  __xx.__f = (float) (int) (__absx + 0x1.fffffep-2f); /* |x| + almost (nearest in direction to zero) 0.5 */
-  __xx.__i |= sign;
-  return __xx.__f;
+
+  if (__absx < 0.5f) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return __xx.__f;
+
+  return (float) (int) (__x + __res.__f);
 }
 
 # else /* __iset__ <= 2 */
@@ -816,14 +853,22 @@ _Pragma ("asm_inline")                      \
 __MATH_INLINE float
 __NTH (roundf (float __x))
 {
-  __extension__ union { float __f; int __i; } __xx = { __f: __x }, con;
+  __extension__ union { float __f; int __i; } __xx = { __f: __x }, __res;
+  float __absx = __builtin_fabsf (__x);
 
-  con.__f = 0x1.fffffep-2f; /* almost (nearest in direction to zero) 0.5 */
-  con.__i |= __xx.__i & 0x80000000;
-  __xx.__f += con.__f;
+  __xx.__i &= 0x80000000;
+  __res.__i = __xx.__i | 0x3f000000; /* 0.5 with sign(__x) */
+
+  if (!(__absx < 8388608.0F /* 2 ^ 23 */))
+    return __x;
+
+  if (__absx < 0.5f) /* 0.5 can't be added for x which is almost equal to 0.5 */
+    return __xx.__f;
+
+  __res.__f += __x;
 #pragma asm_inline
-  __asm ("fstoifs 0x3,%0,%0" : "+r" (__xx.__f)); /* truncating of a fractional part */
-  return __xx.__f;
+  __asm ("fstoifs 0x3,%0,%0" : "+r" (__res.__f)); /* truncating of a fractional part */
+  return __res.__f;
 }
 
 __inline_mathcode (float, nearbyintf,       \

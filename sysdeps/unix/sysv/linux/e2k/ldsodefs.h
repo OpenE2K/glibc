@@ -26,6 +26,7 @@
 #undef VALID_ELF_HEADER
 #undef VALID_ELF_OSABI
 #undef VALID_ELF_ABIVERSION
+#undef MORE_ELF_HEADER_DATA
 
 /* e_ident[EI_OSABI] byte in the header of legacy EM_E2K_OLD ELFs is used in a
    rather unconvential way to store the so-called "semantics", which is why

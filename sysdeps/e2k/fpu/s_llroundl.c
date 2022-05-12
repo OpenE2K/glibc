@@ -14,10 +14,19 @@
 long long int
 __llroundl (LD X)
 {
-  LD con = 0x1.fffffffffffffffep-2L; /* почти 0.5 */
+  LD absx = ldfabs (X);
+
+  if (absx < 0.5L) /* для X, равным почти 0.5 нельзя добавлять 0.5 */
+    return 0;
+
+  /* большие по модулю числа и так целые */
+  if (!(absx < DVAIN63))
+    return (LL) X;
+
   if (X < 0)
-      con = -con;
-  return (LL) (X + con);
+    return (LL) (X - 0.5L);
+  else
+    return (LL) (X + 0.5L);
 }
 
 weak_alias (__llroundl, llroundl)

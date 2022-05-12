@@ -16,21 +16,7 @@ arch_fork (void *ctid)
   const int flags = CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID | SIGCHLD;
   long ret;
 
-#if ! defined __ptr128_new_abi__
-  void *arr[3];
-
-  arr[0] = NULL;
-  arr[1] = ctid;
-  arr[2] = NULL;
-#endif /* ! defined __ptr128_new_abi__  */
-  ret = INLINE_SYSCALL_CALL (clone, flags, (void *) 0,
-#if ! defined __ptr128_new_abi__
-			     arr
-#else /* defined __ptr128_new_abi__  */
-			     NULL, ctid, NULL
-#endif /* defined __ptr128_new_abi__  */
-			     );
-
+  ret = INLINE_SYSCALL_CALL (clone, flags, (void *) 0, NULL, ctid, NULL);
   return ret;
 }
 

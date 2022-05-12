@@ -12,40 +12,20 @@
 #undef r0
 #undef r1
 
-# define SYS_NUM_REG		%b[0]
+#define SYS_NUM_REG		%b[0]
 
-#if ! defined __ptr128_new_abi__
+#define FIRST_PARAM_REG		%qb[2]
+#define SECOND_PARAM_REG	%qb[4]
+#define THIRD_PARAM_REG		%qb[6]
+#define FOURTH_PARAM_REG	%qb[8]
+#define FIFTH_PARAM_REG		%qb[10]
 
-# define FIRST_PARAM_REG	%b[1]
-# define SECOND_PARAM_REG	%qb[2]
-# define AP_REG			%qb[4]
-# define AP_REG_LO		%db[4]
-# define AP_REG_HI		%db[5]
-# define AP_SIZE		0x30
+#define SYSCALL_RES	%b[0]
 
-#else /* defined __ptr128_new_abi__  */
-
-#  define FIRST_PARAM_REG	%qb[2]
-#  define SECOND_PARAM_REG	%qb[4]
-#  define THIRD_PARAM_REG	%qb[6]
-#  define FOURTH_PARAM_REG	%qb[8]
-#  define FIFTH_PARAM_REG	%qb[10]
-	
-#endif /* defined __ptr128_new_abi__  */
-
-# define SYSCALL_RES	%b[0]
-
-#if ! defined __ptr128_new_abi__
-# define WSZ		0x9
-# define RSZ		0x3
-# define RBS		0x5
-# define WBS		0x5
-#else /* defined __ptr128_new_abi__  */
-# define WSZ		0x10
-# define RSZ		0x7
-# define RBS		0x8
-# define WBS		0x8
-#endif /* defined __ptr128_new_abi__  */
+#define WSZ		0x10
+#define RSZ		0x7
+#define RBS		0x8
+#define WBS		0x8
 
 /* int __clone (int (*fn)(void *arg), void *child_stack, int flags, void *arg,
                 pid_t *ptid, struct user_desc *tls, pid_t *ctid) */
@@ -88,14 +68,6 @@ __clone:
 
 	disp	%ctpr1, no_tls
 
-#if ! defined __ptr128_new_abi__
-	/* Stupidly ensure that %qb[4] (or %qb[0] if trap entry #8 is used)
-	   contains NULL if the underlying check determines that no CLONE_SETTLS
-	   flag is set.  */
-	puttagd	0x0, 0x0, AP_REG_LO
-	puttagd 0x0, 0x0, AP_REG_HI
-#endif /* ! defined __ptr128_new_abi__  */
-	
 	/* Below I reuse %qr6 the original value of which has already been
 	   copied into %db[1].  */
 	ands	%r6, (CLONE_SETTLS | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_CHILD_SETTID), %r6
@@ -105,37 +77,18 @@ __clone:
 	/* The remaining three arguments are variadic and turn out to be
 	   passed at the same offsets with respect to %fp (%qr0) whichever
 	   ABI is used.   */
-#if ! defined __ptr128_new_abi__
-	/* The array parameter filled in with 3 APs (see the code below) is
-           passed to the Kernel on %qb[4].  */
-	getsap	-AP_SIZE, AP_REG
-#endif /* ! defined __ptr128_new_abi__  */
 
 	/* Copy ptid.  */
 	ldapq	%qr0, 0x50, %qr6
-#if ! defined __ptr128_new_abi__
-	stapq	AP_REG, 0x0, %qr6
-#else /* defined __ptr128_new_abi__  */
 	movtq %qr6, THIRD_PARAM_REG
-#endif /* defined __ptr128_new_abi__  */
-
 
 	/* Copy tls.  */
 	ldapq	%qr0, 0x60, %qr6
-#if ! defined __ptr128_new_abi__
-	stapq	AP_REG, 0x20, %qr6
-#else /* defined __ptr128_new_abi__  */
 	movtq %qr6, FIFTH_PARAM_REG
-#endif /* defined __ptr128_new_abi__  */
-
 
 	/* Copy ctid.  */
 	ldapq	%qr0, 0x70, %qr6
-#if ! defined __ptr128_new_abi__
-	stapq	AP_REG, 0x10, %qr6
-#else /* defined __ptr128_new_abi__  */
 	movtq %qr6, FOURTH_PARAM_REG
-#endif /* defined __ptr128_new_abi__  */
 
 no_tls:	
 	sdisp	%ctpr1, __SYSCALL_TRAPNUM

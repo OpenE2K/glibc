@@ -85,12 +85,14 @@ __cexp (__complex__ double x)
     int k, ind;
 
     type_union_64f darg1, si, co;
-    DB t0, y0, tmp_si, xv2, xv4, xv8;
+    DB t0, y0, tmp_si, xv2, xv4;
     LD ldx, ldxv2;
     LL k0;
     int k1;
 #if __iset__ >= 6
     _type_double_bits ly, lyv2, lyv4, lyv8, lres, lres1, lres2;
+#else /* __iset__ < 6  */
+    DB xv8;
 #endif /* __iset__ < 6 */
 
     __complex__ double res;
@@ -179,7 +181,6 @@ __cexp (__complex__ double x)
     ldxv2 = ldx * ldx;
     xv2 = y * y;
     xv4 = xv2 * xv2;
-    xv8 = xv4 * xv4;
 #if __iset__ >= 6
     lyv2.value = xv2;
     lyv4.value = xv4;
@@ -201,6 +202,7 @@ __cexp (__complex__ double x)
     lres.llong = __builtin_e2k_fmad (lres1.llong, lres.llong, lres2.llong);
     tmp_si = (DB) (KA3 * ldx * (KA1 / KA3 + ldxv2) + lres.value);
 #else /* __iset__ < 6 */
+    xv8 = xv4 * xv4;
     co.db = (DB) ((KA0 + ldxv2 * KA2) + (xv4 * (KA4 + KA6 * xv2) + KA14 * xv8 *
         (KA8 / KA14 + KA10 / KA14 * xv2 + xv4 * (KA12 / KA14 + xv2))));
     tmp_si = (DB) ((KA1 + KA3 * ldxv2) * ldx + (KA7 * y * xv4 * (KA5 / KA7 + xv2) +

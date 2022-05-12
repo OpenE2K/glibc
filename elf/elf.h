@@ -3556,6 +3556,36 @@ enum
 #define EF_E2K_BUG_75842        64
 #define EF_E2K_PACK_SEGMENTS    64
 
+/* A particular E2K machine ELF is intended for is determined by the 8
+   uppermost bits of its header's e_flags containing one of
+   E_E2K_MACH_* codes listed below.  */
+#define EF_E2K_MACH_TO_FLAG(x)      ((x) << 24)
+#define EF_E2K_FLAG_TO_MACH(x)      (((x) >> 24) & 255)
+
+/* Codes of supported E2K machines.  */
+#define E_E2K_MACH_BASE     0	/* Legacy. Shouldn't be created nowadays.  */
+#define E_E2K_MACH_EV1      1	/* Legacy. Shouldn't be created nowadays.  */
+#define E_E2K_MACH_EV2      2	/* -march=elbrus-v2 code.  */
+#define E_E2K_MACH_EV3      3	/* -march=elbrus-v3 code.  */
+#define E_E2K_MACH_EV4      4	/* -march=elbrus-v4 code.  */
+#define E_E2K_MACH_EV5      5	/* -march=elbrus-v5 code.  */
+#define E_E2K_MACH_EV6      6	/* -march=elbrus-v6 code.  */
+#define E_E2K_MACH_EV7      7	/* -march=elbrus-v7 code.  */
+
+/* Values 16, 17 and 18 used to be reserved for `E_E2K_MACH_CUBE_{1,2,3}'
+   respectively, which have never been used in ELF files in practice. However,
+   they can't be reused right now because they are recognized in all Kernel
+   versions installed on many E2K hosts all over the World and at MCST.
+   Otherwise, it would be possible to mistakenly execute ELFs for `elbrus-{8c,
+   1c+}' at respective iterations of `elbrus-2c+'. Reuse them a few years later
+   after they are eliminated from the Kernel.  */
+
+#define E_E2K_MACH_8C	    19	/* -mtune=elbrus-8c code.  */
+#define E_E2K_MACH_1CPLUS   20	/* -mtune=elbrus-1c+ code.  */
+#define E_E2K_MACH_12C	    21	/* -mtune=elbrus-12c code.  */
+#define E_E2K_MACH_16C	    22	/* -mtune=elbrus-16c code.  */
+#define E_E2K_MACH_2C3	    23	/* -mtune=elbrus-2c3 code.  */
+
 /* E2k relocs.  */
 
 #define R_E2K_32_ABS		0		/* Direct 32 bit */

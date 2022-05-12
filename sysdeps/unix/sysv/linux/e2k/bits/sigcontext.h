@@ -49,6 +49,10 @@ struct sigcontext {
 	unsigned long long 	psp_hi;	 /* 25 base & index & size */
 	unsigned long long 	pcsp_lo; /* 26 Procedure chain stack */
 	unsigned long long 	pcsp_hi; /* 27 pointer: base & index & size */
+
+  /* The kernel believes that the following fields are missing from PM
+     variant of this struct.  */
+#if ! defined __ptr128__
 /*
  *  additional part (for binary compiler)
  */          
@@ -71,6 +75,7 @@ struct sigcontext {
 	unsigned long long mlt [MLT_NUM];
 
         unsigned long long upsr;
+#endif /* ! defined __ptr128__  */
 };
 
 #undef MLT_NUM

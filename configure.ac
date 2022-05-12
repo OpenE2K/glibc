@@ -441,15 +441,6 @@ AC_ARG_ENABLE([maintainer-mode],
 	      [maintainer_mode=no])
 AC_SUBST(maintainer_mode)
 
-dnl For the night build we don't want to build anything in `manual' and
-dnl `po' subdirs.
-AC_ARG_WITH([manual-po],
-            AC_HELP_STRING([--without-manual-po],
-                           [do not build in manual and po subdirs (for e2k only)]),
-	    [with_manual_po=$withval],
-	    [with_manual_po=yes])
-AC_SUBST(with_manual_po)
-
 dnl This option specifies whether support for `sys_atomic' implemented
 dnl inside the Kernel is required (see Bug #54479).
 AC_ARG_WITH([sys-atomic],

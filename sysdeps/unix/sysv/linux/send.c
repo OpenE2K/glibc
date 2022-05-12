@@ -22,7 +22,7 @@
 ssize_t
 __libc_send (int fd, const void *buf, size_t len, int flags)
 {
-#if defined __ptr128__ // && ! defined __ptr128_new_abi__
+#if defined __ptr128__
   struct
   {
     long int a;

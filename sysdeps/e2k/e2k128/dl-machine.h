@@ -69,8 +69,9 @@ elf_machine_load_address (void)
 #define E2K_OSABI       5
 
 #define ELF_MACHINE_JMP_SLOT	R_E2K_32_JMP_SLOT
-#define ARCH_LA_PLTENTER e2k64_gnu_pltenter
-#define ARCH_LA_PLTEXIT e2k64_gnu_pltexit
+
+# define ARCH_LA_PLTENTER e2k64_gnu_pltenter
+# define ARCH_LA_PLTEXIT e2k64_gnu_pltexit
 
 /* Make sure that REL-specific stuff isn't referenced from the generic part of
    ld.so.  */
@@ -81,9 +82,6 @@ elf_machine_load_address (void)
    way from the point of view of Protected Mode.  */
 #define DL_RO_DYN_SECTION 1
 
-
-#define CPU_INIT                                \
-  __builtin_cpu_init_ext ()
 
 #define FIX_USER_STACK							\
   extern  unsigned int _dl_skip_args;					\
@@ -153,8 +151,6 @@ void (* _start2 (void)) (void)						\
   __selfinit ();							\
 									\
   fp +=1;								\
-                                                                        \
-  CPU_INIT;                                                             \
                                                                         \
   entry_point = _dl_start (fp);                                         \
 									\

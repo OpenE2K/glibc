@@ -48,10 +48,9 @@ _start (
      likely to put `argc' at that location. Besides that the Kernel doesn't
      probably take care of 8-byte alignment for (which?) parameters. That's
      why some hackery is required to account for all that.  */
-#if defined __LCC__
-# if ! defined __ptr128__
+#if ! defined __ptr128__
   register long *fp asm ("FP");
-# else /* defined __ptr128__  */
+#else /* defined __ptr128__  */
   /* In Protected Mode it would be incorrect to obtain an incoming stack frame
      via `getsap 0x0' since it would be useless because of its zero size. Make
      use of AP passed by the kernel on %qr0 instead.  */
@@ -64,14 +63,12 @@ _start (
      main executable). Calling it for the second time may result in SIGSEGV
      because of the GNU_RELRO segment which has already been write protected
      by ld.so.  */
-#  if ! defined IN_STATIC_START
+# if ! defined IN_STATIC_START
   if (rtld_fini == (void (*) (void)) 0)
-#  endif /* ! defined IN_STATIC_START  */
+# endif /* ! defined IN_STATIC_START  */
     __selfinit ();
-# endif /* defined __ptr128__  */
-#else /* defined __LCC__  */
-  register long *fp asm ("%r8");
-#endif /* defined __LCC__  */
+#endif /* defined __ptr128__  */
+
   int argc = *((int *) fp);
   char **argv = (char**)(fp + 1);
 

@@ -27,20 +27,7 @@
 int
 shmget (key_t key, size_t size, int shmflg)
 {
-#if defined __ptr128__
-  struct
-  {
-    long int a;
-    long int b;
-    long int c;
-    void *d;
-  }
-  args = {(long int) key, (long int) size, (long int) shmflg,
-	  (void *) NULL};
-
-  return INLINE_SYSCALL_CALL (ipc, IPCOP_shmget, &args);
-
-#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (shmget, key, size, shmflg, NULL);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_shmget, key, size, shmflg, NULL);

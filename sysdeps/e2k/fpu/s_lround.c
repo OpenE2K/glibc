@@ -14,12 +14,21 @@
 long int
 __lround (DB X)
 {
-  _type_double_bits tmp, con;
+  _type_double_bits res, tmp;
+  DB absx = dfabs (X);
 
   tmp.value = X;
-  con.value = 0x1.fffffffffffffp-2; /* почти 0.5 */
-  con.llong |= tmp.llong & 0x8000000000000000LL;
-  return (long int) (X + con.value);
+  tmp.llong &= 0x8000000000000000LL;
+  res.llong = tmp.llong | 0x3fe0000000000000LL; /* 0.5 со знаком X */
+
+  /* большие по модулю числа и так целые */
+  if (!(absx < DVAIN52))
+    return (long int) X;
+
+  if (absx < 0.5) /* для X, равным почти 0.5 нельзя добавлять 0.5 */
+    return 0;
+
+  return (long int) (res.value + X);
 }
 
 weak_alias (__lround, lround)

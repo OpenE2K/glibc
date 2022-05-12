@@ -38,17 +38,8 @@ __ioctl (int fd, unsigned long int request, ...)
 
   va_end (ap);
 
-  result = INLINE_SYSCALL (ioctl,
-#if defined __ptr128_new_abi__
-			   6, fd, request,
-			   args[0], args[1], args[2], args[3]
-#else /* ! defined __ptr128_new_abi__  */
-			   /* Only three arguments for ioctl () are supported
-			      in old PM syscall scheme.  */
-			   3, fd, request,
-			   args[0]
-#endif /* ! defined __ptr128_new_abi__  */
-			   );
+  result = INLINE_SYSCALL (ioctl, 6, fd, request, args[0], args[1], args[2],
+			   args[3]);
   return result;
 }
 libc_hidden_def (__ioctl)

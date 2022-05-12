@@ -20,6 +20,7 @@
 #include <execinfo.h>
 #include <sysdep.h>
 #include <asm/e2k_syswork.h>
+#include <string.h>
 
 union pcsp_lo
 {
@@ -81,6 +82,7 @@ subsidiary (int count, void **array, int size)
       unsigned int pcsp_size;
       unsigned long long base;
       unsigned long long top;
+      unsigned long long real_size;
 
       pcsp_size = (pcsp_hi & 0xffffffffULL) - (32 * count - pcshtp);
       base = pcsp_lo & 0xfffffffffff0ULL;
@@ -93,11 +95,29 @@ subsidiary (int count, void **array, int size)
          "signal trampoline".  */
 
       chain_stack = (unsigned long long *) alloca (pcsp_size);
+
+      /* After the separation of the process kernel and user mode hardware
+	 stacks there is an "unused" frame before the entry point (i.e. `_start
+	 ()') at offset 0 from the base of the chain stack. The kernel could
+	 completely hide it from us by setting `REAL_SIZE = PCSP_SIZE - 32' and
+	 adjusting offsets in the filled in buffer (so that offset 0 in the
+	 buffer matched offset 0x20 in the actual chain stack and so on) or
+	 mark this "unused" frame as the "kernel" one by setting its %cr0_hi.ip
+	 to 0. However, currently the kernel does not do neither the former,
+	 nor the latter and prefers to leave us with junk in CHAIN_STACK[{0,1,
+	 2,3}], which is almost certainly a bug. Fill in the whole CHAIN_STACK[]
+	 with 0 to be on the safe side if the number of redundant uninitialized
+	 frames in it increases.  */
+      memset (chain_stack, 0, pcsp_size);
+
       res = INLINE_SYSCALL (access_hw_stacks, 5, E2K_READ_CHAIN_STACK, &top,
-                            chain_stack, pcsp_size, NULL);
+                            chain_stack, pcsp_size, &real_size);
 
       if (res < 0)
         return 0;
+
+      /* They should be the same in fact.  */
+      pcsp_size = (unsigned int) real_size;
 
       /* Get %cr0.hi's from the obtained copy of the chain stack.  */
       for (i = 0, j = (pcsp_size >> 3) - 3; j > 0 && i < size; j -= 4)

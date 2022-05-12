@@ -851,7 +851,7 @@ static const unsigned int __tbl_rem_pio2[140] = {
  /   Функция возвращает старшую часть приведенного аргумента.
 */
 
-double __attribute__ ((no_associative_math))
+double __attribute__ ((optimize ("-fno-associative-math")))
 __rem_pio2 (double x, int * nseg, double * lo)
 {
     double /*volatile */ tv, y_hi;

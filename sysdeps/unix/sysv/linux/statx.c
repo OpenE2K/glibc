@@ -25,9 +25,7 @@ int
 statx (int fd, const char *path, int flags,
        unsigned int mask, struct statx *buf)
 {
-#if (defined __NR_statx							\
-     && (! (defined __e2k__ && defined __ptr128__)			\
-	 || defined __ptr128_new_abi__))
+#ifdef __NR_statx
   int ret = INLINE_SYSCALL_CALL (statx, fd, path, flags, mask, buf);
 # ifdef __ASSUME_STATX
   return ret;

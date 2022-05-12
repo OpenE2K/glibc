@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
  * @(#) $Id: strncase.c 2101 2014-05-13 11:24:32Z vlog $
  */
@@ -172,7 +172,7 @@ __strncasecmp (s1, s2, n LOCALE_PARAM)
     srcp2 &= ~7;
     E2K_PREPARE_ALIGN (align1, spec);
     a00 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 0); /* чтобы не залезть за левую границу */
-    a01 = ((op_t *) srcp1)[1];
+    a01 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 8); /* чтобы не залезть за правую границу */
     E2K_ALIGN_DATA (a00, a01, a0, spec);
     b0 = ((op_t *) srcp2)[0];
     a0 |= ~mask; /* байты до начала строки заполняем 0xff */
@@ -279,7 +279,7 @@ m_last:
     srcp2 &= ~15;
     E2K_PREPARE_ALIGN128 (align1, spec);
     a00 = __builtin_e2k_ld_128_cleartag ((__v2di *) srcp1, 0); /* чтобы не залезть за левую границу */
-    a01 = ((__v2di *) srcp1)[1];
+    a01 = __builtin_e2k_ld_128_cleartag ((__v2di *) srcp1, 16); /* чтобы не залезть за правую границу */
     E2K_ALIGN_DATA128 (a00, a01, a0, spec);
     b0 = ((__v2di *) srcp2)[0];
     __CMP0 (mask0, b0);
@@ -527,7 +527,7 @@ __strncasecmp_nonascii (const char *s1, const char *s2, size_t n, __locale_t loc
     srcp2 &= ~7;
     E2K_PREPARE_ALIGN (align1, spec);
     a00 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 0); /* чтобы не залезть за левую границу */
-    a01 = ((op_t *) srcp1)[1];
+    a01 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 8); /* чтобы не залезть за правую границу */
     E2K_ALIGN_DATA (a00, a01, a0, spec);
     b0 = ((op_t *) srcp2)[0];
     a0 |= ~mask; /* байты до начала строки заполняем 0xff */

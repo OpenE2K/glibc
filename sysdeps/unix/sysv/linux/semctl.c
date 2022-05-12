@@ -51,6 +51,7 @@ __new_semctl (int semid, int semnum, int cmd, ...)
     case IPC_STAT:      /* arg.buf */
     case IPC_SET:
     case SEM_STAT:
+    case SEM_STAT_ANY:
     case IPC_INFO:      /* arg.__buf */
     case SEM_INFO:
       va_start (ap, cmd);
@@ -59,22 +60,7 @@ __new_semctl (int semid, int semnum, int cmd, ...)
       break;
     }
 
-#if defined __ptr128__ && ! defined __ptr128_new_abi__
-  struct
-  {
-    long int a;
-    long int b;
-    long int c;
-    void *d;
-  }
-  args = {(long int) semid, (long int) semnum, (long int) (cmd | __IPC_64),
-	  /* FIXME: the way &arg.array is passed here and from __old_semctl
-	     makes me uncertain. To be revisited.  */
-	  (void *) SEMCTL_ARG_ADDRESS (arg)};
-
-  return INLINE_SYSCALL_CALL (ipc, IPCOP_semctl, &args);
-
-#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (semctl, semid, semnum, cmd | __IPC_64,
 			      arg.array);
 #else
@@ -105,6 +91,7 @@ __old_semctl (int semid, int semnum, int cmd, ...)
     case IPC_STAT:      /* arg.buf */
     case IPC_SET:
     case SEM_STAT:
+    case SEM_STAT_ANY:
     case IPC_INFO:      /* arg.__buf */
     case SEM_INFO:
       va_start (ap, cmd);
@@ -113,20 +100,7 @@ __old_semctl (int semid, int semnum, int cmd, ...)
       break;
     }
 
-# if defined __ptr128__ && ! defined __ptr128_new_abi__
-  struct
-  {
-    long int a;
-    long int b;
-    long int c;
-    void *d;
-  }
-  args = {(long int) semid, (long int) semnum, (long int) cmd,
-	  (void *) SEMCTL_ARG_ADDRESS (arg)};
-
-  return INLINE_SYSCALL_CALL (ipc, IPCOP_semctl, &args);
-
-# elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (semctl, semid, semnum, cmd, arg.array);
 # else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semctl, semid, semnum, cmd,

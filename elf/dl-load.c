@@ -1193,7 +1193,22 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
        l_map_start, l_map_end, l_addr, l_contiguous, l_text_end, l_phdr
      */
     errstring = _dl_map_segments (l, fd, header, type, loadcmds, nloadcmds,
-				  maplength, has_holes, loader);
+				  maplength, has_holes, loader
+#if defined __ptr128__
+				  /* In PM PHDR should additionally be passed
+				     to this function since this is it that
+				     takes care of copying Program Headers read
+				     from ELF to `malloc ()'ed l->l_phdr in case
+				     Program Headers cannot be located in GD.
+				     &ERRVAL lets one achieve `goto lose_errno'
+				     behaviour (note `goto lose' a few lines
+				     below and the difference between `lose{,
+				     _errno}:') in case the `malloc ()'ation of
+				     Program Headers fails by analogy with
+				     ordinary modes.  */
+				  , phdr, &errval
+#endif /* defined __ptr128__  */
+				  );
     if (__glibc_unlikely (errstring != NULL))
       goto call_lose;
   }
@@ -1211,46 +1226,6 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 #if ! defined __ptr128__
       l->l_ld = (ElfW(Dyn) *) ((ElfW(Addr)) l->l_ld + l->l_addr);
 #else /* defined __ptr128__  */
-      if (! (header->e_flags & EF_E2K_PACK_SEGMENTS))
-	{
-	  /* If l_phdr still contains "NULL" there's no PT_PHDR in its ELF as
-	     it takes place in libm.so. In such a case there's no other way of
-	     getting access to Program Headers in legacy PM case (as well as in
-	     ordinary modes) except for `malloc ()'ing and memcpy ()'ing them
-	     from PHDR (the temporary  buffer they were read to above) even
-	     though  they are almost sure to be present in GD (see the
-	     evaluation in the packed case relying on the latter).  */
-	  if (l->l_phdr != NULL)
-	    l->l_phdr = l->l_gd + (long) l->l_phdr;
-	  else
-	    {
-	      /* FIXME(?): this is an ugly copy/paste of the analogous code in
-		 ordinary modes below. See if the evaluation of "runtime"
-		 l_phdr value at an earlier stage (at which it's needed in PM)
-		 is going to break anything in ordinary modes. */
-
-	      /* The program header is not contained in any of the segments.
-		 We have to allocate memory ourself and copy it over from out
-		 temporary place.  */
-	      ElfW(Phdr) *newp = (ElfW(Phdr) *) malloc (header->e_phnum
-							* sizeof (ElfW(Phdr)));
-	      if (newp == NULL)
-		{
-		  errstring = N_("cannot allocate memory for program header");
-		  goto call_lose_errno;
-		}
-
-	      l->l_phdr = memcpy (newp, phdr,
-				  (header->e_phnum * sizeof (ElfW(Phdr))));
-	      l->l_phdr_allocated = 1;
-	    }
-    }
-      else
-	/* In packed case rely on the assumption that the containing segment
-	   is mapped starting from 0 offset in GD. Note that get_offset ()
-	   can't be used before l_phdr is set.  */
-	l->l_phdr = l->l_gd + header->e_phoff;
-
       l->l_ld = (ElfW(Dyn) *) (l->l_gd
 			       + get_offset (l, (ElfW(Addr)) l->l_ld));
 #endif /* defined __ptr128__  */

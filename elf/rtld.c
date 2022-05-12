@@ -1317,7 +1317,16 @@ of this helper program; chances are you did not intend to run this program.\n\
       {
       case PT_PHDR:
 	/* Find out the load address.  */
-	main_map->l_addr = (ElfW(Addr)) phdr - ph->p_vaddr;
+	main_map->l_addr = ((ElfW(Addr)) phdr
+			    -
+#if defined __ptr128__
+			    get_offset (main_map,
+#endif
+					ph->p_vaddr
+#if defined __ptr128__
+					)
+#endif
+			    );
 	break;
       case PT_DYNAMIC:
 	/* This tells us where to find the dynamic section,
@@ -1395,24 +1404,24 @@ of this helper program; chances are you did not intend to run this program.\n\
 	  if (ph->p_flags & PF_X)
 	    {
 	      mapstart = (main_map->l_code_addr
-			  + (ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
+			  + get_offset (main_map, ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
 
 	      if (main_map->l_text_start > mapstart)
 		main_map->l_text_start = mapstart;
 
-	      allocend = main_map->l_code_addr + ph->p_vaddr + ph->p_memsz;
+	      allocend = main_map->l_code_addr + get_offset (main_map, ph->p_vaddr) + ph->p_memsz;
 	      if (main_map->l_text_end < allocend)
 		main_map->l_text_end = allocend;
 	    }
 	  else
 	    {
 	      mapstart = (main_map->l_addr
-			  + (ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
+			  + get_offset (main_map, ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
 
 	      if (main_map->l_data_start > mapstart)
 		main_map->l_data_start = mapstart;
 
-	      allocend = main_map->l_addr + ph->p_vaddr + ph->p_memsz;
+	      allocend = main_map->l_addr + get_offset (main_map, ph->p_vaddr) + ph->p_memsz;
 	      if (main_map->l_data_end < allocend)
 		main_map->l_data_end = allocend;
 	    }

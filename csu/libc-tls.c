@@ -169,14 +169,9 @@ __libc_setup_tls (void)
   {
     size_t tlsblock_size = (tcb_offset + memsz + max_align
 			    + TLS_PRE_TCB_SIZE + GL(dl_tls_static_size));
-#ifdef __ptr128_new_abi__
     tlsblock = INLINE_BOGUS_SYSCALL (mmap, 6, NULL, tlsblock_size,
 				     PROT_READ | PROT_WRITE,
 				     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#else /* ! defined __ptr128_new_abi__  */
-    tlsblock = INLINE_BOGUS_SYSCALL (get_mem, 1, tlsblock_size);
-    memset (tlsblock, 0, tlsblock_size);
-#endif /* ! defined __ptr128_new_abi__  */
   }
 # else
   tlsblock = __sbrk (tcb_offset + memsz + max_align

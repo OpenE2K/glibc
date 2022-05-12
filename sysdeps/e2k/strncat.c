@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
  * @(#) $Id: strncat.c 2218 2014-06-16 13:57:59Z vlog $
  */
@@ -298,8 +298,8 @@ start_strncpy:
     }
     /* next 3 qwords */
     __CMP (mask1, qword_ptr[1]);
-    __CMP (mask2, qword_ptr[2]);
-    __CMP (mask3, qword_ptr[3]);
+    __CMP (mask2, __builtin_e2k_ld_128_cleartag (qword_ptr, 32));
+    __CMP (mask3, __builtin_e2k_ld_128_cleartag (qword_ptr, 48));
     mask2 |= mask3 << 16;
     llmask = (mask2 << 16) | mask1;
 
@@ -354,7 +354,7 @@ start_strncpy:
     count = __builtin_ctz (mask);
 
     if (mask != 0 || dstp > end_ptr) { /* заканчиваем в этом qword */
-      if (n < count - (16 - alignd)) { /* n меньше длины строки */
+      if (n <= count - (16 - alignd)) { /* n меньше длины строки */
         __builtin_e2k_pst_128 (a0, dstp - 16, (-1 << (16 - alignd)) & ~(-1 << (16 - alignd + n)));
         dstp[-alignd + n] = '\0'; /* последний ноль */
       }
@@ -396,7 +396,7 @@ start_strncpy:
     count = __builtin_ctz (mask);
 
     if (mask != 0 || dstp > end_ptr) { /* заканчиваем в этом qword */
-      if (n < count - (16 - alignd)) { /* n меньше длины строки */
+      if (n <= count - (16 - alignd)) { /* n меньше длины строки */
         __builtin_e2k_pst_128 (a0, dstp - 16, (-1 << (16 - alignd)) & ~(-1 << (16 - alignd + n)));
         dstp[-alignd + n] = '\0'; /* последний ноль */
       }
@@ -541,7 +541,7 @@ start_strncpy:
   count = __builtin_ctz (mask);
 
   if (mask != 0 || dstp >= end_ptr) { /* заканчиваем в этом qword */
-    if (n < count - align) { /* n меньше длины строки */
+    if (n <= count - align) { /* n меньше длины строки */
       __builtin_e2k_pst_128 (a0, dstp, (-1 << align) & ~(-1 << (align + n)));
       dstp[align + n] = '\0'; /* последний ноль */
     }

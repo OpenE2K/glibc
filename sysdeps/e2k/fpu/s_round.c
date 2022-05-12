@@ -14,28 +14,27 @@
 
 DB __round (DB X)
 {
- _type_double_bits res, tmp;
+  _type_double_bits res, tmp;
+  DB absx = dfabs (X);
 
   tmp.value = X;
-
-# if __iset__ <= 2
-
-  DB absx = dfabs (X);
+  tmp.llong &= 0x8000000000000000LL;
+  res.llong = tmp.llong | 0x3fe0000000000000LL; /* 0.5 со знаком X */
+  res.value += X;
 
   /* большие по модулю числа и так целые */
   if (!(absx < DVAIN52))
     return X;
 
-  absx += 0x1.fffffffffffffp-2; /* |x| + почти 0.5 */
-  res.value = (DB) (LL) absx;
-  res.llong |= tmp.llong & 0x8000000000000000LL;
+  if (absx < 0.5) /* для X, равным почти 0.5 нельзя добавлять 0.5 */
+    return tmp.value;
+
+# if __iset__ <= 2
+
+  res.value = (DB) (LL) res.value;
 
 # else /* __iset__ <= 2 */
 
-  res.value = 0x1.fffffffffffffp-2; /* почти 0.5 */
-  res.llong |= tmp.llong & 0x8000000000000000LL;
-
-  res.value += X;
 #pragma asm_inline
   __asm ("fdtoifd 0x3,%0,%0" : "+r" (res.value)); /* отбрасывание дробной части */
 

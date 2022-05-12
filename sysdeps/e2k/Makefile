@@ -1,6 +1,10 @@
 ifeq (yes,$(compile-with-lcc))
 gnulib-arch = -llcc
 static-gnulib-arch = -llcc
+ifeq ($(config-machine),e2k128)
+# gnulib-arch += -latomic
+static-gnulib-arch += -latomic
+endif # e2k128
 endif
 
 # The E2k `long double' is a distinct type we support.

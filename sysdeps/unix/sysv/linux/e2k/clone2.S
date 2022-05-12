@@ -110,7 +110,7 @@ _error:
 __thread_start:
 	__GETPL	%dr0, %ctpr1
 	getsp	-16, %empty
-	addd	0x0, %dr4, %db[0]
+	__ADDP	0x0, %dr4, %db[0]
 	call	%ctpr1, wbs = 0x4
 
 	/* Pass the thread function's return value (it's already on `%b[0]')

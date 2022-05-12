@@ -18,6 +18,9 @@
 
 #include <link.h>
 #include <elf.h>
+#if defined __ptr128__
+#include <ldsodefs.h>
+#endif /* defined __ptr128__  */
 
 /* Return non-zero if ADDR lies within one of L's loadable segments.
    We have three cases we care about.
@@ -103,7 +106,15 @@ _dl_addr_inside_object (struct link_map *l, const ElfW(Addr) addr)
     if (l->l_phdr[n].p_type == PT_LOAD
 	&& ((addr_in_cud && (l->l_phdr[n].p_flags & PF_X))
 	    || (!addr_in_cud && !(l->l_phdr[n].p_flags & PF_X)))
-	&& reladdr - l->l_phdr[n].p_vaddr < l->l_phdr[n].p_memsz)
+	&& (reladdr -
+#if defined __ptr128__
+	    get_offset (l,
+#endif /* defined __ptr128__  */
+			l->l_phdr[n].p_vaddr
+#if defined __ptr128__
+			)
+#endif /* defined __ptr128__  */
+	    < l->l_phdr[n].p_memsz))
       return 1;
 
   return 0;

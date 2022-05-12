@@ -23,7 +23,7 @@ ssize_t
 __libc_recvfrom (int fd, void *buf, size_t len, int flags,
 		 __SOCKADDR_ARG addr, socklen_t *addrlen)
 {
-#if defined __ptr128__ // && ! defined __ptr128_new_abi__
+#if defined __ptr128__
   struct
   {
     long int a;

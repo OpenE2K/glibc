@@ -24,12 +24,24 @@
 
 #include_next <kernel-features.h>
 
+/* All of the 7 underlying `__ASSUME_*'s should be defined if the new PM ABI
+   and syscall interface are used at least. Moreover, it should be clarified
+   if they are supported by relevant kernel versions (i.e. the ones glibc
+   is intended to be used with) in ordinary modes.  */
+#if ! defined __ptr128__
 /* Due to some obscure reasons `__NR_{recv,send}msg' syscalls are missing from
    E2K Linux Kernel, whereas `sysdeps/unix/sysv/linux/kernel-features.h' defines
    the following macros by default nowadays.  */
-#if ! defined __ptr128__
 # undef __ASSUME_RECVMSG_SYSCALL
 # undef __ASSUME_SENDMSG_SYSCALL
+#endif /* ! defined __ptr128__  */
+
+#if ! defined __ptr128__
+# undef __ASSUME_ACCEPT_SYSCALL
+# undef __ASSUME_ACCEPT4_SYSCALL
+# undef __ASSUME_RECVFROM_SYSCALL
+# undef __ASSUME_CONNECT_SYSCALL
+# undef __ASSUME_SENDTO_SYSCALL
 #endif /* ! defined __ptr128__  */
 
 /* These ones stayed undefined in the generic kernel-features.h by virtue of
@@ -65,14 +77,14 @@
 /* E2K only supports ipc syscall.  */
 #undef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
 
-#undef __ASSUME_ACCEPT_SYSCALL
-#undef __ASSUME_ACCEPT4_SYSCALL
-#undef __ASSUME_RECVFROM_SYSCALL
-#undef __ASSUME_CONNECT_SYSCALL
-#undef __ASSUME_SENDTO_SYSCALL
-
 #if defined __ptr128__
 # undef __ASSUME_RENAMEAT2
+#endif /* defined __ptr128__  */
+
+#if defined __ptr128__
+
+# define __ASSUME_GETPEERNAME_SYSCALL	1
+
 #endif /* defined __ptr128__  */
 
 #endif /* _KERNEL_FEATURES_H */

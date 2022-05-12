@@ -91,12 +91,14 @@ DB __cos (DB X)
 #define PIO2_1T (1.2246467991473531772015e-16L * 0.5)
 {
     type_union_64f darg0, darg1;
-    DB t0, y0, xv2, xv4, xv8;
+    DB t0, y0, xv2, xv4;
     LD ldx, ldxv2;
     int k0;
 #if __iset__ >= 6
     _type_double_bits lyv2, lyv4, lyv8, lres, lres1, lres2;
-#endif /* __iset__ < 6 */
+#else /* __iset__ < 6  */
+    DB xv8;
+#endif /* __iset__ < 6  */
 
     darg0.db = X;
     darg0.ll &= ~0x8000000000000000LL;
@@ -107,7 +109,6 @@ DB __cos (DB X)
         ldxv2 = ldx * ldx;
         xv2 = X * X;
         xv4 = xv2 * xv2;
-        xv8 = xv4 * xv4;
 #if __iset__ >= 6
         /* здесь несколько хуже точность из-за счета только первых
 	 * 2-х степеней в 80-битной арифметике */
@@ -122,6 +123,7 @@ DB __cos (DB X)
         lres.llong = __builtin_e2k_fmad (lres1.llong, lyv8.llong, lres2.llong);
         return (DB) ((KA0 + ldxv2 * KA2) + lres.value);
 #else /* __iset__ < 6 */
+	xv8 = xv4 * xv4;
         LD ldxv4 = ldxv2 * ldxv2;
         return (DB) ((KA0 + ldxv2 * KA2 + ldxv4 * KA4) + (KA6 * xv2 * xv4 + KA14 * xv8 *
             (KA8 / KA14 + KA10 / KA14 * xv2 + xv4 * (KA12 / KA14 + xv2))));
@@ -155,7 +157,6 @@ DB __cos (DB X)
     ldxv2 = ldx * ldx;
     xv2 = X * X;
     xv4 = xv2 * xv2;
-    xv8 = xv4 * xv4;
 #if __iset__ >= 6
     lyv2.value = xv2;
     lyv4.value = xv4;
@@ -180,6 +181,7 @@ DB __cos (DB X)
         darg0.db = (DB) ((KA1 + KA3 * ldxv2) * ldx + lres.value);
     }
 #else /* __iset__ < 6 */
+    xv8 = xv4 * xv4;
     if (k0 & 1) {
         darg0.db = (DB) ((KA0 + ldxv2 * KA2) + (xv4 * (KA4 + KA6 * xv2) + KA14 * xv8 *
             (KA8 / KA14 + KA10 / KA14 * xv2 + xv4 * (KA12 / KA14 + xv2))));

@@ -243,6 +243,10 @@ extern int __malloc_lock;
 #define M_MXFAST            1
 #endif
 
+#ifndef M_NLBLKS
+# define M_NLBLKS  2    /* UNUSED in this malloc */
+#endif
+
 #ifndef DEFAULT_MXFAST
 #define DEFAULT_MXFAST     64
 #endif

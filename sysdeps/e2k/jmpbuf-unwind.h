@@ -50,11 +50,18 @@ __jmpbuf_cfa_unwinds_adj (__jmp_buf jmpbuf,
                           struct _Unwind_Context *context,
                           uintptr_t adj)
 {
+#if 0
+  /* Not currently used for anything.  */
   e2k_pcsp_lo_t pcsp_lo;
+#endif /* 0  */
   e2k_pcsp_hi_t pcsp_hi;
   unsigned int pcshtp;
 
+#if 0
+  /* See above. Just left as a reminder on where %pcsp_lo may be fetched
+     from if needed.  */
   pcsp_lo.word = jmpbuf[3];
+#endif
   pcsp_hi.word = jmpbuf[4];
   pcshtp = *((unsigned int *) &jmpbuf[5]);
 

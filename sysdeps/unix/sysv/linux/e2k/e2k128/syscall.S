@@ -37,7 +37,6 @@ ENTRY (syscall)
 	/* Load syscall argument #3.  */
 	ldapq %qr0, 64, %qb[6]
 	
-#if defined __ptr128_new_abi__
 	/* Load syscall argument #4.  */
 	cmpbsb %r2, 96, %pred0
 	ct %ctpr1 ? %pred0
@@ -52,7 +51,6 @@ ENTRY (syscall)
 	ct %ctpr1 ? %pred0
 	/* Load syscall argument #6.  */
 	ldapq %qr0, 112, %qb[12]
-#endif /* defined __ptr128_new_abi__  */
 
 do_syscall:
         sdisp   %ctpr1, __SYSCALL_TRAPNUM

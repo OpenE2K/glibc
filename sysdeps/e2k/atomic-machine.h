@@ -72,12 +72,15 @@ typedef uintmax_t uatomic_max_t;
 /* Use atomic builtins when configured appropriately.  */
 #define USE_ATOMIC_COMPILER_BUILTINS 1
 
-# define __arch_compare_and_exchange_bool_64_int(mem, newval, oldval, model) \
+# define __arch_compare_and_exchange_bool_128_int(mem, newval, oldval, model) \
   ({									\
     typeof (*mem) __oldval = (oldval);					\
     !__atomic_compare_exchange_n (mem, (void *) &__oldval, newval, 0,	\
 				  model, __ATOMIC_RELAXED);		\
   })
+
+#define __arch_compare_and_exchange_bool_64_int(mem, newval, oldval, model) \
+  __arch_compare_and_exchange_bool_128_int (mem, newval, oldval, model)
 
 #define __arch_compare_and_exchange_bool_32_int(mem, newval, oldval, model) \
   __arch_compare_and_exchange_bool_64_int (mem, newval, oldval, model)
@@ -95,13 +98,16 @@ typedef uintmax_t uatomic_max_t;
 
 
 
-#define __arch_compare_and_exchange_val_64_int(mem, newval, oldval, model) \
+#define __arch_compare_and_exchange_val_128_int(mem, newval, oldval, model) \
   ({									\
     typeof (*mem) __oldval = (oldval);					\
     __atomic_compare_exchange_n (mem, (void *) &__oldval, newval, 0,	\
 				 model, __ATOMIC_RELAXED);		\
     __oldval;								\
   })
+
+#define __arch_compare_and_exchange_val_64_int(mem, newval, oldval, model) \
+  __arch_compare_and_exchange_val_128_int (mem, newval, oldval, model)
 
 #define __arch_compare_and_exchange_val_32_int(mem, newval, oldval, model) \
   __arch_compare_and_exchange_val_64_int (mem, newval, oldval, model)
@@ -121,9 +127,11 @@ typedef uintmax_t uatomic_max_t;
   __atomic_val_bysize (__arch_compare_and_exchange_val, int,	\
 		       mem, new, old, __ATOMIC_RELEASE)
 
+# define __arch_exchange_128_int(mem, newval, model)	\
+  __atomic_exchange_n (mem, newval, model)
 
 # define __arch_exchange_64_int(mem, newval, model)	\
-  __atomic_exchange_n (mem, newval, model)
+  __arch_exchange_128_int (mem, newval, model)
 
 # define __arch_exchange_32_int(mem,newval,model)	\
   __arch_exchange_64_int (mem, newval, model)
@@ -138,137 +146,16 @@ typedef uintmax_t uatomic_max_t;
 # define atomic_exchange_acq(mem, value)				\
   __atomic_val_bysize (__arch_exchange, int, mem, value, __ATOMIC_ACQUIRE)
 
-# ifdef __ptr128__
-
-int __ptr128_spinlock
-__attribute__ ((nocommon, section (".gnu.linkonce.b.__ptr128_spinlock"
-				   __sec_comment),
-		visibility ("hidden")));
-
-#  define atomic_exchange_ptr_acq(mem, value)				\
-  ({									\
-    extern int __ptr128_spinlock;					\
-    void **__mem = (void **) mem;					\
-    void *__oldval;							\
-    while (atomic_compare_and_exchange_bool_acq (&__ptr128_spinlock, 1, 0)) \
-      continue;								\
-    									\
-    __oldval =  *__mem;							\
-      *__mem = value;							\
-    									\
-    atomic_exchange_acq (&__ptr128_spinlock, 0);			\
-    __oldval;								\
-  })
-
-# define atomic_load_ptr_relaxed(mem)					\
-  ({									\
-    extern int __ptr128_spinlock;					\
-    void **__mem;							\
-    void *__oldval;							\
-    if (sizeof (*mem) != 16)						\
-      __atomic_link_error ();						\
-									\
-    __mem = (void **) mem;						\
-    while (atomic_compare_and_exchange_bool_acq (&__ptr128_spinlock, 1, 0)) \
-      continue;								\
-									\
-    __oldval =  *__mem;							\
-									\
-    atomic_exchange_acq (&__ptr128_spinlock, 0);			\
-    __oldval;								\
-									\
-  })
-
-/* FIXME: this is almost sure to be incorrect.  */
-# define atomic_load_ptr_acquire(mem) atomic_load_ptr_relaxed (mem)
-
-# define atomic_store_ptr_relaxed(mem, val)					\
-  ({									\
-    extern int __ptr128_spinlock;					\
-    void **__mem;							\
-    if (sizeof (*mem) != 16)						\
-      __atomic_link_error ();						\
-									\
-    __mem = (void **) mem;						\
-    while (atomic_compare_and_exchange_bool_acq (&__ptr128_spinlock, 1, 0)) \
-      continue;								\
-									\
-    *__mem = val;							\
-									\
-    atomic_exchange_acq (&__ptr128_spinlock, 0);			\
-  })
-
-#  define atomic_compare_and_exchange_ptr_val_acq(mem, newval, oldval)	\
-  ({									\
-    extern int __ptr128_spinlock;					\
-    void **__mem = (void **) mem;					\
-    void *__oldval;							\
-    while (atomic_compare_and_exchange_bool_acq (&__ptr128_spinlock, 1, 0)) \
-      continue;								\
-    									\
-    __oldval =  *__mem;							\
-    if (oldval == __oldval)						\
-      *__mem = newval;							\
-    									\
-    atomic_exchange_acq (&__ptr128_spinlock, 0);			\
-    __oldval;								\
-  })
-
-
-#  define atomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval) \
-  ({									\
-    int res = 1;							\
-    extern int __ptr128_spinlock;					\
-    void **__mem = (void **) mem;					\
-    void *__oldval;							\
-    while (atomic_compare_and_exchange_bool_acq (&__ptr128_spinlock, 1, 0)) \
-      continue;								\
-    									\
-    __oldval =  *__mem;							\
-    if (oldval == __oldval)						\
-      {									\
-	*__mem = newval;						\
-	res = 0;							\
-      }									\
-    									\
-    atomic_exchange_acq (&__ptr128_spinlock, 0);			\
-    res;								\
-  })
-
-#  define catomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval) \
-  atomic_compare_and_exchange_ptr_bool_acq (mem, newval, oldval)
-
-#  define atomic_compare_exchange_ptr_weak_acquire(mem, expected, desired) \
-  ({									\
-    typeof (*(expected)) __atg102_expected = *(expected);		\
-    *(expected) =							\
-      atomic_compare_and_exchange_ptr_val_acq ((mem), (desired), *(expected)); \
-    *(expected) == __atg102_expected;					\
-  })
-
-/* Defined by analogy with the default definition of `atomic_compare_and_
-   exchange_val_rel ()' in `include/atomic.h'.  */
-# define atomic_compare_and_exchange_ptr_val_rel(mem, newval, oldval)	\
-  atomic_compare_and_exchange_ptr_val_acq (mem, newval, oldval)
-
-/* Implemented by analogy with `atomic_compare_exchange_weak_release ()' in
-   `include/atomic.h' in non-`USE_ATOMIC_COMPILER_BUILTINS' case.  */
-#  define atomic_compare_exchange_ptr_weak_release(mem, expected, desired) \
-  ({ typeof (*(expected)) __atg103_expected = *(expected);		\
-    *(expected) =							\
-      atomic_compare_and_exchange_ptr_val_rel ((mem), (desired), *(expected)); \
-    *(expected) == __atg103_expected; })
-
-
-#endif /* defined __ptr128__  */
-
 
 # define atomic_exchange_rel(mem, value)				\
   __atomic_val_bysize (__arch_exchange, int, mem, value, __ATOMIC_RELEASE)
 
 
-# define __arch_exchange_and_add_64_int(mem, value, model)	\
+# define __arch_exchange_and_add_128_int(mem, value, model)	\
   __atomic_fetch_add (mem, value, model)
+
+# define __arch_exchange_and_add_64_int(mem, value, model)	\
+  __arch_exchange_and_add_128_int (mem, value, model)
 
 # define __arch_exchange_and_add_32_int(mem, value, model)	\
   __arch_exchange_and_add_64_int (mem, value, model)
@@ -287,3 +174,14 @@ __attribute__ ((nocommon, section (".gnu.linkonce.b.__ptr128_spinlock"
 # define atomic_exchange_and_add_rel(mem, value)			\
   __atomic_val_bysize (__arch_exchange_and_add, int, mem, value,	\
 		       __ATOMIC_RELEASE)
+
+#define __atomic_val_by16(pre, post, mem, ...)				\
+  else if (sizeof (*mem) == 16)						\
+    __atg1_result = pre##_128_##post (mem, __VA_ARGS__);
+
+
+#define __atomic_bool_by16(pre, post, mem, ...)				\
+  else if (sizeof (*mem) == 16)						\
+    __atg2_result = pre##_128_##post (mem, __VA_ARGS__);
+
+#define __atomic_check_size_ls_16(mem) && (sizeof (*mem) != 16)

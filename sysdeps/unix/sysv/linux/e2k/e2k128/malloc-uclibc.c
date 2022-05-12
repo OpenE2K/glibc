@@ -28,7 +28,7 @@ int __malloc_lock;
 struct malloc_state __malloc_state;  /* never directly referenced */
 
 /* forward declaration */
-static int __malloc_largebin_index(unsigned int sz);
+static int __malloc_largebin_index(size_t sz);
 
 #ifdef __UCLIBC_MALLOC_DEBUGGING__
 
@@ -788,9 +788,9 @@ static void* __malloc_alloc(size_t nb, mstate av)
   Compute index for size. We expect this to be inlined when
   compiled with optimization, else not, which works out well.
 */
-static int __malloc_largebin_index(unsigned int sz)
+static int __malloc_largebin_index(size_t sz)
 {
-    unsigned int  x = sz >> SMALLBIN_WIDTH;
+    size_t  x = sz >> SMALLBIN_WIDTH;
     unsigned int m;            /* bit position of highest set bit of m */
 
     if (x >= 0x10000) return NBINS-1;
@@ -1261,13 +1261,36 @@ malloc_internal (size_t bytes)
 void* malloc(size_t bytes)
 {
     void *retval;
+    /* This is an intentionally uninitialized EV.  */
+    unsigned long empty_value;
+    size_t i;
+    size_t alloc_bytes = ((bytes + 7) & 0xfffffffffffffff8UL);
 
-    retval = malloc_internal(bytes);
+    /* Fill in EMPTY_VALUE with diagnostics. No idea how it could be set to a
+       real EV in case of disabled CLW.  */
+    __asm__ ("ldapd,sm %1, 0x0, %0\n" : "=r" (empty_value) : "r" (NULL));
+
+    /* Handle a possible overflow during the evaluation of alloc_bytes. This
+       also prevents the erroneous creation of a subarray of a huge size
+       exceeding the one of AP returned by malloc_internal () from taking
+       place below.  */
+    if (alloc_bytes < bytes)
+      alloc_bytes = bytes;
+
+    retval = malloc_internal(alloc_bytes);
     if (retval == NULL)
 	return NULL;
 
     /* Delete poiters to next and prev chunk in list */
     memset(retval, 0, 32);
+
+    /* An attempt to fill in the allocated buffer with EMPTY_VALUEs in C could
+       result in exc_illegal_operand if compiler generated non-speculative
+       instructions.  */
+    for (i = 0; i < (alloc_bytes >> 3); i++)
+      __asm__ ("stapd,sm %0, 0x0, %1\n" :
+	       : "r" (&(((unsigned long *) retval)[i])), "r" (empty_value));
+
     retval = mem2pmem(retval, bytes);
     return retval;
 }

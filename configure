@@ -672,7 +672,6 @@ build_pt_chown
 build_nscd
 extra_optimizations
 with_sys_atomic
-with_manual_po
 maintainer_mode
 enable_debian_multiarch
 build_obsolete_nsl
@@ -795,7 +794,6 @@ enable_obsolete_rpc
 enable_obsolete_nsl
 enable_systemtap
 enable_debian_multiarch
-with_manual_po
 with_sys_atomic
 enable_extra_optimizations
 with_bug_75842
@@ -1505,7 +1503,6 @@ Optional Packages:
   --with-default-link     do not use explicit linker scripts
   --with-nonshared-cflags=CFLAGS
                           build nonshared libraries with additional CFLAGS
-  --without-manual-po     do not build in manual and po subdirs (for e2k only)
   --with-sys-atomic       add support for `sys_atomic' implemented by the
                           Kernel
   --with-bug-75842        prevent Bug #75842 unsafe ELFs from loading
@@ -3718,16 +3715,6 @@ if test "${enable_maintainer_mode+set}" = set; then :
   enableval=$enable_maintainer_mode; maintainer_mode=$enableval
 else
   maintainer_mode=no
-fi
-
-
-
-
-# Check whether --with-manual-po was given.
-if test "${with_manual_po+set}" = set; then :
-  withval=$with_manual_po; with_manual_po=$withval
-else
-  with_manual_po=yes
 fi
 
 

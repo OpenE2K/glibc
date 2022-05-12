@@ -25,6 +25,8 @@
 
 #include_next <ldsodefs.h>
 
+static unsigned int get_offset (struct link_map *map, unsigned int off);
+
 static __attribute__ ((unused)) int
 dl_addr_sym_match(struct link_map *l, const ElfW(Sym) *sym,
 		  const ElfW(Sym) *matchsym, const ElfW(Addr) addr)
@@ -65,11 +67,17 @@ dl_addr_sym_match(struct link_map *l, const ElfW(Sym) *sym,
   if (addr_in_cud != sym_in_cud)
     return 0;
 
-  return (addr >= base + sym->st_value
+  unsigned int sym_offset = get_offset (l, sym->st_value);
+  return (addr >= base + sym_offset
 	  && (((sym->st_shndx == SHN_UNDEF || sym->st_size == 0)
-	       && addr == base + sym->st_value)
-	      || addr < base + sym->st_value + sym->st_size)
-	  && (matchsym == NULL || matchsym->st_value < sym->st_value));
+	       && addr == base + sym_offset)
+	      || addr < base + sym_offset + sym->st_size)
+	  && (matchsym == NULL
+	      /* Hopefully the comparison of `st_value's of symbols belonging
+		 simultaneously to either CUD or GD makes sense even in packed
+		 ELFs as the same relation is expected to hold for matching
+		 {CUD,GD} symbols' runtime offsets.  */
+	      || matchsym->st_value < sym->st_value));
 }
 
 #undef DL_ADDR_SYM_MATCH
@@ -251,13 +259,26 @@ see_if_packed (struct link_map *map)
 
 static unsigned int
 get_packed_offset_in_ranges (struct link_map *map, struct range *ranges,
-			     unsigned int off)
+			     unsigned int off, int in_cud)
 {
   size_t i;
-  for (i = 0; i < map->range_num; i++)
+  if (! in_cud)
     {
-      if (off >= ranges[i].min && off < ranges[i].max)
-	return off + ranges[i].delta;
+      for (i = 0; i < map->range_num; i++)
+	{
+	  if (off >= ranges[i].min && off < ranges[i].max)
+	    return off + ranges[i].delta;
+	}
+    }
+  else /* in_cud  */
+    {
+      for (i = 0; i < map->range_num; i++)
+	{
+	  if (ranges[i].in_cud
+	      && off >= (ranges[i].min & -((uintptr_t) 0x1000))
+	      && off <= ((ranges[i].max + 0xfff) & -((uintptr_t) 0x1000)))
+	    return off + ranges[i].delta;
+	}
     }
 
   /* FIXME: stupidly return OFF if no matching range was found.  */
@@ -265,25 +286,25 @@ get_packed_offset_in_ranges (struct link_map *map, struct range *ranges,
 }
 
 static unsigned int
-get_packed_offset_slow (struct link_map *map, unsigned int off)
+get_packed_offset_slow (struct link_map *map, unsigned int off, int in_cud)
 {
   struct range ranges[map->range_num];
 
   fill_ranges (map, ranges);
-  return get_packed_offset_in_ranges (map, ranges, off);
+  return get_packed_offset_in_ranges (map, ranges, off, in_cud);
 }
 
 static unsigned int
-get_packed_offset (struct link_map *map, unsigned int off)
+get_packed_offset (struct link_map *map, unsigned int off, int in_cud)
 {
   if (map->range_num <= 8)
-    return get_packed_offset_in_ranges (map, map->ranges, off);
+    return get_packed_offset_in_ranges (map, map->ranges, off, in_cud);
 
-  return get_packed_offset_slow (map, off);
+  return get_packed_offset_slow (map, off, in_cud);
 }
 
 static __attribute__ ((unused)) unsigned int
-get_offset (struct link_map *map, unsigned int off)
+get_offset_ex (struct link_map *map, unsigned int off, int in_cud)
 {
   if (map->packed == PACKED_UNKNOWN)
     see_if_packed (map);
@@ -291,7 +312,13 @@ get_offset (struct link_map *map, unsigned int off)
   if (map->packed == PACKED_LEGACY)
     return off;
 
-  return get_packed_offset (map, off);
+  return get_packed_offset (map, off, in_cud);
+}
+
+static __attribute__ ((unused)) unsigned int
+get_offset (struct link_map *map, unsigned int off)
+{
+  return get_offset_ex (map, off, 0);
 }
 
 

@@ -870,7 +870,7 @@ IO_set_accept_foreign_vtables (void (*flag) (void))
 #ifdef PTR_MANGLE
   PTR_MANGLE (flag);
 #endif
-  atomic_store_ptr_relaxed (&IO_accept_foreign_vtables, flag);
+  atomic_store_relaxed (&IO_accept_foreign_vtables, flag);
 }
 
 #else  /* !SHARED */

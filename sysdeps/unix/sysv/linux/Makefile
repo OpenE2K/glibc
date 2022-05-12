@@ -26,7 +26,10 @@ ifeq ($(config-machine),e2k128)
 # source tree. But in PM we do need to use a C implementation. Without adding
 # it to sysdeps_routines one would be left both without C and the (invalid)
 # generated assembler version in the compiled glibc.
-sysdep_routines += mount
+# The same probably applies to mremap (). Note how they add it to
+# sysdep_routines in sysdeps/mach/hurd/Makefile to make it be compiled from
+# sysdeps/mach/hurd/mremap.c when making glibc for Hurd.
+sysdep_routines += mount mremap
 endif
 
 CFLAGS-gethostid.c = -fexceptions
@@ -71,29 +74,12 @@ tests-internal += tst-ofdlocks-compat
 # call names, and the generated header file produces SYS_* macros for
 # the __NR_* macros which are actually defined.
 
-ifeq ($(base-machine),e2k)
-
-enable-new-pm-syscalls = $(shell ../sysdeps/unix/sysv/linux/e2k/support-new-pm-syscalls.sh "$(CC)")
-
-ifeq ($(enable-new-pm-syscalls),yes)
-extra-syscall-body = \#define __NEW_PM_SYSCALLS	1
-extra-syscall-body += \n\#if defined __ptr128__ && ! defined __ptr128_new_abi__
-extra-syscall-body += \n\# error \"glibc configured with new PM syscalls is not compatible with LCC implementing old PM ABI\"
-extra-syscall-body += \n\#endif
-else
-extra-syscall-body = \n\#if defined __ptr128__ && defined __ptr128_new_abi__
-extra-syscall-body += \n\# error \"glibc configured with old PM syscalls is not compatible with LCC implementing new PM ABI\"
-extra-syscall-body += \n\#endif
-endif
-extra-syscall-macro = "$(extra-syscall-body)"
-endif
-
 generated += bits/syscall.h
 $(objpfx)bits/syscall.h: \
   ../sysdeps/unix/sysv/linux/gen-syscall-h.awk \
   ../sysdeps/unix/sysv/linux/syscall-names.list
 	$(make-target-directory)
-	LC_ALL=C $(AWK) -v extra=$(extra-syscall-macro) -f $^ > $@-tmp
+	LC_ALL=C $(AWK) -f $^ > $@-tmp
 	$(move-if-change) $@-tmp $@
 before-compile += $(objpfx)bits/syscall.h
 

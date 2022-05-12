@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
  * @(#) $Id: strncmp.c 2218 2014-06-16 13:57:59Z vlog $
  */
@@ -91,7 +91,7 @@ STRNCMP (const char *s1, const char *s2, size_t len)
     srcp2 &= ~7;
     E2K_PREPARE_ALIGN (align1, spec);
     a00 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 0); /* чтобы не залезть за левую границу */
-    a01 = ((op_t *) srcp1)[1];
+    a01 = __builtin_e2k_ld_64s_cleartag ((op_t *) srcp1, 8); /* чтобы не залезть за правую границу */
     E2K_ALIGN_DATA (a00, a01, a0, spec);
     b0 = ((op_t *) srcp2)[0];
     a0 |= ~mask; /* байты до начала строки заполняем 0xff */
@@ -183,7 +183,7 @@ m_last:
     srcp2 &= ~15;
     E2K_PREPARE_ALIGN128 (align1, spec);
     a00 = __builtin_e2k_ld_128_cleartag ((__v2di *) srcp1, 0); /* чтобы не залезть за левую границу */
-    a01 = ((__v2di *) srcp1)[1];
+    a01 = __builtin_e2k_ld_128_cleartag ((__v2di *) srcp1, 16); /* чтобы не залезть за правую границу */
     E2K_ALIGN_DATA128 (a00, a01, a0, spec);
     b0 = ((__v2di *) srcp2)[0];
     srcp1 += 16;

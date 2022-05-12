@@ -110,7 +110,11 @@ register struct pthread *__thread_self __asm__(__p2(__TLS_REGISTER));
   ((struct pthread *) ((char *) __thread_self - TLS_PRE_TCB_SIZE))
 
 /* Magic for libthread_db to know how to do THREAD_SELF.  */
+#if ! defined __ptr128__
 # define DB_THREAD_SELF REGISTER (64, 64, 14 * 8, -TLS_PRE_TCB_SIZE)
+#else /* defined __ptr128__  */
+# define DB_THREAD_SELF REGISTER (64, 128, 13 * 8, -TLS_PRE_TCB_SIZE)
+#endif /* defined __ptr128__  */
 
 
 /* Access to data in the thread descriptor is easy.  */

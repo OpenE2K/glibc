@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
  * @(#) $Id: strnlen.c 2202 2014-06-10 16:05:22Z vlog $
  */
@@ -54,7 +54,10 @@ __strnlen (const char *str, size_t maxlen)
   else {
     longword_ptr = E2K_ALIGN_PTR_BACK (str, 8);
   }
-  FIND_ZERO (longword_ptr[0], longword_ptr[1], longword_ptr[2], longword_ptr[3]);
+  FIND_ZERO (longword_ptr[0],
+	     __builtin_e2k_ld_64s_cleartag (longword_ptr, 8),
+	     __builtin_e2k_ld_64s_cleartag (longword_ptr, 16),
+	     __builtin_e2k_ld_64s_cleartag (longword_ptr, 24));
   mask >>= (str - (const char *) longword_ptr);
   longword_ptr += 4;
 
@@ -119,7 +122,10 @@ __strnlen (const char *str, size_t maxlen)
   else {
     qword_ptr = E2K_ALIGN_PTR_BACK (str, 16);
   }
-  FIND_ZERO (qword_ptr[0], qword_ptr[1], qword_ptr[2], qword_ptr[3]);
+  FIND_ZERO (qword_ptr[0],
+	     __builtin_e2k_ld_128_cleartag (qword_ptr, 16),
+	     __builtin_e2k_ld_128_cleartag (qword_ptr, 32),
+	     __builtin_e2k_ld_128_cleartag (qword_ptr, 48));
   mask >>= (str - (const char *) qword_ptr);
   qword_ptr += 4;
 

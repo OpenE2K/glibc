@@ -6,13 +6,8 @@
 # define PREINIT_FUNCTION_WEAK 1
 #endif
 
-#if ! defined __ptr128_new_abi__
-# define WSZ	0xa
-# define WBS	0x6
-#else /* defined __ptr128_new_abi__  */
 # define WSZ	0x14
 # define WBS	0xc
-#endif /* defined __ptr128_new_abi__  */
 
 #if PREINIT_FUNCTION_WEAK
 	weak_extern (PREINIT_FUNCTION)

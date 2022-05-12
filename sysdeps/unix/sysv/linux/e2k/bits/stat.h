@@ -64,7 +64,7 @@ struct stat
 #else
     __blkcnt64_t st_blocks;		/* Number 512-byte blocks allocated. */
 #endif
-#ifdef __USE_MISC
+#ifdef __USE_XOPEN2K8
     /* Nanosecond resolution timestamps are stored in a format
        equivalent to 'struct timespec'.  This is the type used
        whenever possible but the Unix namespace rules do not allow the
@@ -104,7 +104,7 @@ struct stat64
     __blksize_t st_blksize;		/* Optimal block size for I/O.  */
     unsigned int __glibc_reserved1;
     __blkcnt64_t st_blocks;		/* Number 512-byte blocks allocated. */
-#ifdef __USE_MISC
+#ifdef __USE_XOPEN2K8
     /* Nanosecond resolution timestamps are stored in a format
        equivalent to 'struct timespec'.  This is the type used
        whenever possible but the Unix namespace rules do not allow the
@@ -157,8 +157,7 @@ struct stat64
 #define	__S_IWRITE	0200	/* Write by owner.  */
 #define	__S_IEXEC	0100	/* Execute by owner.  */
 
-#if defined __USE_ATFILE || defined __USE_GNU
-/* XXX This will change to the macro for the next 2008 POSIX revision.  */
+#ifdef __USE_ATFILE
 # define UTIME_NOW	((1l << 30) - 1l)
 # define UTIME_OMIT	((1l << 30) - 2l)
 #endif

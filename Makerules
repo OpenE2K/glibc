@@ -525,6 +525,12 @@ link-libc-args = -Wl,--start-group \
 		 $(as-needed) $(elf-objpfx)ld.so $(no-as-needed) \
 		 -Wl,--end-group
 
+ifeq (yes,$(compile-with-lcc))
+ifeq ($(config-machine),e2k128)
+$(common-objpfx)nptl/libpthread.so: link-libc-args += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif
+endif
+
 # The corresponding shared libc to use.  This may be modified for a
 # particular target.
 libc-for-link = $(common-objpfx)libc.so

@@ -97,13 +97,13 @@ get_locked_global (void)
   __libc_lock_lock (lock);
   /* Use relaxed MO through because of load outside the lock in
      __resolv_conf_detach.  */
-  struct resolv_conf_global *global_copy = atomic_load_ptr_relaxed (&global);
+  struct resolv_conf_global *global_copy = atomic_load_relaxed (&global);
   if (global_copy == NULL)
     {
       global_copy = calloc (1, sizeof (*global));
       if (global_copy == NULL)
         return NULL;
-      atomic_store_ptr_relaxed (&global, global_copy);
+      atomic_store_relaxed (&global, global_copy);
       resolv_conf_array_init (&global_copy->array);
     }
   return global_copy;
@@ -664,7 +664,7 @@ __resolv_conf_attach (struct __res_state *resp, struct resolv_conf *conf)
 void
 __resolv_conf_detach (struct __res_state *resp)
 {
-  if (atomic_load_ptr_relaxed (&global) == NULL)
+  if (atomic_load_relaxed (&global) == NULL)
     /* Detach operation after a shutdown, or without any prior
        attachment.  We cannot free the data (and there might not be
        anything to free anyway).  */

@@ -103,7 +103,7 @@ _error:
 __thread_start:
         __GETPL	%dr0, %ctpr1
 	getsp	-16, %empty
-	addd	0x0, %dr3, %db[0]
+	__ADDP	0x0, %r3, %b[0]
 	call	%ctpr1, wbs = 0x4
 
 

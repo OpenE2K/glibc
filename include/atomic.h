@@ -64,6 +64,14 @@
 
 #include <atomic-machine.h>
 
+#ifndef __atomic_val_by16
+# define __atomic_val_by16(pre, post, mem, ...)
+#endif
+
+#ifndef __atomic_bool_by16
+# define __atomic_bool_by16(pre, post, mem, ...)
+#endif
+
 /* Wrapper macros to call pre_NN_post (mem, ...) where NN is the
    bit width of *MEM.  The calling macro puts parens around MEM
    and following args.  */
@@ -78,6 +86,7 @@
       __atg1_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg1_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_val_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
       ABORT ();								      \
     __atg1_result;							      \
@@ -93,6 +102,7 @@
       __atg2_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg2_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_bool_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
       ABORT ();								      \
     __atg2_result;							      \
@@ -564,7 +574,11 @@ void __atomic_link_error (void);
 #define __atomic_link_error() ABORT ()
 #endif /* __LCC__  */
 
-# if __HAVE_64B_ATOMICS == 1
+# if defined __e2k__ && defined __ptr128__
+#  define __atomic_check_size(mem) \
+   if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8) && (sizeof (*mem) != 16)) \
+     __atomic_link_error ();
+# elif __HAVE_64B_ATOMICS == 1
 #  define __atomic_check_size(mem) \
    if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8))			      \
      __atomic_link_error ();
@@ -578,9 +592,14 @@ void __atomic_link_error (void);
    loads and stores makes this easier for archs that do not have native
    support for atomic operations to less-than-word-sized data.  */
 # if __HAVE_64B_ATOMICS == 1
+
+#  if ! defined __atomic_check_size_ls_16
+#   define __atomic_check_size_ls_16(mem)
+#  endif
+
 #  define __atomic_check_size_ls(mem) \
    if ((sizeof (*mem) != 1) && (sizeof (*mem) != 2) && (sizeof (*mem) != 4)   \
-       && (sizeof (*mem) != 8))						      \
+       && (sizeof (*mem) != 8) __atomic_check_size_ls_16 (mem))		      \
      __atomic_link_error ();
 # else
 #  define __atomic_check_size_ls(mem) \
@@ -834,46 +853,6 @@ void __atomic_link_error (void);
 #endif
 
 #endif /* !USE_ATOMIC_COMPILER_BUILTINS  */
-
-/* The underlying `*_ptr_*' macros should be defined specially in PM until
-   we've got workable 128-bit atomic builtins. In other cases they are
-   equivalent to their non-`_ptr_' counterparts.  */
-#ifndef atomic_compare_and_exchange_ptr_bool_acq
-# define atomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval)	\
-  atomic_compare_and_exchange_bool_acq (mem, newval, oldval)
-#endif
-
-#ifndef catomic_compare_and_exchange_ptr_bool_acq
-# define catomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval)	\
-  catomic_compare_and_exchange_bool_acq (mem, newval, oldval)
-#endif
-
-#ifndef atomic_exchange_ptr_acq
-# define atomic_exchange_ptr_acq(mem, newvalue) \
-  atomic_exchange_acq (mem, newvalue)
-#endif
-
-#if ! defined atomic_load_ptr_relaxed
-# define atomic_load_ptr_relaxed(mem) atomic_load_relaxed (mem)
-#endif
-
-#if ! defined atomic_load_ptr_acquire
-# define atomic_load_ptr_acquire(mem) atomic_load_acquire (mem)
-#endif
-
-#if ! defined atomic_store_ptr_relaxed
-# define atomic_store_ptr_relaxed(mem, val) atomic_store_relaxed (mem, val)
-#endif
-
-#if ! defined atomic_compare_exchange_ptr_weak_acquire
-# define atomic_compare_exchange_ptr_weak_acquire(mem, expected, desired) \
-  atomic_compare_exchange_weak_acquire (mem, expected, desired)
-#endif
-
-#if ! defined atomic_compare_exchange_ptr_weak_release
-# define atomic_compare_exchange_ptr_weak_release(mem, expected, desired) \
-  atomic_compare_exchange_weak_release (mem, expected, desired)
-#endif
 
 /* This operation does not affect synchronization semantics but can be used
    in the body of a spin loop to potentially improve its efficiency.  */

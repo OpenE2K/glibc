@@ -38,16 +38,7 @@ __select (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	  struct timeval *timeout)
 {
 #ifdef __NR_select
-# if defined __ptr128__ && ! defined __ptr128_new_abi__
-  fd_set *fds[3] = {readfds, writefds, exceptfds};
-# endif
-  return SYSCALL_CANCEL (select, nfds,
-# if ! defined __ptr128__ || defined __ptr128_new_abi__
-			 readfds, writefds, exceptfds,
-# else /* defined __ptr128__ && ! defined __ptr128_new_abi__  */
-			 fds,
-# endif /* defined __ptr128__ && ! defined __ptr128_new_abi__  */
-			 timeout);
+  return SYSCALL_CANCEL (select, nfds, readfds, writefds, exceptfds, timeout);
 #else
   int result;
   struct timespec ts, *tsp = NULL;

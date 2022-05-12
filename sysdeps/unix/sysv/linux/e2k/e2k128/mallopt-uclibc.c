@@ -30,8 +30,8 @@ int mallopt(int param_number, int value)
 
     switch(param_number) {
 	case M_MXFAST:
-	    if (value >= 0 && value <= MAX_FAST_SIZE) {
-		set_max_fast(av, value);
+	    if (value >= 0 && value <= MAX_FAST_SIZE * sizeof (size_t) / 4) {
+		set_max_fast(av, value <= MAX_FAST_SIZE ? value : MAX_FAST_SIZE);
 		ret = 1;
 	    }
 	    break;
@@ -53,6 +53,10 @@ int mallopt(int param_number, int value)
 
 	case M_MMAP_MAX:
 	    av->n_mmaps_max = value;
+	    ret = 1;
+	    break;
+
+	case M_NLBLKS:
 	    ret = 1;
 	    break;
     }

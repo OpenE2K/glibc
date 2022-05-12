@@ -29,7 +29,7 @@ FL __ieee754_atanhf (FL X)
     _type_float_bits arg;
     DB x, y, yp, yv2, yv4;
 #if __iset__ >= 6
-    _type_double_bits ly, lyv2, lyv4, lyv3, lres, lres1, lres2;
+    _type_double_bits ly, lyv2, lyv3, lres, lres1, lres2;
 #endif /* __iset__ < 6 */
 
     x = (DB) X;
@@ -42,7 +42,6 @@ FL __ieee754_atanhf (FL X)
 #if __iset__ >= 6
         ly.value = x;
         lyv2.value = yv2;
-        lyv4.value = yv4;
         lyv3.value = yv2 * x;
         lres1.llong = __builtin_e2k_fmad (LKA2, lyv2.llong, LKA1);
         lres2.llong = __builtin_e2k_fmad (lres1.llong, lyv3.llong, ly.llong);

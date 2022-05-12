@@ -416,13 +416,19 @@ elf_machine_rela (struct link_map *map, const Elf64_Rela *reloc,
   value = 0;
 #endif
 
-  value += reloc->r_addend;	/* Assume copy relocs have zero addend.  */
-
   if (sym != NULL
       && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0)
       && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
       && __builtin_expect (!skip_ifunc, 1))
     value = ((Elf64_Addr (*) (int)) value) (GLRO(dl_hwcap));
+
+  value += reloc->r_addend;	/* Assume copy relocs have zero addend.
+				   For i-functions r_addend should be applied
+				   to the address returned by the resolver, not
+				   to the resolver's address as it still happens
+				   on 'master'. At least when processing
+				   R_SPARC_JMP_SLOT. As for R_SPARC_{JMP_IREL,
+				   IRELATIVE} they are to be revisited yet. */
 
   switch (r_type)
     {

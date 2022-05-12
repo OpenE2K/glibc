@@ -108,11 +108,11 @@
 FUNCNAME:
 1:
 	{
-#if ! defined __ptr128_new_abi__
+#if ! defined __ptr128__
 	    setwd   wsz = 0x5
-#else /* defined __ptr128_new_abi__  */
+#else /* defined __ptr128__  */
 	    setwd   wsz = 0x8
-#endif /* defined __ptr128_new_abi__  */
+#endif /* defined __ptr128__  */
 	    rrd     %cr0.hi,  TEMP1
 #ifdef HAS_SECOND_ARG
 	    cmpesb  ARG1, 0,  %pred0

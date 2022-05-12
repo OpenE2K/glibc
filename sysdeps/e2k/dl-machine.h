@@ -315,21 +315,6 @@ _fix_user_stack (long *user_stack)                              \
 }
 
 
-#if defined __LCC__
-
-# define register_long_fp register long *fp asm ("FP")
-
-#define CPU_INIT                                \
-  __builtin_cpu_init_ext ()
-
-#else /* defined __LCC__  */
-
-# define register_long_fp register long *fp asm ("%r8")
-# define CPU_INIT
-
-#endif /* defined __LCC__  */
-
-
 #define RTLD_START 							\
                                                                         \
 FIX_USER_STACK                                                          \
@@ -338,14 +323,12 @@ static ElfW(Addr) _dl_start (void *arg);				\
 ElfW(Addr)								\
 _start2 (void)								\
 {									\
-  register_long_fp;							\
+  register long *fp asm ("FP");						\
   int argc;								\
   char **argv, **envp;							\
   ElfW(Addr) entry_point;						\
 									\
   extern void _dl_init (struct link_map *main_map, int argc, char **argv, char **env); \
-                                                                        \
-  CPU_INIT;                                                             \
                                                                         \
   entry_point = _dl_start (fp);                                         \
   _fix_user_stack (fp);                                                 \

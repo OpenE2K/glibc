@@ -683,10 +683,21 @@ static-gnulib-tests := -lgcc -lgcc_eh $(libunwind)
 # tests.
 ifeq (yes,$(compile-with-lcc))
 static-gnulib-tests += -llcc
+# Not placed between -Wl,--{,no-}as-needed as we have got only liblcc.a and
+# no liblcc.so.
+gnulib-tests += -llcc
+ifeq ($(config-machine),e2k128)
+static-gnulib-tests += -latomic
+gnulib-tests += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif # e2k128
 endif
 
 ifeq (yes,$(compile-with-lcc))
-libc.so-gnulib := -lgcc -llcc -lgcc
+libc.so-gnulib := -lgcc -llcc
+ifeq ($(config-machine),e2k128)
+libc.so-gnulib += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif # e2k128
+libc.so-gnulib += -lgcc
 else
 libc.so-gnulib := -lgcc
 endif # compile-with-lcc
@@ -1309,12 +1320,6 @@ all-subdirs = csu assert ctype locale intl catgets math setjmp signal	    \
 ifeq ($(build-crypt),yes)
 all-subdirs += crypt
 rpath-dirs += crypt
-endif
-
-# Filter out the annoying `manual' and `po' subdirs which
-# spoil the source tree during the build process.
-ifneq ($(with-manual-po),yes)
-all-subdirs := $(filter-out manual po,$(all-subdirs))
 endif
 
 ifndef avoid-generated

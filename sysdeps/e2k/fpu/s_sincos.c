@@ -63,12 +63,14 @@ void __sincos (DB X, DB *SI, DB *CO)
 #define PIO2_1T (1.2246467991473531772015e-16L * 0.5)
 {
     type_union_64f darg0, darg1, si, co;
-    DB t0, y0, tmp_si, xv2, xv4, xv8;
+    DB t0, y0, tmp_si, xv2, xv4;
     LD ldx, ldxv2;
     int k0, k1;
 #if __iset__ >= 6
     _type_double_bits lyv2, lyv4, lyv8, lres, lres1, lres2;
-#endif /* __iset__ < 6 */
+#else /* __iset__ < 6  */
+    DB xv8;
+#endif /* __iset__ < 6  */
 
     if (X == 0) { /* for X = -0.0 only */
         *SI = X;
@@ -85,7 +87,6 @@ void __sincos (DB X, DB *SI, DB *CO)
         ldxv2 = ldx * ldx;
         xv2 = X * X;
         xv4 = xv2 * xv2;
-        xv8 = xv4 * xv4;
 #if __iset__ >= 6
         lyv2.value = xv2;
         lyv4.value = xv4;
@@ -106,6 +107,7 @@ void __sincos (DB X, DB *SI, DB *CO)
         lres.llong = __builtin_e2k_fmad (lres1.llong, lyv8.llong, lres2.llong);
         *CO = (DB) ((KA0 + ldxv2 * KA2) + lres.value);
 #else /* __iset__ < 6 */
+	xv8 = xv4 * xv4;
         *SI = (DB) (KA3 * ldx * (KA1 / KA3 + ldxv2) + (KA7 * X * xv4 * (KA5 / KA7 + xv2) +
             X * xv8 * (KA9 + KA11 * xv2 + KA13 * xv4)));
         *CO = (DB) ((KA0 + ldxv2 * KA2) + (xv4 * (KA4 + KA6 * xv2) + KA14 * xv8 *
@@ -141,7 +143,6 @@ void __sincos (DB X, DB *SI, DB *CO)
     ldxv2 = ldx * ldx;
     xv2 = X * X;
     xv4 = xv2 * xv2;
-    xv8 = xv4 * xv4;
 #if __iset__ >= 6
     lyv2.value = xv2;
     lyv4.value = xv4;
@@ -163,6 +164,7 @@ void __sincos (DB X, DB *SI, DB *CO)
     lres.llong = __builtin_e2k_fmad (lres1.llong, lres.llong, lres2.llong);
     tmp_si = (DB) (KA3 * ldx * (KA1 / KA3 + ldxv2) + lres.value);
 #else /* __iset__ < 6 */
+    xv8 = xv4 * xv4;
     co.db = (DB) ((KA0 + ldxv2 * KA2) + (xv4 * (KA4 + KA6 * xv2) + KA14 * xv8 *
         (KA8 / KA14 + KA10 / KA14 * xv2 + xv4 * (KA12 / KA14 + xv2))));
     tmp_si = (DB) ((KA1 + KA3 * ldxv2) * ldx + (KA7 * X * xv4 * (KA5 / KA7 + xv2) +

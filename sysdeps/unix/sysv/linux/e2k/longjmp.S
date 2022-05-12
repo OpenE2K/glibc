@@ -35,7 +35,7 @@
 # define SXT
 #endif
 
-#if defined __PROTECTED__ && defined __ptr128_new_abi__
+#if defined __PROTECTED__
 # define GETSAP getsap 0xffffffc0, %qb[0]
 #else
 # define GETSAP
