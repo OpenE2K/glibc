@@ -95,7 +95,11 @@ struct _IO_FILE_complete
   size_t __pad5;
   int _mode;
   /* Make sure we don't get into trouble again.  */
+# if defined __e2k__ && defined __ptr128__
+  char _unused2[32 * sizeof (int) - 4 * sizeof (void *) - sizeof (size_t)];
+# else
   char _unused2[15 * sizeof (int) - 4 * sizeof (void *) - sizeof (size_t)];
+# endif /* ! (__e2k__ && __ptr128__)  */
 };
 
 /* These macros are used by bits/stdio.h and internal headers.  */

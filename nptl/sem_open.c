@@ -174,6 +174,8 @@ sem_open (const char *name, int oflag, ...)
 	    goto try_create;
 
 	  /* Return.  errno is already set.  */
+	  result = SEM_FAILED;
+	  goto out;
 	}
       else
 	/* Check whether we already have this semaphore mapped and
@@ -211,7 +213,7 @@ sem_open (const char *name, int oflag, ...)
 	struct new_sem newsem;
       } sem;
 
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
       sem.newsem.data = value;
 #else
       sem.newsem.value = value << SEM_VALUE_SHIFT;

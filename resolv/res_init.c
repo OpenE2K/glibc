@@ -259,7 +259,7 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
   bool haveenv = false;
 
   /* Allow user to override the local domain definition.  */
-  if ((cp = getenv ("LOCALDOMAIN")) != NULL)
+  if ((cp = __libc_secure_getenv ("LOCALDOMAIN")) != NULL)
     {
       /* The code below splits the string in place.  */
       cp = __strdup (cp);
@@ -535,7 +535,7 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
         }
     }
 
-  if ((cp = getenv ("RES_OPTIONS")) != NULL)
+  if ((cp = __libc_secure_getenv ("RES_OPTIONS")) != NULL)
     res_setoptions (parser, cp);
 
   if (nameserver_list_has_failed (&parser->nameserver_list)

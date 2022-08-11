@@ -52,6 +52,13 @@ c++-bits-std_abs-h = @CXX_BITS_STD_ABS_H@
 all-warnings = @all_warnings@
 enable-werror = @enable_werror@
 
+enable-debian-multiarch = @enable_debian_multiarch@
+maintainer-mode = @maintainer_mode@
+with-sys-atomic = @with_sys_atomic@
+extra-optimizations = @extra_optimizations@
+
+compile-with-lcc = @LCC_COMPILER@
+
 have-z-combreloc = @libc_cv_z_combreloc@
 have-z-execstack = @libc_cv_z_execstack@
 have-protected-data = @libc_cv_protected_data@

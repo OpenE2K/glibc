@@ -1602,7 +1602,7 @@ get_output_charset (struct binding *domainbinding)
 
       if (!output_charset_cached)
 	{
-	  const char *value = getenv ("OUTPUT_CHARSET");
+	  const char *value = __libc_secure_getenv ("OUTPUT_CHARSET");
 
 	  if (value != NULL && value[0] != '\0')
 	    {

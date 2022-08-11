@@ -23,6 +23,10 @@
 #define EW_(e, w, t) EW__(e, w, _##t)
 #define EW__(e, w, t) e##w##t
 
+#if defined __ptr128__
+#define _Static_assert
+#endif
+
 struct E(link_map)
 {
   EW(Addr) l_addr;

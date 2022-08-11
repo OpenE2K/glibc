@@ -44,7 +44,7 @@ __pthread_cond_wait_2_0 (pthread_cond_2_0_t *cond, pthread_mutex_t *mutex)
       (void) pthread_cond_init (newcond, NULL);
 #endif
 
-      if (atomic_compare_and_exchange_bool_acq (&cond->cond, newcond, NULL))
+      if (atomic_compare_and_exchange_ptr_bool_acq (&cond->cond, newcond, NULL))
 	/* Somebody else just initialized the condvar.  */
 	free (newcond);
     }

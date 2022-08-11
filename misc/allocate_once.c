@@ -35,12 +35,12 @@ __libc_allocate_once_slow (void **place, void *(*allocate) (void *closure),
     {
       /* Synchronizes with the acquire MO load in allocate_once.  */
       void *expected = NULL;
-      if (atomic_compare_exchange_weak_release (place, &expected, result))
+      if (atomic_compare_exchange_ptr_weak_release (place, &expected, result))
         return result;
 
       /* The failed CAS has relaxed MO semantics, so perform another
          acquire MO load.  */
-      void *other_result = atomic_load_acquire (place);
+      void *other_result = atomic_load_ptr_acquire (place);
       if (other_result == NULL)
         /* Spurious failure.  Try again.  */
         continue;

@@ -39,7 +39,11 @@ _dl_osversion_init (char *assume_kernel)
 	break;
     }
   if (osversion)
-    GLRO(dl_osversion) = osversion;
+    {
+      if (__LINUX_KERNEL_VERSION > 0 && osversion < __LINUX_KERNEL_VERSION)
+	osversion = __LINUX_KERNEL_VERSION;
+      GLRO(dl_osversion) = osversion;
+    }
 }
 
 /* Recognizing extra environment variables.  */
@@ -52,7 +56,7 @@ _dl_osversion_init (char *assume_kernel)
 
 #define DL_OSVERSION_INIT \
   do {									      \
-    char *assume_kernel = getenv ("LD_ASSUME_KERNEL");			      \
+    char *assume_kernel = __libc_secure_getenv ("LD_ASSUME_KERNEL");		      \
     if (assume_kernel)							      \
       _dl_osversion_init (assume_kernel);				      \
   } while (0)

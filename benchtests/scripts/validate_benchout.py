@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Copyright (C) 2014-2019 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #

@@ -136,4 +136,60 @@ __NTH (strncat (char *__restrict __dest, const char *__restrict __src,
   return __builtin___strncat_chk (__dest, __src, __len, __bos (__dest));
 }
 
+#ifdef __USE_MISC
+__warndecl (__warn_strlcpy_size_zero,
+	    "strlcpy used with a size argument of zero");
+__warndecl (__warn_strlcpy_size_large,
+	    "strlcpy used with a size argument which is too large");
+extern size_t __strlcpy_chk (char *__dest, const char *__src, size_t __n,
+			     size_t __destlen) __THROW;
+extern size_t __REDIRECT_NTH (__strlcpy_alias,
+			      (char *__dest, const char *__src, size_t __n),
+			      strlcpy);
+
+__fortify_function size_t
+__NTH (strlcpy (char *__restrict __dest, const char *__restrict __src,
+		size_t __len))
+{
+  if (__builtin_constant_p (__len == 0) && __len == 0)
+    {
+      __warn_strlcpy_size_zero ();
+      return 0;
+    }
+  if (__builtin_constant_p (__len > __bos (__dest)) && __len > __bos (__dest))
+    __warn_strlcpy_size_large ();
+  if (__builtin_constant_p (__bos (__dest) == (size_t) -1)
+      && __bos (__dest) == (size_t) -1)
+    return __strlcpy_alias (__dest, __src, __len);
+  return __strlcpy_chk (__dest, __src, __len, __bos (__dest));
+}
+
+__warndecl (__warn_strlcat_size_zero,
+	    "strlcat used with a size argument of zero");
+__warndecl (__warn_strlcat_size_large,
+	    "strlcat used with a size argument which is too large");
+extern size_t __strlcat_chk (char *__dest, const char *__src, size_t __n,
+			     size_t __destlen) __THROW;
+extern size_t __REDIRECT_NTH (__strlcat_alias,
+			      (char *__dest, const char *__src, size_t __n),
+			      strlcat);
+
+__fortify_function size_t
+__NTH (strlcat (char *__restrict __dest, const char *__restrict __src,
+		size_t __len))
+{
+  if (__builtin_constant_p (__len == 0) && __len == 0)
+    {
+      __warn_strlcat_size_zero ();
+      return strlen (__src);
+    }
+  if (__builtin_constant_p (__len > __bos (__dest)) && __len > __bos (__dest))
+    __warn_strlcat_size_large ();
+  if (__builtin_constant_p (__bos (__dest) == (size_t) -1)
+      && __bos (__dest) == (size_t) -1)
+    return __strlcat_alias (__dest, __src, __len);
+  return __strlcat_chk (__dest, __src, __len, __bos (__dest));
+}
+#endif /* __USE_MISC */
+
 #endif /* bits/string_fortified.h */

@@ -1,3 +1,5 @@
+ALT_2.24 __strlcat_chk F
+ALT_2.24 __strlcpy_chk F
 GLIBC_2.10 __cxa_at_quick_exit F
 GLIBC_2.10 __posix_getopt F
 GLIBC_2.10 accept4 F
@@ -411,6 +413,7 @@ GLIBC_2.4 __libc_realloc F
 GLIBC_2.4 __libc_sa_len F
 GLIBC_2.4 __libc_start_main F
 GLIBC_2.4 __libc_valloc F
+GLIBC_2.4 __locale_getenv F
 GLIBC_2.4 __lseek F
 GLIBC_2.4 __lxstat F
 GLIBC_2.4 __lxstat64 F
@@ -1766,6 +1769,8 @@ GLIBC_2.4 strfmon_l F
 GLIBC_2.4 strfry F
 GLIBC_2.4 strftime F
 GLIBC_2.4 strftime_l F
+GLIBC_2.4 strlcat F
+GLIBC_2.4 strlcpy F
 GLIBC_2.4 strlen F
 GLIBC_2.4 strncasecmp F
 GLIBC_2.4 strncasecmp_l F

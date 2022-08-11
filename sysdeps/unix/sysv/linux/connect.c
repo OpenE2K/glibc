@@ -22,7 +22,18 @@
 int
 __libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
-#ifdef __ASSUME_CONNECT_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+  }
+  args = {(long int) fd, (void *) addr.__sockaddr__, (long int) len};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_connect, &args);
+
+#elif defined __ASSUME_CONNECT_SYSCALL
   return SYSCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
 #else
   return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);

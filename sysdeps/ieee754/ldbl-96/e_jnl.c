@@ -318,8 +318,17 @@ __ieee754_ynl (int n, long double x)
   if (__builtin_expect ((ix == 0x7fff) && ((i0 & 0x7fffffff) != 0), 0))
     return x + x;
   if (__builtin_expect ((ix | i0 | i1) == 0, 0))
-    /* -inf or inf and divide-by-zero exception.  */
-    return ((n < 0 && (n & 1) != 0) ? 1.0L : -1.0L) / 0.0L;
+    {
+      /* -inf or inf and divide-by-zero exception.  */
+#if ! defined __LCC__
+      return ((n < 0 && (n & 1) != 0) ? 1.0L : -1.0L) / 0.0L;
+#else /* defined __LCC__  */
+      /* Inhibit "division by zero" EDG warning this way. Note that GCC does
+	 _not_ barf on _floating-point_ division by zero.  */
+      long double zero = 0.0L;
+      return ((n < 0 && (n & 1) != 0) ? 1.0L : -1.0L) / zero;
+#endif
+    }
   if (__builtin_expect (se & 0x8000, 0))
     return zero / (zero * x);
   sign = 1;

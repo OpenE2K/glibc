@@ -28,7 +28,9 @@
 
 #include <arch-fork.h>
 
-#ifdef __NR_clone2
+/* Ensure that on E2K preference isn't given to __NR_clone2 over
+   __NR_clone.  */
+#if defined __NR_clone2 && ! defined __e2k__
 # define ARCH_CLONE __clone2
 #else
 # define ARCH_CLONE __clone

@@ -182,26 +182,26 @@ endif
 
 shared-only-routines = oldiofopen oldiofdopen oldiofclose oldfileops	\
 		       oldstdfiles oldiopopen oldpclose oldtmpfile	\
-		       oldiofgetpos oldiofgetpos64 oldiofsetpos		\
-		       oldiofsetpos64
+			   oldiofgetpos oldiofgetpos64 oldiofsetpos		\
+			   oldiofsetpos64
 
 ifeq ($(run-built-tests),yes)
-tests-special += $(objpfx)test-freopen.out $(objpfx)test-fmemopen-mem.out \
-		 $(objpfx)tst-bz22415-mem.out
-ifeq (yes,$(build-shared))
-# Run tst-fopenloc-cmp.out and tst-openloc-mem.out only if shared
-# library is enabled since they depend on tst-fopenloc.out.
-tests-special += $(objpfx)tst-fopenloc-cmp.out $(objpfx)tst-fopenloc-mem.out \
-		 $(objpfx)tst-bz24228-mem.out
-endif
+	tests-special += $(objpfx)test-freopen.out $(objpfx)test-fmemopen-mem.out \
+		$(objpfx)tst-bz22415-mem.out
+	ifeq (yes,$(build-shared))
+	# Run tst-fopenloc-cmp.out and tst-openloc-mem.out only if shared
+	# library is enabled since they depend on tst-fopenloc.out.
+	tests-special += $(objpfx)tst-fopenloc-cmp.out $(objpfx)tst-fopenloc-mem.out \
+		$(objpfx)tst-bz24228-mem.out
+	endif
 endif
 
 include ../Rules
 
 ifeq ($(run-built-tests),yes)
-LOCALES := de_DE.ISO-8859-1 de_DE.UTF-8 en_US.ISO-8859-1 en_US.UTF-8 \
-	   ja_JP.EUC-JP ja_JP.UTF-8
-include ../gen-locales.mk
+	LOCALES := de_DE.ISO-8859-1 de_DE.UTF-8 en_US.ISO-8859-1 en_US.UTF-8 \
+		ja_JP.EUC-JP ja_JP.UTF-8
+	include ../gen-locales.mk
 
 $(objpfx)bug-ftell.out: $(gen-locales)
 $(objpfx)bug-ungetwc1.out: $(gen-locales)
@@ -225,26 +225,35 @@ endif
 
 $(objpfx)test-freopen.out: test-freopen.sh $(objpfx)test-freopen
 	$(SHELL) $< $(common-objpfx) '$(test-program-prefix)'	\
-	$(common-objpfx)libio/ > $@; \
-	$(evaluate-test)
+		$(common-objpfx)libio/ > $@; \
+		$(evaluate-test)
 
 $(objpfx)tst-fopenloc-cmp.out: ../iconvdata/testdata/ISO-8859-1..UTF8 \
-			       $(objpfx)tst-fopenloc.out
+	$(objpfx)tst-fopenloc.out
 	cmp $^ > $@; \
-	$(evaluate-test)
+		$(evaluate-test)
 
 $(objpfx)test-fmemopen-mem.out: $(objpfx)test-fmemopen.out
 	$(common-objpfx)malloc/mtrace $(objpfx)test-fmemopen.mtrace > $@; \
-	$(evaluate-test)
+		$(evaluate-test)
 
 $(objpfx)tst-fopenloc-mem.out: $(objpfx)tst-fopenloc.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-fopenloc.mtrace > $@; \
-	$(evaluate-test)
+		$(evaluate-test)
 
 $(objpfx)tst-bz22415-mem.out: $(objpfx)tst-bz22415.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz22415.mtrace > $@; \
-	$(evaluate-test)
+		$(evaluate-test)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+CFLAGS-fputc.o = $(extra-optimizations)
+CFLAGS-fputc.os = $(extra-optimizations)
+
+endif # Check for extra optimizations
 
 $(objpfx)tst-bz24228-mem.out: $(objpfx)tst-bz24228.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz24228.mtrace > $@; \
-	$(evaluate-test)
+		$(evaluate-test)

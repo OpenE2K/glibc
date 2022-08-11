@@ -63,7 +63,13 @@ ENTRY (__llrint)
 	for	%f0, SIGN_BIT, %f0
 	fdtox	%f0, %f4
 	std	%f4, [%sp + 72]
+#ifdef __LCC__
+	ld	[%sp + 72], %o0
+	retl
+	ld	[%sp + 76], %o1
+#else /* __LCC__  */
 	retl
 	 ldd	[%sp + 72], %o0
+#endif /* __LCC__  */
 END (__llrint)
 libm_alias_double (__llrint, llrint)

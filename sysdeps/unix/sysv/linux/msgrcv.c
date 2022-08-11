@@ -24,7 +24,24 @@ ssize_t
 __libc_msgrcv (int msqid, void *msgp, size_t msgsz, long int msgtyp,
 	       int msgflg)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ptr128__ && ! defined __ptr128_new_abi__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+    long int e;
+  }
+  args = {(long int) msqid, (long int) msgsz, (long int) msgflg,
+	  (void *) msgp, (long int) msgtyp};
+  /* FIXME(?): `1 << 16' prevents the Kernel from interpreting the fourth
+     argument as the pointer to an array into which MSGP and MSGTYP are
+     packed. That would be absolutely redundant as all arguments are already
+     packed into a struct in PM.  */
+  return SYSCALL_CANCEL (ipc, IPCOP_msgrcv | (1 << 16), &args);
+
+#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return SYSCALL_CANCEL (msgrcv, msqid, msgp, msgsz, msgtyp, msgflg);
 #else
   return SYSCALL_CANCEL (ipc, IPCOP_msgrcv, msqid, msgsz, msgflg,

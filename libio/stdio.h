@@ -324,30 +324,54 @@ extern void setlinebuf (FILE *__stream) __THROW;
    This function is a possible cancellation point and therefore not
    marked with __THROW.  */
 extern int fprintf (FILE *__restrict __stream,
-		    const char *__restrict __format, ...);
+		    const char *__restrict __format, ...)
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 2, 3)))
+#endif /* __LCC__  */
+;
 /* Write formatted output to stdout.
 
    This function is a possible cancellation point and therefore not
    marked with __THROW.  */
-extern int printf (const char *__restrict __format, ...);
+extern int printf (const char *__restrict __format, ...)
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 1, 2)))
+#endif /* __LCC__  */
+;
 /* Write formatted output to S.  */
 extern int sprintf (char *__restrict __s,
-		    const char *__restrict __format, ...) __THROWNL;
+		    const char *__restrict __format, ...) __THROWNL
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 2, 3)))
+#endif /* __LCC__  */
+;
 
 /* Write formatted output to S from argument list ARG.
 
    This function is a possible cancellation point and therefore not
    marked with __THROW.  */
 extern int vfprintf (FILE *__restrict __s, const char *__restrict __format,
-		     __gnuc_va_list __arg);
+		     __gnuc_va_list __arg)
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 2, 0)))
+#endif /* __LCC__  */
+;
 /* Write formatted output to stdout from argument list ARG.
 
    This function is a possible cancellation point and therefore not
    marked with __THROW.  */
-extern int vprintf (const char *__restrict __format, __gnuc_va_list __arg);
+extern int vprintf (const char *__restrict __format, __gnuc_va_list __arg)
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 1, 0)))
+#endif /* __LCC__  */
+;
 /* Write formatted output to S from argument list ARG.  */
 extern int vsprintf (char *__restrict __s, const char *__restrict __format,
-		     __gnuc_va_list __arg) __THROWNL;
+		     __gnuc_va_list __arg) __THROWNL
+#if defined __LCC__
+     __attribute__ ((__format__ (__printf__, 2, 0)))
+#endif /* __LCC__  */
+;
 
 #if defined __USE_ISOC99 || defined __USE_UNIX98
 /* Maximum chars of output to write in MAXLEN.  */

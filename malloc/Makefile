@@ -155,7 +155,7 @@ lib := memusagestat
 include $(patsubst %,$(..)libof-iterator.mk,$(cpp-srcs-left))
 
 $(objpfx)memusagestat: $(memusagestat-modules:%=$(objpfx)%.o)
-	$(LINK.o) -o $@ $^ $(libgd-LDFLAGS) -lgd -lpng -lz -lm
+	$(LINK.o) -o $@ $^ $(libgd-LDFLAGS) -lgd
 
 ifeq ($(run-built-tests),yes)
 ifeq (yes,$(build-shared))
@@ -206,7 +206,8 @@ endif
 # Uncomment this for test releases.  For public releases it is too expensive.
 #CPPFLAGS-malloc.o += -DMALLOC_DEBUG=1
 
-sLIBdir := $(shell echo $(slibdir) | sed 's,lib\(\|64\)$$,\\\\$$LIB,')
+# FIXME: standard PERL location at gerhildes.
+REMOTE_PERL = /usr/bin/perl
 
 $(objpfx)mtrace: mtrace.pl
 	rm -f $@.new
@@ -219,7 +220,7 @@ $(objpfx)mtrace: mtrace.pl
 $(objpfx)memusage: memusage.sh
 	rm -f $@.new
 	sed -e 's|@BASH@|$(BASH)|' -e 's|@VERSION@|$(version)|' \
-	    -e 's|@SLIBDIR@|$(sLIBdir)|' -e 's|@BINDIR@|$(bindir)|' \
+	    -e 's|@SLIBDIR@|$(libdir)|' -e 's|@BINDIR@|$(bindir)|' \
 	    -e 's|@PKGVERSION@|$(PKGVERSION)|' \
 	    -e 's|@REPORT_BUGS_TO@|$(REPORT_BUGS_TO)|' $^ > $@.new \
 	&& rm -f $@ && mv $@.new $@ && chmod +x $@
@@ -254,3 +255,14 @@ $(objpfx)tst-dynarray-fail-mem.out: $(objpfx)tst-dynarray-fail.out
 
 $(objpfx)tst-malloc-tcache-leak: $(shared-thread-library)
 $(objpfx)tst-malloc_info: $(shared-thread-library)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+# This magic combination of options overriding $(extra-optimizations) was
+# proposed in Bug #93150, Comment #12
+CFLAGS-malloc.o = -O4 -faligned -finline-static-functions -fno-dam -fibranch-bound=0.02
+CFLAGS-malloc.os = -O4 -faligned -finline-static-functions -fno-dam -fibranch-bound=0.02
+
+endif # Check for extra optimizations

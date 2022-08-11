@@ -373,8 +373,11 @@ tzset_internal (int always)
     return;
   is_initialized = 1;
 
-  /* Examine the TZ environment variable.  */
-  tz = getenv ("TZ");
+  /* Examine the TZ environment variable.  This doesn't really have to be
+     a __libc_secure_getenv() call as __tzfile_read() tries to only read files
+     found under a trusted directory, but this helps reduce the amount of
+     security-critical code.  */
+  tz = __libc_secure_getenv ("TZ");
   if (tz && *tz == '\0')
     /* User specified the empty string; use UTC explicitly.  */
     tz = "Universal";

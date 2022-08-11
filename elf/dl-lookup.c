@@ -347,7 +347,10 @@ do_lookup_x (const char *undef_name, uint_fast32_t new_hash,
 
   do
     {
-      const struct link_map *map = list[i]->l_real;
+#if ! defined __ptr128__
+      const
+#endif /* ! defined __ptr128__  */
+	struct link_map *map = list[i]->l_real;
 
       /* Here come the extra test needed for `_dl_lookup_symbol_skip'.  */
       if (map == skip)
@@ -1080,6 +1083,11 @@ _dl_debug_bindings (const char *undef_name, struct link_map *undef_map,
 	  || GLRO(dl_trace_prelink_map) == NULL
 	  || type_class >= 4)
 	{
+#if defined __ptr128__
+	  /* Stupidly replace a non-existent field in PM with the existing one
+	     this way. FIXME: ideally both of them should be output in PM.  */
+# define l_map_start l_data_start
+#endif
 	  _dl_printf ("%s 0x%0*Zx 0x%0*Zx -> 0x%0*Zx 0x%0*Zx ",
 		      conflict ? "conflict" : "lookup",
 		      (int) sizeof (ElfW(Addr)) * 2,
@@ -1099,6 +1107,10 @@ _dl_debug_bindings (const char *undef_name, struct link_map *undef_map,
 			(size_t) (val.s ? val.s->st_value : 0));
 
 	  _dl_printf ("/%x %s\n", type_class, undef_name);
+
+#if defined __ptr128
+# undef l_data_start
+#endif
 	}
     }
 #endif

@@ -243,7 +243,15 @@ _dl_start_profile (void)
       else if (sizeof (*froms) == 16)
 	log_hashfraction = 5;
       else
+#if (defined __LCC__)
+        {
+          int *p = 0;
+          *p = 0;
+        }
+#else /* __LCC__ */
 	log_hashfraction = __ffs (HASHFRACTION * sizeof (*froms)) - 1;
+#endif /* __LCC__ */
+
     }
   else
     log_hashfraction = -1;
@@ -271,7 +279,14 @@ _dl_start_profile (void)
 	  != offsetof (struct gmon_hdr, cookie))
       || (offsetof (struct real_gmon_hdr, version)
 	  != offsetof (struct gmon_hdr, version)))
-    abort ();
+    {
+#if defined __LCC__
+      int *p = 0;
+      *p = 0;
+#else
+      abort ();
+#endif
+    }
 
   memcpy (&gmon_hdr.cookie[0], GMON_MAGIC, sizeof (gmon_hdr.cookie));
   gmon_hdr.version = GMON_SHOBJ_VERSION;
@@ -300,7 +315,15 @@ _dl_start_profile (void)
 	  != offsetof (struct gmon_hist_hdr, dimen))
       || (offsetof (struct real_gmon_hist_hdr, dimen_abbrev)
 	  != offsetof (struct gmon_hist_hdr, dimen_abbrev)))
-    abort ();
+    {
+#if defined __LCC__
+      int *p = 0;
+      *p = 0;
+#else
+      abort ();
+#endif
+    }
+
 
   hist_hdr.low_pc = (char *) mapstart;
   hist_hdr.high_pc = (char *) mapend;
@@ -313,7 +336,16 @@ _dl_start_profile (void)
 	      sizeof (hist_hdr.dimen) - sizeof ("seconds"));
     }
   else
+#if (defined __LCC__)
+    {
+      int *p = 0;
+      *p = 0;
+    }
+#else /* __LCC__ */
     strncpy (hist_hdr.dimen, "seconds", sizeof (hist_hdr.dimen));
+#endif /* __LCC__ */
+    
+
   hist_hdr.dimen_abbrev = 's';
 
   /* First determine the output name.  We write in the directory

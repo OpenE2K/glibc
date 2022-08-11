@@ -41,7 +41,15 @@ do_test (void)
      return.  */
   volatile int ret = 0;
 
-  if (signal (SIGSEGV, &sig_handler) == SIG_ERR)
+  if (signal (
+#if ! defined __ptr128__
+	      SIGSEGV,
+#else /* defined __ptr128__  */
+	      /* In PM a store to NULL Pointer is likely to result in SIGILL
+		 rather than SIGSEGV.  */
+	      SIGILL,
+#endif /* defined __ptr128__  */
+	      &sig_handler) == SIG_ERR)
     {
       perror ("installing SIGSEGV handler");
       return 1;

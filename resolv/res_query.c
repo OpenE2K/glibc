@@ -645,7 +645,7 @@ __res_context_hostalias (struct resolv_context *ctx,
 
 	if (ctx->resp->options & RES_NOALIASES)
 		return (NULL);
-	file = getenv("HOSTALIASES");
+	file = __libc_secure_getenv("HOSTALIASES");
 	if (file == NULL || (fp = fopen(file, "rce")) == NULL)
 		return (NULL);
 	setbuf(fp, NULL);

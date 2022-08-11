@@ -180,3 +180,26 @@ $(objpfx)tst-setvbuf1-cmp.out: tst-setvbuf1.expect $(objpfx)tst-setvbuf1.out
 
 $(objpfx)tst-printf-round: $(libm)
 $(objpfx)tst-scanf-round: $(libm)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+CFLAGS-_itoa.o = $(extra-optimizations)
+CFLAGS-_itoa.os = $(extra-optimizations)
+
+CFLAGS-printf_fp.o = $(extra-optimizations)
+CFLAGS-printf_fp.os = $(extra-optimizations)
+CFLAGS-printf_fphex.o = $(extra-optimizations)
+CFLAGS-printf_fphex.os = $(extra-optimizations)
+CFLAGS-printf-parsemb.o = $(extra-optimizations)
+CFLAGS-printf-parsemb.os = $(extra-optimizations)
+CFLAGS-printf_size.o = $(extra-optimizations)
+CFLAGS-printf_size.os = $(extra-optimizations)
+
+CFLAGS-vfprintf.o = $(extra-optimizations)
+CFLAGS-vfprintf.os = $(extra-optimizations)
+CFLAGS-vfscanf.o = $(extra-optimizations)
+CFLAGS-vfscanf.os = $(extra-optimizations)
+
+endif # Check for extra optimizations

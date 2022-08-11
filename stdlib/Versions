@@ -95,6 +95,8 @@ libc {
     # used by new G++ ABI
     __cxa_atexit; __cxa_finalize;
   }
+  GLIBC_2.2.4 {
+    __locale_getenv;
   GLIBC_2.3 {
     # Silent change in SUS.
     realpath;

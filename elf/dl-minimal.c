@@ -31,6 +31,11 @@
 
 #include <assert.h>
 
+/* By eliminating `{m,c,re}alloc ()' and `free ()' functions from this file in
+   Protected Mode one ensures that they'll be pulled into ld.so from `malloc/
+   rtld-malloc.os' compiled from standard PM-specific source file.  */
+#if ! defined __ptr128__
+
 /* Minimal malloc allocator for used during initial link.  After the
    initial link, a full malloc implementation is interposed, either
    the one in libc, or a different one supplied by the user through
@@ -129,6 +134,15 @@ realloc (void *ptr, size_t n)
   void *new = malloc (n);
   return new != ptr ? memcpy (new, ptr, old_size) : new;
 }
+
+#else /* defined __ptr128__  */
+
+/* This file, when compiled on behalf of ld.so (i.e. with `IS_IN (rtld)')
+   provides the most primitive malloc () implementation suitable for PM.
+   FIXME: consider adapting the above minimal implemenation to PM instead.  */
+#include <sysdeps/unix/sysv/linux/e2k/e2k128/malloc.c>
+
+#endif /* defined __ptr128__  */
 
 /* Avoid signal frobnication in setjmp/longjmp.  Keeps things smaller.  */
 
@@ -137,7 +151,10 @@ realloc (void *ptr, size_t n)
 int weak_function
 __sigjmp_save (sigjmp_buf env, int savemask __attribute__ ((unused)))
 {
+#ifndef __e2k__
+  /* See Bugs #26432 and #43069.  */
   env[0].__mask_was_saved = 0;
+#endif /* __e2k__ */
   return 0;
 }
 
@@ -269,7 +286,11 @@ __strsep (char **stringp, const char *delim)
     {
       char *end = begin;
 
-      while (*end != '\0' || (end = NULL))
+      while (*end != '\0' || (end = NULL
+#if defined __LCC__
+			      , end != NULL
+#endif			      
+			      ))
 	{
 	  const char *dp = delim;
 

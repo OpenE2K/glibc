@@ -102,7 +102,7 @@ __newlocale (int category_mask, const char *locale, locale_t base)
   locale_path = NULL;
   locale_path_len = 0;
 
-  locpath_var = getenv ("LOCPATH");
+  locpath_var = __libc_secure_getenv ("LOCPATH");
   if (locpath_var != NULL && locpath_var[0] != '\0')
     {
       if (__argz_create_sep (locpath_var, ':',

@@ -177,6 +177,10 @@ CFLAGS-support_paths.c = \
 		-DLIBDIR_PATH=\"$(libdir)\" \
 		-DBINDIR_PATH=\"$(bindir)\"
 
+# The original `ifeq (,$(CXX))' isn't adequate here if glibc is made as a part
+# of self-consistent toolchain created from scratch in which case libstdc++
+# headers and libraries are not available yet.
+# Alt change: revert to CXX, it is sufficient for bootstrap
 ifeq (,$(CXX))
 LINKS_DSO_PROGRAM = links-dso-program-c
 else

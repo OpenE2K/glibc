@@ -27,7 +27,9 @@ Copyright (C) 2019 Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\n\
 PARTICULAR PURPOSE.\n"
+#if ! defined __LCC_SJLJ_EXCEPTIONS__
 "Forced unwind support included.\n"
+#endif
 ;
 
 

@@ -39,6 +39,7 @@ ld {
     calloc; free; malloc; realloc;
 
     _r_debug;
+    __libc_enable_secure;
   }
   GLIBC_2.1 {
     # functions used in other libraries
@@ -56,7 +57,6 @@ ld {
   }
   GLIBC_PRIVATE {
     # Those are in the dynamic linker, but used by libc.so.
-    __libc_enable_secure;
     _dl_allocate_tls; _dl_allocate_tls_init;
     _dl_argv; _dl_find_dso_for_object; _dl_get_tls_static_info;
     _dl_deallocate_tls; _dl_make_stack_executable;
@@ -65,7 +65,8 @@ ld {
 
     # Only here for gdb while a better method is developed.
     _dl_debug_state;
-
+    # For sanitizing environment.
+    __libc_security_mask;
     # Pointer protection.
     __pointer_chk_guard;
 

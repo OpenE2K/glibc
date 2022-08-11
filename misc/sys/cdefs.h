@@ -280,7 +280,8 @@
    attribute for functions was introduced.  We don't want to use it
    unconditionally (although this would be possible) since it
    generates warnings.  */
-#if __GNUC_PREREQ (2,97)
+/* LCC doesn't recognize this attribute yet.  */
+#if __GNUC_PREREQ (2,97) && ! defined __LCC__
 # define __attribute_format_strfmon__(a,b) \
   __attribute__ ((__format__ (__strfmon__, a, b)))
 #else
@@ -399,8 +400,17 @@
 #endif
 
 #if __GNUC__ >= 3
-# define __glibc_unlikely(cond)	__builtin_expect ((cond), 0)
-# define __glibc_likely(cond)	__builtin_expect ((cond), 1)
+# if defined __LCC__
+#  define __glibc_never(cond)		__builtin_expect_prob ((cond), 0.00)
+#  define __glibc_unlikely(cond)	__builtin_expect_prob ((cond), 0.05)
+#  define __glibc_likely(cond)		__builtin_expect_prob ((cond), 0.95)
+#  define __glibc_always(cond)		__builtin_expect_prob ((cond), 1.00)
+# else /* ! defined __LCC__  */
+#  define __glibc_never(cond)		__builtin_expect ((cond), 0)
+#  define __glibc_unlikely(cond)	__builtin_expect ((cond), 0)
+#  define __glibc_likely(cond)		__builtin_expect ((cond), 1)
+#  define __glibc_always(cond)		__builtin_expect ((cond), 1)
+# endif /* ! defined __LCC__  */
 #else
 # define __glibc_unlikely(cond)	(cond)
 # define __glibc_likely(cond)	(cond)

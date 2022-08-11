@@ -26,6 +26,11 @@
 # define __NR_fcntl64 __NR_fcntl
 #endif
 
+#ifdef __ptr128__
+# undef __NR_fcntl64
+# define __NR_fcntl64 __NR_fcntl
+#endif
+
 #ifndef FCNTL_ADJUST_CMD
 # define FCNTL_ADJUST_CMD(__cmd) __cmd
 #endif
@@ -37,7 +42,7 @@ __fcntl64_nocancel (int fd, int cmd, ...)
   void *arg;
 
   va_start (ap, cmd);
-  arg = va_arg (ap, void *);
+  get_arg;
   va_end (ap);
 
   cmd = FCNTL_ADJUST_CMD (cmd);

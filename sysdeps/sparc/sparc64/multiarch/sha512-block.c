@@ -1,3 +1,9 @@
+#if defined __LCC__
+
+#include <crypt/sha512-block.c>
+
+#else /* ! __LCC__  */
+
 #include <sparc-ifunc.h>
 
 #define __sha512_process_block __sha512_process_block_generic
@@ -30,3 +36,5 @@ extern void __sha512_process_block (const void *buffer, size_t len,
 sparc_libc_ifunc (__sha512_process_block,
 		  cpu_supports_sha512(hwcap) ? __sha512_process_block_crop
 		    : __sha512_process_block_generic);
+
+#endif /* __LCC__  */

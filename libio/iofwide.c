@@ -161,7 +161,11 @@ do_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 
   struct __gconv_step *gs = codecvt->__cd_out.__cd.__steps;
   int status;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
   codecvt->__cd_out.__cd.__data[0].__outbuf = (unsigned char *) to_start;
@@ -211,7 +215,11 @@ do_unshift (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 
   struct __gconv_step *gs = codecvt->__cd_out.__cd.__steps;
   int status;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
 
   codecvt->__cd_out.__cd.__data[0].__outbuf = (unsigned char *) to_start;
   codecvt->__cd_out.__cd.__data[0].__outbufend = (unsigned char *) to_end;
@@ -259,7 +267,11 @@ do_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 
   struct __gconv_step *gs = codecvt->__cd_in.__cd.__steps;
   int status;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
   codecvt->__cd_in.__cd.__data[0].__outbuf = (unsigned char *) to_start;
@@ -333,7 +345,11 @@ do_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
   const unsigned char *cp = (const unsigned char *) from_start;
   wchar_t to_buf[max];
   struct __gconv_step *gs = codecvt->__cd_in.__cd.__steps;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
 
   codecvt->__cd_in.__cd.__data[0].__outbuf = (unsigned char *) to_buf;
   codecvt->__cd_in.__cd.__data[0].__outbufend = (unsigned char *) &to_buf[max];

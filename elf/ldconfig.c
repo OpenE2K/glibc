@@ -59,6 +59,21 @@
 
 #define PACKAGE _libc_intl_domainname
 
+#ifdef ENABLE_DEBIAN_MULTIARCH
+
+/* Get the generated information about the trusted/standard directories.  */
+#include "trusted-dirs.h"
+
+static const char system_dirs[] = SYSTEM_DIRS;
+static const size_t system_dirs_len[] =
+{
+  SYSTEM_DIRS_LEN
+};
+#define nsystem_dirs_len \
+  (sizeof (system_dirs_len) / sizeof (system_dirs_len[0]))
+
+#endif /* ENABLE_DEBIAN_MULTIARCH  */
+
 static const struct
 {
   const char *name;
@@ -878,6 +893,7 @@ search_dir (const struct dir_entry *entry)
       if (soname == NULL)
 	soname = implicit_soname (direntry->d_name, flag);
 
+#if 0
       /* A link may just point to itself.  */
       if (is_link)
 	{
@@ -916,6 +932,7 @@ search_dir (const struct dir_entry *entry)
 		is_link = 0;
 	    }
 	}
+#endif
 
       if (real_name != real_file_name)
 	free (real_name);
@@ -1266,6 +1283,9 @@ main (int argc, char **argv)
   /* Set the text message domain.  */
   textdomain (_libc_intl_domainname);
 
+  if (getenv ("RPM_INSTALL_NAME"))
+    exit (0);
+
   /* Parse and process arguments.  */
   int remaining;
   argp_parse (&argp, argc, argv, 0, &remaining, NULL);
@@ -1379,12 +1399,26 @@ main (int argc, char **argv)
 
   if (!opt_only_cline)
     {
+#ifdef ENABLE_DEBIAN_MULTIARCH
+      const char *strp = system_dirs;
+      size_t idx = 0;
+#endif /* ENABLE_DEBIAN_MULTIARCH  */
       parse_conf (config_file, true);
 
       /* Always add the standard search paths.  */
+#ifdef ENABLE_DEBIAN_MULTIARCH
+      do
+        {
+          add_system_dir (strp);
+          strp += system_dirs_len[idx] + 1;
+          idx++;
+        }
+      while (idx < nsystem_dirs_len);
+#else /* ! defined ENABLE_DEBIAN_MULTIARCH  */
       add_system_dir (SLIBDIR);
       if (strcmp (SLIBDIR, LIBDIR))
 	add_system_dir (LIBDIR);
+#endif /* ! defined ENABLE_DEBIAN_MULTIARCH  */
     }
 
   const char *aux_cache_file = _PATH_LDCONFIG_AUX_CACHE;

@@ -26,6 +26,8 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
+
 
 static int
 do_test (void)
@@ -71,11 +73,11 @@ do_test (void)
       return 1;
     }
 
-  m = (pthread_mutex_t *) (((uintptr_t) mem + __alignof (pthread_mutex_t) - 1)
-			   & ~(__alignof (pthread_mutex_t) - 1));
-  b = (pthread_barrier_t *) (((uintptr_t) (m + 1)
-			      + __alignof (pthread_barrier_t) - 1)
-			     & ~(__alignof (pthread_barrier_t) - 1));
+  m = (pthread_mutex_t *) ADJUST_PTR ((mem + __alignof (pthread_mutex_t) - 1),
+				      &, ~(__alignof (pthread_mutex_t) - 1));
+  b = (pthread_barrier_t *) ADJUST_PTR (((char *) (m + 1)
+					 + __alignof (pthread_barrier_t) - 1),
+					&, ~(__alignof (pthread_barrier_t) - 1));
   p = (char *) (b + 1);
 
   if (pthread_mutexattr_init (&a) != 0)

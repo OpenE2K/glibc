@@ -563,7 +563,7 @@ enum dwarf_macinfo_record_type
   };
 
 #endif /* !ASSEMBLER */
-
+
 /* @@@ For use with GNU frame unwind information.  */
 
 #define DW_EH_PE_absptr		0x00

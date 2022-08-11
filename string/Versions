@@ -73,6 +73,10 @@ libc {
     # m*
     memrchr;
   }
+  GLIBC_2.2.5 {
+    # imported from OpenBSD.
+    strlcat; strlcpy;
+  }
   GLIBC_2.3.4 {
     # x*
     __xpg_strerror_r;

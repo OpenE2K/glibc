@@ -1,0 +1,10 @@
+#!/bin/sh
+
+f=/etc/nsswitch.conf
+if [ ! -f "$f" ]; then
+	if [ -f "$f".rpmsave ]; then
+		/bin/cp -pf "$f".rpmsave "$f"
+	elif [ -f "$f".rpmnew ]; then
+		/bin/cp -pf "$f".rpmnew "$f"
+	fi
+fi

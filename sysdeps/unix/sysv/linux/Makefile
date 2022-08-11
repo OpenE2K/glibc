@@ -20,6 +20,15 @@ sysdep_routines += clone umount umount2 readahead \
 		   personality epoll_wait tee vmsplice splice \
 		   open_by_handle_at mlock2 pkey_mprotect pkey_set pkey_get
 
+ifeq ($(config-machine),e2k128)
+# FIXME: originally mount () can be implemented only via an automatically
+# generated assembler file only, there's even no stub mount.c in glibc
+# source tree. But in PM we do need to use a C implementation. Without adding
+# it to sysdeps_routines one would be left both without C and the (invalid)
+# generated assembler version in the compiled glibc.
+sysdep_routines += mount
+endif
+
 CFLAGS-gethostid.c = -fexceptions
 CFLAGS-tee.c = -fexceptions -fasynchronous-unwind-tables
 CFLAGS-vmsplice.c = -fexceptions -fasynchronous-unwind-tables
@@ -62,12 +71,29 @@ tests-internal += tst-ofdlocks-compat
 # call names, and the generated header file produces SYS_* macros for
 # the __NR_* macros which are actually defined.
 
+ifeq ($(base-machine),e2k)
+
+enable-new-pm-syscalls = $(shell ../sysdeps/unix/sysv/linux/e2k/support-new-pm-syscalls.sh "$(CC)")
+
+ifeq ($(enable-new-pm-syscalls),yes)
+extra-syscall-body = \#define __NEW_PM_SYSCALLS	1
+extra-syscall-body += \n\#if defined __ptr128__ && ! defined __ptr128_new_abi__
+extra-syscall-body += \n\# error \"glibc configured with new PM syscalls is not compatible with LCC implementing old PM ABI\"
+extra-syscall-body += \n\#endif
+else
+extra-syscall-body = \n\#if defined __ptr128__ && defined __ptr128_new_abi__
+extra-syscall-body += \n\# error \"glibc configured with old PM syscalls is not compatible with LCC implementing new PM ABI\"
+extra-syscall-body += \n\#endif
+endif
+extra-syscall-macro = "$(extra-syscall-body)"
+endif
+
 generated += bits/syscall.h
 $(objpfx)bits/syscall.h: \
   ../sysdeps/unix/sysv/linux/gen-syscall-h.awk \
   ../sysdeps/unix/sysv/linux/syscall-names.list
 	$(make-target-directory)
-	LC_ALL=C $(AWK) -f $^ > $@-tmp
+	LC_ALL=C $(AWK) -v extra=$(extra-syscall-macro) -f $^ > $@-tmp
 	$(move-if-change) $@-tmp $@
 before-compile += $(objpfx)bits/syscall.h
 

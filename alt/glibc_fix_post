@@ -1,0 +1,6 @@
+#!/bin/sh -efu
+
+if ! grep -qs /etc/ld.so.conf.d/ /etc/ld.so.conf; then
+	umask 022
+	printf '\n%s\n' 'include /etc/ld.so.conf.d/*.conf' >>/etc/ld.so.conf
+fi

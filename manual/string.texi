@@ -1071,6 +1071,76 @@ processing text.  Also, this function has significant performance
 issues.  @xref{Concatenating Strings}.
 @end deftypefun
 
+@deftypefun size_t strlcpy (char *restrict @var{to}, const char *restrict @var{from}, size_t @var{size})
+@standards{BSD, string.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+This function is similar to @code{strcpy}, but copies at most
+@var{size} bytes from the string @var{from} into the destination
+array @var{to}, including a terminating null byte.
+
+If @var{size} is greater than the length of the string @var{from},
+this function copies all of the string @var{from} to the destination
+array @var{to}, including the terminating null byte.  Like other
+string functions such as @code{strcpy}, but unlike @code{strncpy}, any
+remaining bytes in the destination array remain unchanged.
+
+If @var{size} is nonzero and less than or equal to the the length of the string
+@var{from}, this function copies only the first @samp{@var{size} - 1}
+bytes to the destination array @var{to}, and writes a terminating null
+byte to the last byte of the array.
+
+The return value @var{result} of @code{strlcpy} is the length of the
+string @var{from}.  This means that @samp{@var{result} >= @var{size}} is
+true whenever truncation occurs.
+
+The behavior of @code{strlcpy} is undefined if @var{size} is zero, or if
+the source string and the first @var{size} bytes of the destination
+array overlap.
+
+As noted below, this function is generally a poor choice for processing
+text.  Unlike @code{strncpy}, @code{strlcpy} requires @var{size} to be
+nonzero and the source string to be null-terminated, computes the
+source string's length, ensures that the destination is
+null-terminated, and does not fill the remaining part of the destination
+with null bytes.
+
+This function is derived from OpenBSD 2.4.
+@end deftypefun
+
+@deftypefun size_t strlcat (char *restrict @var{to}, const char *restrict @var{from}, size_t @var{size})
+@standards{BSD, string.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+This function appends the string @var{from} to the
+string @var{to}, limiting the total size of the result string at
+@var{to} (including the null terminator) to @var{size}.
+
+This function copies as much as possible of the string @var{from} into
+the array at @var{to} of @var{size} bytes, starting at the terminating
+null byte of the original string @var{to}.  In effect, this appends
+the string @var{from} to the string @var{to}.  Although the resulting
+string will contain a null terminator, it can be truncated (not all
+bytes in @var{from} may be copied).
+
+This function returns the sum of the original length of @var{to} and
+the length of @var{from}.  This means that truncation occurs unless
+the returned value is less than @var{size}.
+
+The behavior is undefined if the array at @var{to} does not contain a
+null byte in its first @var{size} bytes, or if the source string and the
+first @var{size} bytes of @var{to} overlap.
+
+As noted below, this function is generally a poor choice for processing
+text.  Also, this function has significant performance issues;
+@pxref{Concatenating Strings}.  Unlike @code{strncat}, @var{size}
+specifies the maximum total size of the result string (including its
+null terminator), not the number of bytes copied from the source string
+@var{from}.  Unlike @code{strncat}, this function requires the source
+and destination to be null-terminated, computes the source string's
+length, and keeps the destination null-terminated.
+
+This function is derived from OpenBSD 2.4.
+@end deftypefun
+
 Because these functions can abruptly truncate strings or wide strings,
 they are generally poor choices for processing text.  When coping or
 concatening multibyte strings, they can truncate within a multibyte

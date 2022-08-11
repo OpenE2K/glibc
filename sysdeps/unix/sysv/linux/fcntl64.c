@@ -29,6 +29,11 @@
 # define __NR_fcntl64 __NR_fcntl
 #endif
 
+#ifdef __ptr128__
+# undef __NR_fcntl64
+# define __NR_fcntl64 __NR_fcntl
+#endif
+
 #ifndef FCNTL_ADJUST_CMD
 # define FCNTL_ADJUST_CMD(__cmd) __cmd
 #endif
@@ -39,11 +44,11 @@ __libc_fcntl64 (int fd, int cmd, ...)
   va_list ap;
   void *arg;
 
-  va_start (ap, cmd);
-  arg = va_arg (ap, void *);
-  va_end (ap);
-
   cmd = FCNTL_ADJUST_CMD (cmd);
+
+  va_start (ap, cmd);
+  get_arg;
+  va_end (ap);
 
   if (cmd == F_SETLKW || cmd == F_SETLKW64 || cmd == F_OFD_SETLKW)
     return SYSCALL_CANCEL (fcntl64, fd, cmd, arg);

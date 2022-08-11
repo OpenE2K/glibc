@@ -1,4 +1,7 @@
+ALT_2.24 __strlcat_chk F
+ALT_2.24 __strlcpy_chk F
 GLIBC_2.10 __cxa_at_quick_exit F
+GLIBC_2.10 __locale_getenv F
 GLIBC_2.10 __posix_getopt F
 GLIBC_2.10 accept4 F
 GLIBC_2.10 endsgent F
@@ -1628,6 +1631,8 @@ GLIBC_2.3 strfmon_l F
 GLIBC_2.3 strfry F
 GLIBC_2.3 strftime F
 GLIBC_2.3 strftime_l F
+GLIBC_2.3 strlcat F
+GLIBC_2.3 strlcpy F
 GLIBC_2.3 strlen F
 GLIBC_2.3 strncasecmp F
 GLIBC_2.3 strncasecmp_l F

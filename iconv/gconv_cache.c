@@ -53,7 +53,7 @@ __gconv_load_cache (void)
 
   /* We cannot use the cache if the GCONV_PATH environment variable is
      set.  */
-  __gconv_path_envvar = getenv ("GCONV_PATH");
+  __gconv_path_envvar = __libc_secure_getenv ("GCONV_PATH");
   if (__gconv_path_envvar != NULL)
     return -1;
 

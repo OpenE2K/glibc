@@ -1,6 +1,7 @@
 # This file names the currently supported and somewhat tested locales.
 # If you have any additions please file a glibc bug report.
 SUPPORTED-LOCALES=\
+C.UTF-8/UTF-8 \
 aa_DJ.UTF-8/UTF-8 \
 aa_DJ/ISO-8859-1 \
 aa_ER/UTF-8 \
@@ -378,10 +379,13 @@ raj_IN/UTF-8 \
 ro_RO.UTF-8/UTF-8 \
 ro_RO/ISO-8859-2 \
 ru_RU.KOI8-R/KOI8-R \
+ru_RU.CP1251/CP1251 \
 ru_RU.UTF-8/UTF-8 \
-ru_RU/ISO-8859-5 \
+ru_RU.IBM866/IBM866 \
+ru_RU.ISO-8859-5/ISO-8859-5 \
 ru_UA.UTF-8/UTF-8 \
-ru_UA/KOI8-U \
+ru_UA.CP1251/CP1251 \
+ru_UA.KOI8-U/KOI8-U \
 rw_RW/UTF-8 \
 sa_IN/UTF-8 \
 sah_RU/UTF-8 \
@@ -451,7 +455,8 @@ tt_RU/UTF-8 \
 tt_RU@iqtelif/UTF-8 \
 ug_CN/UTF-8 \
 uk_UA.UTF-8/UTF-8 \
-uk_UA/KOI8-U \
+uk_UA.KOI8-U/KOI8-U \
+uk_UA.CP1251/CP1251 \
 unm_US/UTF-8 \
 ur_IN/UTF-8 \
 ur_PK/UTF-8 \

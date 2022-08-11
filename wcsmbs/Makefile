@@ -78,7 +78,16 @@ $(objpfx)tst-wcstod-round: $(libm)
 CFLAGS-wcwidth.c += -I../wctype
 CFLAGS-wcswidth.c += -I../wctype
 
+# 'strtox-CFLAGS = -I../include' prepends a redundant '-I ../include' just
+# before another one coming from '+includes' part of CPPFLAGS (see Makeconfig)
+# A sequence of two identical '-I../include' confuses the EDG frontend when it
+# comes to processing the 'include_next' directive: unlike GCC it includes the
+# same file for the second time.
+ifneq ($(compile-with-lcc),yes)
 strtox-CFLAGS = -I../include
+else
+strtox-CFLAGS =
+endif
 CFLAGS-wcstol.c += $(strtox-CFLAGS)
 CFLAGS-wcstoul.c += $(strtox-CFLAGS)
 CFLAGS-wcstoll.c += $(strtox-CFLAGS)

@@ -47,6 +47,8 @@ __lll_cond_trylock (int *futex)
 extern void __lll_lock_wait_private (int *futex) attribute_hidden;
 extern void __lll_lock_wait (int *futex, int private) attribute_hidden;
 
+#if (! defined __LCC__) || IS_IN (libpthread)
+
 static inline void
 __attribute__ ((always_inline))
 __lll_lock (int *futex, int private)
@@ -61,6 +63,31 @@ __lll_lock (int *futex, int private)
 	__lll_lock_wait (futex, private);
     }
 }
+#else /* (defined __LCC__) && ! IS_IN (libpthread)  */
+
+/* In libc this function is always called with LLL_PRIVATE constant in place
+   of PRIVATE. Because of the inability of (a non-optimizing) SCC to get rid
+   of references to functions invoked from dead code, the above implementation
+   is sure to result in a link error due to `__lll_lock_wait ()' missing from
+   libc. Moreover, non-optimizing SCC will hardly inline this function, which
+   is why it'll sooner believe that this is the code under `__builtin_constant_p
+   ()' condition that is dead than the alternative one.  */
+static inline void
+__attribute__ ((always_inline))
+__lll_lock (int *futex, int private)
+{
+  int val = atomic_compare_and_exchange_val_24_acq (futex, 1, 0);
+
+  if (__builtin_expect (val != 0, 0))
+    {
+      if (private != LLL_PRIVATE)
+	((int *) 0)[0] = 0;
+
+      __lll_lock_wait_private (futex);
+    }
+}
+#endif /* (defined __LCC__) && ! IS_IN (libpthread)  */
+
 #define lll_lock(futex, private) __lll_lock (&(futex), private)
 
 static inline void

@@ -79,7 +79,14 @@ __strnlen (const char *str, size_t maxlen)
       lomagic = ((lomagic << 16) << 16) | lomagic;
     }
   if (sizeof (longword) > 8)
+#if (defined __LCC__)
+    {
+      int *p = 0;
+      *p = 0;
+    }
+#else /* __LCC__ */
     abort ();
+#endif /* __LCC__ */
 
   /* Instead of the traditional loop which tests each character,
      we will test a longword at a time.  The tricky part is testing

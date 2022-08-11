@@ -43,7 +43,8 @@ routines	:= strcat strchr strcmp strcoll strcpy strcspn		\
 				     addsep replace)			\
 		   envz basename					\
 		   strcoll_l strxfrm_l string-inlines memrchr		\
-		   xpg-strerror strerror_l explicit_bzero
+		   xpg-strerror strerror_l explicit_bzero 		\
+		   strlcpy strlcat
 
 strop-tests	:= memchr memcmp memcpy memmove mempcpy memset memccpy	\
 		   stpcpy stpncpy strcat strchr strcmp strcpy strcspn	\
@@ -59,7 +60,7 @@ tests		:= tester inl-tester noinl-tester testcopy test-ffs	\
 		   bug-envz1 tst-strxfrm2 tst-endian tst-svc2		\
 		   tst-strtok_r bug-strcoll2 tst-cmp tst-xbzero-opt	\
 		   test-endian-types test-endian-file-scope		\
-		   test-endian-sign-conversion
+		   test-endian-sign-conversion tst-strlcpy tst-strlcat
 
 # This test allocates a lot of memory and can run for a long time.
 xtests = tst-strcoll-overflow
@@ -116,3 +117,106 @@ $(objpfx)bug-strcoll2.out: $(gen-locales)
 $(objpfx)tst-strcoll-overflow.out: $(gen-locales)
 
 endif
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+CFLAGS-memchr.o = $(extra-optimizations)
+CFLAGS-memchr.os = $(extra-optimizations)
+CFLAGS-rtld-memchr.os = $(extra-optimizations)
+
+CFLAGS-rawmemchr.o = $(extra-optimizations)
+CFLAGS-rawmemchr.os = $(extra-optimizations)
+CFLAGS-rtld-rawmemchr.os = $(extra-optimizations)
+
+CFLAGS-memcmp.o = $(extra-optimizations)
+CFLAGS-memcmp.os = $(extra-optimizations)
+CFLAGS-rtld-memcmp.os = $(extra-optimizations)
+
+CFLAGS-memcpy.o = $(extra-optimizations)
+CFLAGS-memcpy.os = $(extra-optimizations)
+CFLAGS-rtld-memcpy.os = $(extra-optimizations)
+
+CFLAGS-memccpy.o = $(extra-optimizations)
+CFLAGS-memccpy.os = $(extra-optimizations)
+
+CFLAGS-mempcpy.o = $(extra-optimizations)
+CFLAGS-mempcpy.os = $(extra-optimizations)
+CFLAGS-rtld-mempcpy.os = $(extra-optimizations)
+
+CFLAGS-memmove.o = $(extra-optimizations)
+CFLAGS-memmove.os = $(extra-optimizations)
+CFLAGS-rtld-memmove.os = $(extra-optimizations)
+
+CFLAGS-memset.o = $(extra-optimizations)
+CFLAGS-memset.os = $(extra-optimizations)
+CFLAGS-rtld-memset.os = $(extra-optimizations)
+
+CFLAGS-stpcpy.o = $(extra-optimizations)
+CFLAGS-stpcpy.os = $(extra-optimizations)
+CFLAGS-rtld-stpcpy.os = $(extra-optimizations)
+
+CFLAGS-stpncpy.o = $(extra-optimizations)
+CFLAGS-stpncpy.os = $(extra-optimizations)
+
+CFLAGS-strcat.o = $(extra-optimizations)
+CFLAGS-strcat.os = $(extra-optimizations)
+
+CFLAGS-strchr.o = $(extra-optimizations)
+CFLAGS-strchr.os = $(extra-optimizations)
+CFLAGS-rtld-strchr.os = $(extra-optimizations)
+
+CFLAGS-strcmp.o = $(extra-optimizations)
+CFLAGS-strcmp.os = $(extra-optimizations)
+CFLAGS-rtld-strcmp.os = $(extra-optimizations)
+
+CFLAGS-strcpy.o = $(extra-optimizations)
+CFLAGS-strcpy.os = $(extra-optimizations)
+CFLAGS-rtld-strcpy.os = $(extra-optimizations)
+
+CFLAGS-strlen.o = $(extra-optimizations)
+CFLAGS-strlen.os = $(extra-optimizations)
+CFLAGS-rtld-strlen.os = $(extra-optimizations)
+
+CFLAGS-strnlen.o = $(extra-optimizations)
+CFLAGS-strnlen.os = $(extra-optimizations)
+CFLAGS-rtld-strnlen.os = $(extra-optimizations)
+
+CFLAGS-strncat.o = $(extra-optimizations)
+CFLAGS-strncat.os = $(extra-optimizations)
+
+CFLAGS-strncmp.o = $(extra-optimizations)
+CFLAGS-strncmp.os = $(extra-optimizations)
+
+CFLAGS-strncpy.o = $(extra-optimizations)
+CFLAGS-strncpy.os = $(extra-optimizations)
+
+CFLAGS-strrchr.o = $(extra-optimizations)
+CFLAGS-strrchr.os = $(extra-optimizations)
+
+CFLAGS-bcopy.o = $(extra-optimizations)
+CFLAGS-bcopy.os = $(extra-optimizations)
+
+CFLAGS-bzero.o = $(extra-optimizations)
+CFLAGS-bzero.os = $(extra-optimizations)
+
+CFLAGS-strdup.o = $(extra-optimizations)
+CFLAGS-strdup.os = $(extra-optimizations)
+
+CFLAGS-strpbrk.o = $(extra-optimizations)
+CFLAGS-strpbrk.os = $(extra-optimizations)
+
+CFLAGS-strspn.o = $(extra-optimizations)
+CFLAGS-strspn.os = $(extra-optimizations)
+
+CFLAGS-strcspn.o = $(extra-optimizations)
+CFLAGS-strcspn.os = $(extra-optimizations)
+
+CFLAGS-strcasecmp.o = $(extra-optimizations)
+CFLAGS-strcasecmp.os = $(extra-optimizations)
+
+CFLAGS-strncase.o = $(extra-optimizations)
+CFLAGS-strncase.os = $(extra-optimizations)
+
+endif # Check for extra optimizations

@@ -27,7 +27,7 @@
 
 
 /* Path of the file.  */
-static const char default_nss[] = "/etc/default/nss";
+static const char default_nss[] = "/etc/nss.conf";
 
 /* Flags once read from the file.  */
 static int default_nss_flags;

@@ -55,8 +55,10 @@ extern void __libc_check_standard_fds (void);
 #ifdef NEED_DL_BASE_ADDR
 ElfW(Addr) _dl_base_addr;
 #endif
-int __libc_enable_secure attribute_relro = 0;
+int __libc_enable_secure attribute_relro = 1;
 rtld_hidden_data_def (__libc_enable_secure)
+int __libc_security_mask attribute_relro = 0x7fffffff;
+rtld_hidden_data_def (__libc_security_mask)
 int __libc_multiple_libcs = 0;	/* Defining this here avoids the inclusion
 				   of init-first.  */
 /* This variable contains the lowest stack address ever used.  */
@@ -69,7 +71,7 @@ void *_dl_random attribute_relro = NULL;
   do {									      \
     void **_tmp;							      \
     (argc) = *(long int *) cookie;					      \
-    (argv) = (char **) ((long int *) cookie + 1);			      \
+    (argv) = (char **) ((void **) cookie + 1);				      \
     (envp) = (argv) + (argc) + 1;					      \
     for (_tmp = (void **) (envp); *_tmp; ++_tmp)			      \
       continue;								      \
@@ -81,6 +83,10 @@ void *_dl_random attribute_relro = NULL;
 # define DL_STACK_END(cookie) ((void *) (cookie))
 #endif
 
+#ifdef HAVE_AUX_XID
+#undef HAVE_AUX_XID
+#endif
+
 ElfW(Addr)
 _dl_sysdep_start (void **start_argptr,
 		  void (*dl_main) (const ElfW(Phdr) *phdr, ElfW(Word) phnum,
@@ -90,19 +96,19 @@ _dl_sysdep_start (void **start_argptr,
   ElfW(Word) phnum = 0;
   ElfW(Addr) user_entry;
   ElfW(auxv_t) *av;
-#ifdef HAVE_AUX_SECURE
+  int security_mask = 0;
+#if 0
 # define set_seen(tag) (tag)	/* Evaluate for the side effects.  */
-# define set_seen_secure() ((void) 0)
 #else
   uid_t uid = 0;
   gid_t gid = 0;
   unsigned int seen = 0;
-# define set_seen_secure() (seen = -1)
 # ifdef HAVE_AUX_XID
 #  define set_seen(tag) (tag)	/* Evaluate for the side effects.  */
 # else
 #  define M(type) (1 << (type))
 #  define set_seen(tag) seen |= M ((tag)->a_type)
+#  define is_seen(tag) seen & M ((tag)->a_type)
 # endif
 #endif
 #ifdef NEED_DL_SYSINFO
@@ -120,7 +126,23 @@ _dl_sysdep_start (void **start_argptr,
     switch (av->a_type)
       {
       case AT_PHDR:
+#if defined __e2k__ && defined __ptr128__
+	/* Does this AUXV entry actually describe program headers of ld.so? With
+	   the latest Kernel including my patch this should be the case both if
+	   it's started explicitly as a program and implicitly as an
+	   interpreter.  */
+	phdr = ({
+	    const void *res;
+	    const void *gd;
+	    __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+	    __asm__ ("gdtoap %1, %0\n\t"
+		     : "=r" (res)
+		     : "r" (av->a_un.a_val - (uintptr_t) gd));
+	    res;
+	  });
+#else
 	phdr = (void *) av->a_un.a_val;
+#endif
 	break;
       case AT_PHNUM:
 	phnum = av->a_un.a_val;
@@ -136,21 +158,18 @@ _dl_sysdep_start (void **start_argptr,
 	_dl_base_addr = av->a_un.a_val;
 	break;
 #endif
-#ifndef HAVE_AUX_SECURE
       case AT_UID:
       case AT_EUID:
+	if (is_seen (av)) break;
 	uid ^= av->a_un.a_val;
 	break;
       case AT_GID:
       case AT_EGID:
+	if (is_seen (av)) break;
 	gid ^= av->a_un.a_val;
 	break;
-#endif
       case AT_SECURE:
-#ifndef HAVE_AUX_SECURE
-	seen = -1;
-#endif
-	__libc_enable_secure = av->a_un.a_val;
+	security_mask |= av->a_un.a_val != 0;
 	break;
       case AT_PLATFORM:
 	GLRO(dl_platform) = (void *) av->a_un.a_val;
@@ -185,8 +204,6 @@ _dl_sysdep_start (void **start_argptr,
 #endif
       }
 
-#ifndef HAVE_AUX_SECURE
-  if (seen != -1)
     {
       /* Fill in the values we have not gotten from the kernel through the
 	 auxiliary vector.  */
@@ -198,12 +215,12 @@ _dl_sysdep_start (void **start_argptr,
       SEE (GID, gid, gid);
       SEE (EGID, gid, egid);
 # endif
-
-      /* If one of the two pairs of IDs does not match this is a setuid
-	 or setgid run.  */
-      __libc_enable_secure = uid | gid;
     }
-#endif
+  /* If one of the two pairs of IDs does not match
+     this is a setuid or setgid run.  */
+  security_mask |= ((uid != 0) << 1) | ((gid != 0) << 2);
+  __libc_security_mask = security_mask;
+  __libc_enable_secure = security_mask != 0;
 
 #ifndef HAVE_AUX_PAGESIZE
   if (GLRO(dl_pagesize) == 0)
@@ -235,6 +252,7 @@ _dl_sysdep_start (void **start_argptr,
   if (GLRO(dl_platform) != NULL)
     GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
 
+#if ! defined __ptr128__
   if (__sbrk (0) == _end)
     /* The dynamic linker was run as a program, and so the initial break
        starts just after our bss, at &_end.  The malloc in dl-minimal.c
@@ -243,6 +261,7 @@ _dl_sysdep_start (void **start_argptr,
        will see this new value and not clobber our data.  */
     __sbrk (GLRO(dl_pagesize)
 	    - ((_end - (char *) 0) & (GLRO(dl_pagesize) - 1)));
+#endif
 
   /* If this is a SUID program we make sure that FDs 0, 1, and 2 are
      allocated.  If necessary we are doing it ourself.  If it is not

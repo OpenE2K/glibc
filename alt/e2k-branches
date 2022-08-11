@@ -1,0 +1,16 @@
+e2k/2.23/1.23:
+mcst -> patches/fedora -> patches/patches -> patches/e2k -> alt -> e2k32
+                            [sisyphus]         [alt]       [spec]
+
+e2k/2.29/1.24:
+mcst -> branch -> fedora -> sisyphus -> e2k -> alt
+      [upstream]                            |
+                            {special merge as described below}
+
+Special merge during toolchain branch change (from alt branch only
+selected files are needed + all history):
+$ git merge --no-commit $branch # saves all history
+# clean all except non-glibc files
+$ find -mindepth 1 -maxdepth 1 ! -name alt ! -name .git ! -name .gear -execdir rm -r '{}' \+
+$ git checkout $branch -- .     # restores all glibc files
+$ git merge --commit            # finalize commit

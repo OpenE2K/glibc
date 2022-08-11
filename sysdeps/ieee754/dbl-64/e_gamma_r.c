@@ -176,8 +176,17 @@ __ieee754_gamma_r (double x, int *signgamp)
 	  double tx = trunc (x);
 	  *signgamp = (tx == 2.0 * trunc (tx / 2.0)) ? -1 : 1;
 	  if (x <= -184.0)
-	    /* Underflow.  */
-	    ret = DBL_MIN * DBL_MIN;
+	    {
+	      /* Underflow.  */
+#if ! defined __LCC__
+	      ret = DBL_MIN * DBL_MIN;
+#else /* defined __LCC__  */
+	      /* Suppress "floating point operation result is out of range" EDG
+		 warning this way.  */
+	      double dbl_min = DBL_MIN;
+	      ret = dbl_min * dbl_min;
+#endif
+	    }
 	  else
 	    {
 	      double frac = tx - x;

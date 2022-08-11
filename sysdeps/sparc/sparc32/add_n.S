@@ -55,7 +55,12 @@ LOC(v1):
 	ld	[S1_PTR+0],%g4
 	addcc	SIZE,-10,SIZE
 	ld	[S1_PTR+4],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+0],%g2
+	ld	[S2_PTR+4],%g3
+#else /* __LCC__  */
 	ldd	[S2_PTR+0],%g2
+#endif /* __LCC__  */
 	blt	LOC(fin1)
 	subcc	%g0,%o4,%g0		! restore cy
 /* Add blocks of 8 limbs until less than 8 limbs remain */
@@ -64,26 +69,54 @@ LOC(loop1):
 	ld	[S1_PTR+8],%g4
 	addxcc	%g1,%g3,%o5
 	ld	[S1_PTR+12],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+8],%g2
+	ld	[S2_PTR+12],%g3
+	st	%o4,[RES_PTR+0]
+	st	%o5,[RES_PTR+4]
+#else /* __LCC__  */
 	ldd	[S2_PTR+8],%g2
 	std	%o4,[RES_PTR+0]
+#endif /* __LCC__  */
 	addxcc	%g4,%g2,%o4
 	ld	[S1_PTR+16],%g4
 	addxcc	%g1,%g3,%o5
 	ld	[S1_PTR+20],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+16],%g2
+	ld	[S2_PTR+20],%g3
+	st	%o4,[RES_PTR+8]
+	st	%o5,[RES_PTR+12]
+#else /* __LCC__  */
 	ldd	[S2_PTR+16],%g2
 	std	%o4,[RES_PTR+8]
+#endif /* __LCC__  */
 	addxcc	%g4,%g2,%o4
 	ld	[S1_PTR+24],%g4
 	addxcc	%g1,%g3,%o5
 	ld	[S1_PTR+28],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+24],%g2
+	ld	[S2_PTR+28],%g3
+	st	%o4,[RES_PTR+16]
+	st	%o5,[RES_PTR+20]
+#else /* __LCC__  */
 	ldd	[S2_PTR+24],%g2
 	std	%o4,[RES_PTR+16]
+#endif /* __LCC__  */
 	addxcc	%g4,%g2,%o4
 	ld	[S1_PTR+32],%g4
 	addxcc	%g1,%g3,%o5
 	ld	[S1_PTR+36],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+32],%g2
+	ld	[S2_PTR+36],%g3
+	st	%o4,[RES_PTR+24]
+	st	%o5,[RES_PTR+28]
+#else /* __LCC__  */
 	ldd	[S2_PTR+32],%g2
 	std	%o4,[RES_PTR+24]
+#endif /* __LCC__  */
 	addx	%g0,%g0,%o4		! save cy in register
 	addcc	SIZE,-8,SIZE
 	add	S1_PTR,32,S1_PTR
@@ -102,8 +135,15 @@ LOC(loope1):
 	ld	[S1_PTR+8],%g4
 	addxcc	%g1,%g3,%o5
 	ld	[S1_PTR+12],%g1
+#ifdef __LCC__
+	ld	[S2_PTR+8],%g2
+	ld	[S2_PTR+12],%g3
+	st	%o4,[RES_PTR+0]
+	st	%o5,[RES_PTR+4]
+#else /* __LCC__  */
 	ldd	[S2_PTR+8],%g2
 	std	%o4,[RES_PTR+0]
+#endif /* __LCC__  */
 	addx	%g0,%g0,%o4		! save cy in register
 	addcc	SIZE,-2,SIZE
 	add	S1_PTR,8,S1_PTR
@@ -114,7 +154,12 @@ LOC(loope1):
 LOC(end1):
 	addxcc	%g4,%g2,%o4
 	addxcc	%g1,%g3,%o5
+#ifdef __LCC__
+	st	%o4,[RES_PTR+0]
+	st	%o5,[RES_PTR+4]
+#else /* __LCC__  */
 	std	%o4,[RES_PTR+0]
+#endif /* __LCC__  */
 	addx	%g0,%g0,%o4		! save cy in register
 
 	andcc	SIZE,1,%g0
@@ -169,26 +214,54 @@ LOC(v2):
 	subcc	%g0,%o4,%g0		! restore cy
 /* Add blocks of 8 limbs until less than 8 limbs remain */
 LOC(loop2):
+#ifdef __LCC__
+	ld	[S1_PTR+0],%g2
+	ld	[S1_PTR+4],%g3
+	ld	[S2_PTR+0],%o4
+	ld	[S2_PTR+4],%o5
+#else /* __LCC__  */
 	ldd	[S1_PTR+0],%g2
 	ldd	[S2_PTR+0],%o4
+#endif /* __LCC__  */
 	addxcc	%g2,%o4,%g2
 	st	%g2,[RES_PTR+0]
 	addxcc	%g3,%o5,%g3
 	st	%g3,[RES_PTR+4]
+#ifdef __LCC__
+	ld	[S1_PTR+8],%g2
+	ld	[S1_PTR+12],%g3
+	ld	[S2_PTR+8],%o4
+	ld	[S2_PTR+12],%o5
+#else /* __LCC__  */
 	ldd	[S1_PTR+8],%g2
 	ldd	[S2_PTR+8],%o4
+#endif /* __LCC__  */
 	addxcc	%g2,%o4,%g2
 	st	%g2,[RES_PTR+8]
 	addxcc	%g3,%o5,%g3
 	st	%g3,[RES_PTR+12]
+#ifdef __LCC__
+	ld	[S1_PTR+16],%g2
+	ld	[S1_PTR+20],%g3
+	ld	[S2_PTR+16],%o4
+	ld	[S2_PTR+20],%o5
+#else /* __LCC__  */
 	ldd	[S1_PTR+16],%g2
 	ldd	[S2_PTR+16],%o4
+#endif /* __LCC__  */
 	addxcc	%g2,%o4,%g2
 	st	%g2,[RES_PTR+16]
 	addxcc	%g3,%o5,%g3
 	st	%g3,[RES_PTR+20]
+#ifdef __LCC__
+	ld	[S1_PTR+24],%g2
+	ld	[S1_PTR+28],%g3
+	ld	[S2_PTR+24],%o4
+	ld	[S2_PTR+28],%o5
+#else /* __LCC__  */
 	ldd	[S1_PTR+24],%g2
 	ldd	[S2_PTR+24],%o4
+#endif /* __LCC__  */
 	addxcc	%g2,%o4,%g2
 	st	%g2,[RES_PTR+24]
 	addxcc	%g3,%o5,%g3
@@ -206,8 +279,15 @@ LOC(fin2):
 	blt	LOC(end2)
 	subcc	%g0,%o4,%g0		! restore cy
 LOC(loope2):
+#ifdef __LCC__
+	ld	[S1_PTR+0],%g2
+	ld	[S1_PTR+4],%g3
+	ld	[S2_PTR+0],%o4
+	ld	[S2_PTR+4],%o5
+#else /* __LCC__  */
 	ldd	[S1_PTR+0],%g2
 	ldd	[S2_PTR+0],%o4
+#endif /* __LCC__  */
 	addxcc	%g2,%o4,%g2
 	st	%g2,[RES_PTR+0]
 	addxcc	%g3,%o5,%g3

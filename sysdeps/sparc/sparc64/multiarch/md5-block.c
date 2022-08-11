@@ -1,3 +1,9 @@
+#if defined __LCC__
+
+#include <crypt/md5-block.c>
+
+#else /* ! __LCC__  */
+
 #include <sparc-ifunc.h>
 
 #define  __md5_process_block __md5_process_block_generic
@@ -27,3 +33,5 @@ static bool cpu_supports_md5(int hwcap)
 extern void __md5_process_block (const void *buffer, size_t len,
 				 struct md5_ctx *ctx);
 sparc_libc_ifunc(__md5_process_block, cpu_supports_md5(hwcap) ? __md5_process_block_crop : __md5_process_block_generic);
+
+#endif /* __LCC__  */

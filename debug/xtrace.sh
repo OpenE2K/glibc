@@ -88,8 +88,8 @@ format_line() {
 # If the variable COLUMNS is not set do this now.
 COLUMNS=${COLUMNS:-80}
 
-# If `TERMINAL_PROG' is not set, set it to `xterm'.
-TERMINAL_PROG=${TERMINAL_PROG:-xterm}
+# If `TERMINAL_PROG' is not set, set it to `xvt'.
+TERMINAL_PROG=${TERMINAL_PROG:-xvt}
 
 # The data file to process, if any.
 data=
@@ -151,6 +151,14 @@ if test ! -x "$program"; then
   help_info
 fi
 
+fifodir=
+cleanup()
+{
+	trap - EXIT
+	[ -z "$fifodir" ] || rm -rf -- "$fifodir"
+	exit "$@"
+}
+
 # We have two modes.  If a data file is given simply print the included data.
 printf "%-20s  %-*s  %6s\n" Function $(expr $COLUMNS - 30) File Line
 for i in $(seq 1 $COLUMNS); do printf -; done; printf '\n'
@@ -165,8 +173,14 @@ if test -n "$data"; then
     fi
   done
 else
-  fifo=$(mktemp -ut xtrace.XXXXXX) || exit
-  trap 'rm -f "$fifo"; exit 1' HUP INT QUIT TERM PIPE
+  fifodir="$(mktemp -dt xtrace.XXXXXXXXXX)" || exit
+  trap 'cleanup $?' EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 131' QUIT
+  trap 'exit 141' PIPE
+  trap 'exit 143' TERM
+  fifo="$fifodir/fifo"
   mkfifo -m 0600 $fifo || exit 1
 
   # Now start the program and let it write to the FIFO.
@@ -186,7 +200,6 @@ else
   done
   read -p "Press return here to close $TERMINAL_PROG($program)."
   echo > "$fifo"
-  rm "$fifo"
 fi
 
 exit 0

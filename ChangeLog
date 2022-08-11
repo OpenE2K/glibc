@@ -15796,6 +15796,12 @@
 	versions of gcc, binutils, texinfo, gawk, bison, and sed.
 	* INSTALL: Regenerated.
 
+2018-01-30  Dmitry V. Levin  <ldv@altlinux.org>
+
+	*  stdlib/test-atexit-race-common.c: Include <unistd.h>.
+	(kNumThreads): Remove const qualifier.
+	(do_test): Limit kNumThreads to sysconf (_SC_CHILD_MAX) / 8.
+
 2018-01-30  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* sysdeps/pthread/allocalim.h (__libc_use_alloca): Use __glibc_likely

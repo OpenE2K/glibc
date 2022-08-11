@@ -52,6 +52,10 @@ to_string (const counter &c)
 template <counter *Counter>
 struct counting
 {
+#if defined __LCC__
+  /* Stupidly suppress `__attribute__ ((noclone))' unrecognized by LCC.  */
+# pragma diag_suppress 1097
+#endif /* defined __LCC__  */
   counting () __attribute__ ((noinline, noclone));
   ~counting () __attribute__ ((noinline, noclone));
   void operation () __attribute__ ((noinline, noclone));

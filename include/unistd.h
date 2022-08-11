@@ -170,8 +170,10 @@ libc_hidden_proto (__sbrk)
    and some functions contained in the C library ignore various
    environment variables that normally affect them.  */
 extern int __libc_enable_secure attribute_relro;
+extern int __libc_security_mask attribute_relro;
 extern int __libc_enable_secure_decided;
 rtld_hidden_proto (__libc_enable_secure)
+rtld_hidden_proto (__libc_security_mask)
 
 
 /* Various internal function.  */

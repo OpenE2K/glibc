@@ -32,7 +32,7 @@
 #ifndef aio_create_helper_thread
 # define aio_create_helper_thread __aio_create_helper_thread
 
-extern inline int
+static int
 __aio_create_helper_thread (pthread_t *threadp, void *(*tf) (void *), void *arg)
 {
   pthread_attr_t attr;

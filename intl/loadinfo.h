@@ -34,12 +34,6 @@
 # define LIBINTL_DLL_EXPORTED
 #endif
 
-/* Tell the compiler when a conditional or integer expression is
-   almost always true or almost always false.  */
-#ifndef HAVE_BUILTIN_EXPECT
-# define __builtin_expect(expr, val) (expr)
-#endif
-
 /* Separator in PATH like lists of pathnames.  */
 #if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__) || defined __EMX__ || defined __DJGPP__
   /* Win32, OS/2, DOS */

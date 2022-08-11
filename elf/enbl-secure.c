@@ -26,11 +26,17 @@
 int __libc_enable_secure_decided;
 /* Safest assumption, if somehow the initializer isn't run.  */
 int __libc_enable_secure = 1;
+int __libc_security_mask = 0x7fffffff;
 
 void
 __libc_init_secure (void)
 {
   if (__libc_enable_secure_decided == 0)
-    __libc_enable_secure = (__geteuid () != __getuid ()
-			    || __getegid () != __getgid ());
+    {
+      __libc_security_mask =
+	((__geteuid () != __getuid ()) << 1) |
+	((__getegid () != __getgid ()) << 2);
+      __libc_enable_secure = __libc_security_mask != 0;
+      __libc_security_mask |= __libc_enable_secure;
+    }
 }

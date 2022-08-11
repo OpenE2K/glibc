@@ -268,7 +268,11 @@ parse_tunables (char *tunestr, char *valstring)
    for setuid binaries.  We use the special version of access() to avoid
    setting ERRNO, which is a TLS variable since TLS has not yet been set
    up.  */
-static inline void
+static
+#ifndef __LCC__
+inline
+#endif
+void
 __always_inline
 maybe_enable_malloc_check (void)
 {

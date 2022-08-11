@@ -40,16 +40,18 @@
 data=$1
 shift
 cxx=$(echo $* | sed 's/-fgnu89-inline//')
+tmp_src=$(mktemp)
 while read t; do
   echo -n "$t:"
-  $cxx -S -xc++ -o - -D_GNU_SOURCE <(cat <<EOF
+  (cat <<EOF
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <unistd.h>
 void foo ($t) { }
 EOF
-) |
+) > $tmp_src
+  $cxx -S -xc++ -o - -D_GNU_SOURCE $tmp_src |
   sed 's/[[:space:]]*[.]globa\?l[[:space:]]*_Z3foo\([_[:alnum:]]*\).*/\1/p;d'
 done <<EOF |
 blkcnt64_t

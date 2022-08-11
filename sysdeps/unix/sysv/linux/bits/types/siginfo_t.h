@@ -88,7 +88,11 @@ typedef struct
 	/* SIGILL, SIGFPE, SIGSEGV, SIGBUS.  */
 	struct
 	  {
+#if ! (defined __e2k__ && defined __ptr128__)
 	    void *si_addr;	    /* Faulting insn/memory ref.  */
+#else /* defined __e2k__ && defined __ptr128__  */
+	    unsigned long int si_addr;
+#endif /* defined __e2k__ && defined __ptr128__  */
 	    __SI_SIGFAULT_ADDL
 	    short int si_addr_lsb;  /* Valid LSB of the reported address.  */
 	    union
@@ -96,8 +100,13 @@ typedef struct
 		/* used when si_code=SEGV_BNDERR */
 		struct
 		  {
+#if ! (defined __e2k__ && defined __ptr128__)
 		    void *_lower;
 		    void *_upper;
+#else /* defined __e2k__ && defined __ptr128__  */
+		    unsigned long int _lower;
+		    unsigned long int _upper;
+#endif /* defined __e2k__ && defined __ptr128__  */
 		  } _addr_bnd;
 		/* used when si_code=SEGV_PKUERR */
 		__uint32_t _pkey;

@@ -1,3 +1,5 @@
+#if ! defined __LCC__
+
 /* Test module for making nonexecutable stacks executable
    on load of a DSO that requires executable stacks.  */
 
@@ -28,3 +30,5 @@ callme (void (*callback) (void))
 {
   (*callback) ();
 }
+
+#endif /* ! defined __LCC__  */

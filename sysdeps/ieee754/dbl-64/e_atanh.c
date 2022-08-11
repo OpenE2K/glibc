@@ -65,10 +65,19 @@ __ieee754_atanh (double x)
     t = 0.5 * __log1p ((xa + xa) / (1.0 - xa));
   else
     {
+#if defined __LCC__
+      double z = 0.0;
+#endif
       if (isgreater (xa, 1.0))
 	return (x - x) / (x - x);
 
-      return x / 0.0;
+      return x /
+#if defined __LCC__
+	z
+#else
+	0.0
+#endif
+	;
     }
 
   return copysign (t, x);

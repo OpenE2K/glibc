@@ -30,7 +30,7 @@ get_current_dir_name (void)
   char *pwd;
   struct stat64 dotstat, pwdstat;
 
-  pwd = getenv ("PWD");
+  pwd = __libc_secure_getenv ("PWD");
   if (pwd != NULL
       && stat64 (".", &dotstat) == 0
       && stat64 (pwd, &pwdstat) == 0

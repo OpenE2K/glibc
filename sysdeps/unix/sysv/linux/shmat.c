@@ -35,8 +35,26 @@ shmat (int shmid, const void *shmaddr, int shmflg)
   unsigned long resultvar;
   void *raddr;
 
+# if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    void *c;
+    void *d;
+  }
+  /* FIXME: RADDR is expected to contain AP on return. This requires redesign
+     of PM-specific implementation on the Kernel side.  */
+  args = {(long int) shmid, (long int) shmflg, (void *) &raddr,
+	  (void *) shmaddr};
+
+  resultvar = INTERNAL_SYSCALL_CALL (ipc, err, IPCOP_shmat, &args);
+
+# else /* ! defined __ptr128__  */
+
   resultvar = INTERNAL_SYSCALL_CALL (ipc, err, IPCOP_shmat, shmid, shmflg,
 				     &raddr, shmaddr);
+#endif /* ! defined __ptr128__  */
   if (INTERNAL_SYSCALL_ERROR_P (resultvar, err))
     return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (INTERNAL_SYSCALL_ERRNO (resultvar,
 									       err));

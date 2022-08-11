@@ -19,6 +19,7 @@
 #include <sysdeps/generic/ldconfig.h>
 
 #define SYSDEP_KNOWN_INTERPRETER_NAMES \
+  { "/lib64/ld-linux-aarch64.so.1", FLAG_ELF_LIBC6 }, \
   { "/lib/ld-linux-aarch64.so.1", FLAG_ELF_LIBC6 }, \
   { "/lib/ld-linux-aarch64_be.so.1", FLAG_ELF_LIBC6 }, \
   { "/lib/ld-linux-aarch64_ilp32.so.1", FLAG_ELF_LIBC6 }, \

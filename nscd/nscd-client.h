@@ -403,10 +403,19 @@ extern struct mapped_database *__nscd_get_map_ref (request_type type,
 						   int *gc_cyclep)
   attribute_hidden;
 
+/* Note that `__nscd_unmap ()' becomes a LOCAL symbol within libc.so, therefore
+   if a non-optimizing compiler turns out to be unable to get rid of the unused
+   `__nscd_drop_map_ref ()' when compiling sources for NSCD utility, this will
+   cause a linkage error due to an unresolved reference to `__nscd_unmap ()'.
+   Help it a bit and prevent it from seeing `__nscd_drop_map_ref ()' when it's
+   not actually needed.  */
+#if IS_IN (libc)
+
 /* Unmap database.  */
 extern void __nscd_unmap (struct mapped_database *mapped)
   attribute_hidden;
 
+#ifndef __NSCD_DROP_MAP_REF_UNUSED
 /* Drop reference of mapping.  */
 static int
 __attribute__ ((unused))
@@ -428,7 +437,9 @@ __nscd_drop_map_ref (struct mapped_database *map, int *gc_cycle)
 
   return 0;
 }
+#endif /* __NSCD_DROP_MAP_REF_UNUSED  */
 
+#endif /* IS_IN (libc)  */
 
 /* Search the mapped database.  */
 extern struct datahead *__nscd_cache_search (request_type type,

@@ -36,7 +36,7 @@ install (void)
 {
   /* See whether the environment variable `PCPROFILE_OUTPUT' is defined.
      If yes, it should name a FIFO.  We open it and mark ourself as active.  */
-  const char *outfile = getenv ("PCPROFILE_OUTPUT");
+  const char *outfile = __libc_secure_getenv ("PCPROFILE_OUTPUT");
 
   if (outfile != NULL && *outfile != '\0')
     {

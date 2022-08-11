@@ -42,7 +42,7 @@ do_test (void)
 
   fclose (stderr);
 
-  if (dup2 (fd, 2) == -1)
+  if (dup3 (fd, 2, 0) == -1)
     {
       printf ("cannot create file descriptor 2: %m\n");
       exit (EXIT_FAILURE);
@@ -97,7 +97,7 @@ do_test (void)
   lseek (fd, 0, SEEK_SET);
   ftruncate (fd, 0);
 
-  if (dup2 (fd, 2) == -1)
+  if (dup3 (fd, 2, 0) == -1)
     {
       printf ("cannot create file descriptor 2: %m\n");
       exit (EXIT_FAILURE);

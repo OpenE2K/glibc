@@ -44,7 +44,10 @@ __vasprintf_internal (char **result_ptr, const char *format, va_list args,
      we know we will never seek on the stream.  */
   string = (char *) malloc (init_string_size);
   if (string == NULL)
-    return -1;
+    {
+      *result_ptr = NULL;
+      return -1;
+    }
 #ifdef _IO_MTSAFE_IO
   sf._sbf._f._lock = NULL;
 #endif
@@ -58,6 +61,7 @@ __vasprintf_internal (char **result_ptr, const char *format, va_list args,
   if (ret < 0)
     {
       free (sf._sbf._f._IO_buf_base);
+      *result_ptr = NULL;
       return ret;
     }
   /* Only use realloc if the size we need is of the same (binary)

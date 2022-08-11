@@ -28,7 +28,11 @@ int rtld_errno attribute_hidden;
 
 #else
 
-__thread int errno;
+__thread int errno
+#if defined __ptr128__
+= 0
+#endif
+  ;
 extern __thread int __libc_errno __attribute__ ((alias ("errno")))
   attribute_hidden;
 

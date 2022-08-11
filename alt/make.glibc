@@ -1,0 +1,448 @@
+#!/bin/bash
+
+# @(#) $Id$
+
+# -----------------------------------------------------------------------------
+
+# Скрипт для формирования log'ов
+. `dirname $0`/scr.log
+
+# -----------------------------------------------------------------------------
+
+# Учитывая, что значением данного параметра может быть пустая строка
+RENAME_DIR=__fake_rename_dir
+
+# ---------- Сборка -----------------------------------------------------------
+
+# void configure_glibc (char *mode)
+configure_glibc ()
+{
+    local target_cflags
+    local host=$1
+    local build_dir=$BUILD_DIR/build-${host}-glibc
+    local glibc_host=$host
+    # Версию ядра для Sparc'ов приходится понижать, т.к. на наших Sun'овских
+    # хостах в основном стоит старье, а MCST'шных V9 с linux-2.6.33 практически
+    # нет. Еще одна причина заключается в том, что до исправления Bug #67213
+    # v9sim не обеспечивает environment, совместимый с linux-2.6.33.
+    local kernel_version="2.6.33"
+    local extra
+
+
+    # Раскомментировать для сборки glibc с поддержкой Lazy binding'а,
+    # включающего обход аппаратной ошибки Bug #75842 (см. Bug #68067) и с
+    # контролем наличия данного обхода в динамически загружаемых ELF-файлах
+    # (см. Bug #68116). Данная glibc будет подгружать только динамические
+    # библиотеки, собранные с использованием компилятора и binutils, в которых
+    # включена поддержка указанных bug'ов ! ! !
+    # case $host in
+    #     e2k*-linux)
+    #         extra="--with-bug-75842"
+    #         ;;
+    # esac
+
+#    case $host in
+#	e2k*-linux)
+#	    extra="$extra --enable-new-pm-syscalls"
+#	    ;;
+#    esac
+
+    case $host in
+        e2k32-linux)
+            target_cflags="-mptr32 -U__NO_INLINE__ -masm-inline"
+            ;;
+        e2k64-linux)
+            target_cflags="-mptr64 -U__NO_INLINE__ -masm-inline"
+            ;;
+        e2k128-linux)
+            target_cflags="-mptr128 -U__NO_INLINE__ -masm-inline -Wno-void-pointer-to-function-pointer-cast"
+	    # Avoid allocating local VLA arrays via `__lcc_malloc ()' (this is
+	    # the default behaviour in PM due to the inability of GETSAP to
+	    # "return" the previously allocated stack) as the latter depends on
+	    # `fprintf (stderr)' which is sure to break the linkage of ld.so
+	    # (see Bugs #109851 and #109796). This is done in hope that the use
+	    # of GETSAPs to allocate VLAs in glibc won't result in stack
+	    # overflow.
+	    target_cflags="$target_cflags -fstack-arrays"
+            ;;
+        v832-linux)
+            target_cflags="-m32 -mcpu=v8 -U__NO_INLINE__"
+            glibc_host=sparc-linux
+            kernel_version="2.6.24"
+            ;;
+        v932-linux)
+            target_cflags="-m32 -mcpu=$CPU -Wa,-Av9d -U__NO_INLINE__"
+            glibc_host=sparcv9b-linux
+            kernel_version="2.6.24"
+            ;;
+        v964-linux)
+            target_cflags="-m64 -mcpu=$CPU -U__NO_INLINE__"
+            glibc_host=sparc64b-linux
+            kernel_version="2.6.24"
+            ;;
+    esac
+
+    # См. Bug #60075 и Bug #94443
+    target_cflags="$target_cflags -Wno-builtin-functions-redefined -Wno-builtin-declaration-mismatch"
+
+    # These options are expected to suppress all currently known unreliable
+    # warnings produced by optimizing LCC making `--enable-werror' glibc build
+    # fail (Bug #123898, Comment #0). They are attached unconditionally because
+    # as stated in Comment #7 and below a class of warnings emitted by LCC
+    # optimizer does not intersect with the one produced by EDG which is why
+    # EDG warnings are not going to be unreasonably inhibited.
+    target_cflags="$target_cflags -Wno-error=invalid-builtin-arg -Wno-error=maybe-uninitialized"
+
+    log_cmd "rm -rf $build_dir"
+    log_cmd "mkdir -p $build_dir"
+
+    if [ -n "$DEBIAN_MULTIARCH" ]; then
+	local prefix_wo_usr=$(echo $PREFIX | sed -e "s#/usr\$##" -e "s#/usr/\$##")
+	case $host in
+	    e2k32-linux)
+		echo "libdir = $PREFIX/lib32" > $build_dir/configparms
+		echo "slibdir = $prefix_wo_usr/lib32" >> $build_dir/configparms
+		;;
+	    e2k64-linux)
+		echo "libdir = $PREFIX/lib/e2k-linux-gnu" > $build_dir/configparms
+		echo "slibdir = $prefix_wo_usr/lib/e2k-linux-gnu" >> $build_dir/configparms
+		echo "rtlddir = $prefix_wo_usr/lib64" >> $build_dir/configparms
+		;;
+	    e2k128-linux)
+		echo "libdir = $PREFIX/lib/e2k128-linux-gnu" > $build_dir/configparms
+		echo "slibdir = $prefix_wo_usr/lib/e2k128-linux-gnu" >> $build_dir/configparms
+		echo "rtlddir = $prefix_wo_usr/lib128" >> $build_dir/configparms
+		;;
+	    v932-linux)
+		echo "libdir = $PREFIX/lib32" > $build_dir/configparms
+		echo "slibdir = $prefix_wo_usr/lib32" >> $build_dir/configparms
+		;;
+	    v964-linux)
+		echo "libdir = $PREFIX/lib/sparc64-linux-gnu" > $build_dir/configparms
+		echo "slibdir = $prefix_wo_usr/lib/sparc64-linux-gnu" >> $build_dir/configparms
+		echo "rtlddir = $prefix_wo_usr/lib64" >> $build_dir/configparms
+		;;
+	esac
+
+	extra="$extra --enable-debian-multiarch"
+    fi
+
+    log_cmd "cd $build_dir; \
+	        CC=\"$CC -fasm-entries-first -fno-strict-aliasing -fno-ipa-attrs $target_cflags $CFLAGS\" \
+	        CXX=\"$CC -fasm-entries-first -fno-strict-aliasing -fno-ipa-attrs -C++ $target_cflags $CFLAGS\" \
+                CFLAGS=\"-D__OPTIMIZE__\" \
+                NM=\"$($CC -print-prog-name=nm)\" \
+                $SRC_DIR/configure \
+                --prefix=$PREFIX --with-headers=$LINUX_HEADERS --enable-kernel=$kernel_version \
+                --build=i686-pc-linux-gnu --host=$glibc_host \
+                --without-manual-po \
+                --enable-obsolete-rpc --enable-obsolete-nsl \
+                --enable-nscd \
+                $EXTRA_CONFIGURE_OPTIONS $extra -v"
+}
+
+make_glibc ()
+{
+    local host=$1
+    local build_dir=$BUILD_DIR/build-${host}-glibc
+    log_cmd "cd $build_dir; \
+                make no_cxx_headers=y -j$J"
+}
+
+make_install ()
+{
+    local host=$1
+    local make_target=$2
+    local build_dir=$BUILD_DIR/build-${host}-glibc
+
+    log_cmd "cd $build_dir; \
+                make no_cxx_headers=y install_root=$INSTALL_DIR -j$J $make_target"
+
+
+    # Stupidly create a "legacy" link `/libXX/ld-linux.so.2' to
+    # `/lib/zzz-linux-gnu/ld-2.27.so' by analogy with Debian for Sparc64
+    # and x86_64.
+    if [ "$make_target" = "install" -a -n "$DEBIAN_MULTIARCH" -a \
+	\( "$host" = "e2k64-linux" -o "$host" = "e2k128-linux" -o "$host" = "v964-linux" \) ]; then
+
+	local tuple
+	local lib_sfx
+	case $host in
+	    e2k64-linux)
+		tuple=e2k-linux-gnu
+		lib_sfx=64
+		;;
+	    e2k128-linux)
+		tuple=e2k128-linux-gnu
+		lib_sfx=128
+		;;
+	    v964-linux)
+		tuple=sparc64-linux-gnu
+		lib_sfx=64
+		;;
+	esac
+
+	local prefix_wo_usr=$(echo $PREFIX | sed -e "s#/usr\$##" -e "s#/usr/\$##")
+	local real_ldso_path=$prefix_wo_usr/lib/${tuple}/$(readlink ${INSTALL_DIR}${prefix_wo_usr}/lib/${tuple}/ld-linux.so.2)
+	log_cmd "mkdir -pv $INSTALL_DIR/lib${lib_sfx}"
+	log_cmd "ln -svf $real_ldso_path $INSTALL_DIR/lib${lib_sfx}/ld-linux.so.2"
+    fi
+
+}
+
+install_glibc_headers ()
+{
+    local host=$1
+    local build_dir=$BUILD_DIR/build-${host}-glibc
+
+    make_install $host install-headers
+
+    case $host in
+        v8* | v9*)
+            log_cmd "touch $INSTALL_DIR/usr/include/gnu/stubs.h"
+            log_cmd "cp $build_dir/bits/stdio_lim.h \
+                        $INSTALL_DIR/usr/include/bits"
+            ;;
+    esac
+}
+
+install_glibc ()
+{
+    local host=$1
+    local lib=$2
+    local lib_dir=$INSTALL_DIR/usr/$lib
+
+    make_install $host install
+
+    # Renaming doesn't make sense for sysroot configurations (see Bug #97543).
+    if ! $CC -print-sysroot >& /dev/null; then
+	log_cmd "mv $lib_dir/libc.so $lib_dir/libc.so.orig"
+	echo INCLUDE \"ВНИМАНИЕ!!! Оригинал libc.so переименован в libc.so.orig. Нужно переименовать обратно, установив правильный путь\" > $lib_dir/libc.so
+    fi
+}
+
+
+copy_linux_headers ()
+{
+    local glibc_headers=$INSTALL_DIR/usr/include
+
+    # Kernel Headers для linux-2.6.33 создаются стандартным образом, в них
+    # нет избыточных каталогов вроде `net' и символьных ссылок вместо
+    # директориев. Их можно целиком копировать напрямую в `/usr/include'.
+
+    log_cmd "tar --directory $LINUX_HEADERS -cf - . \
+             | tar --directory $glibc_headers -xf -"
+}
+
+
+
+# Данная функция осуществляет "переименование" содержимого скрипта libc.so,
+# содержащего внутри себя абсолютные пути, которые необходимо модифицировать
+# при перетаскивании поставки из каталога в каталог.
+# void rename_glibc (char *bitmode)
+rename_glibc ()
+{
+    local lib=$1
+
+  # Полагаем, что в каталоге INSTALL_DIR нужно поменять пути на RENAME_DIR
+  # Если RENAME_DIR пустое, то полагаем, что нам нужен native вариант -
+  # просто копируем первоначальное содержимое файла
+  if [ -z "$RENAME_DIR" ] ; then
+    log_cmd "mv $INSTALL_DIR/usr/$lib/libc.so.orig $INSTALL_DIR/usr/$lib/libc.so"
+  else
+    log_cmd "sed -e 's| /$lib/| '$RENAME_DIR'/$lib/|g' -e 's| /usr/| '$RENAME_DIR'/usr/|g' \
+             < $INSTALL_DIR/usr/$lib/libc.so.orig > $INSTALL_DIR/usr/$lib/libc.so"
+  fi
+}
+
+# Данная функция выполняет необходимое действие в зависимости от значения
+# параметра ACTION.
+# void action (char *mode)
+action()
+{
+    local host=$1
+    local lib
+
+    case $host in
+        e2k32-linux)
+            lib=lib32
+            ;;
+        v832-linux | v932-linux)
+            lib=lib
+            ;;
+        e2k64-linux | v964-linux)
+            lib=lib64
+            ;;
+        e2k128-linux)
+            lib=lib128
+            ;;
+    esac
+
+    case $ACTION in
+        headers)
+            configure_glibc $host
+            install_glibc_headers $host
+            ;;
+        build-with-existing-headers)
+            make_glibc $host
+            install_glibc $host $lib
+            ;;
+        build)
+            configure_glibc $host
+            make_glibc $host
+            install_glibc $host $lib
+            ;;
+        rename)
+            rename_glibc $lib
+            ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+
+# Будет вызвано из log_parse_cmd_line при недопустимых значениях опций
+print_usage()
+{
+  echo "Запуск:"
+  echo "  $0 \\"
+  echo "    HOST=[e2k|e90-v9|e90-v8-v9|e90-v8] \\"
+  echo "    ACTION=[headers|build-with-existing-headers|build|rename]"
+  echo "    CC=<cc> \\"
+  echo "    CFLAGS=<cflags> \\"
+  echo "    SRC_DIR=<src_dir> \\"
+  echo "    [BUILD_DIR=<build_dir>] \\"
+  echo "    PREFIX=<prefix> \\"
+  echo "    [INSTALL_DIR=<install_dir>] \\"
+  echo "    RENAME_DIR=<rename_dir> \\"
+  echo "    LINUX_HEADERS=<linux_headers> \\"
+  echo "    [EXTRA_CONFIGURE_OPTIONS=<extra_configure_options>] \\"
+  echo "    [LOG_FILE=<log_file>]"
+  echo "    [J=<j>]"
+  exit 1
+}
+
+# Проверка опций
+check_options()
+{
+    # Обязательные параметры
+
+    [ -z "$HOST" ] && log_fatal_error "Не задан параметр HOST"
+    case $HOST in
+        e2k128 | e2k32 | e2k64 | e2k | e90-v964 | e90-v932 | e90-v9 | r1000 | e90-v8-v9 | e90-v8)
+            ;;
+        *)
+            log_fatal_error "Недопустимое значение параметра HOST"
+            print_usage
+            ;;
+    esac
+
+    [ -z "$ACTION" ] && log_fatal_error "Не задан параметр ACTION"
+    case $ACTION in
+        rename)
+            [ "$RENAME_DIR" = "__fake_rename_dir" ] && log_fatal_error "Не задан параметр RENAME_DIR"
+            ;;
+        headers | build)
+            [ -z "$PREFIX" ] && log_fatal_error "Не задан параметр PREFIX"
+            [ -z "$CC" ] && log_fatal_error "Не задан параметр CC"
+            [ -z "$CFLAGS" ] && log_fatal_error "Не задан параметр CFLAGS"
+            [ -z "$SRC_DIR" ] && log_fatal_error "Не задан параметр SRC_DIR"
+
+            [ -z "$LINUX_HEADERS" ] && log_fatal_error "Не задан параметр LINUX_HEADERS"
+            ;;
+        build-with-existing-headers)
+            ;;
+        *)
+            log_fatal_error "Недопустимое значение параметра ACTION"
+            print_usage
+            ;;
+    esac
+
+    if [ -z "$INSTALL_DIR" ]; then
+        # При непустом значении параметра `PREFIX' параметр `INSTALL_DIR'
+        # по умолчанию имеет то же значение.
+        if [ -n "$PREFIX" ]; then
+            INSTALL_DIR="$PREFIX";
+        else
+            log_fatal_error "Не задан параметр INSTALL_DIR";
+        fi;
+    fi
+
+    # Необязательные параметры
+    [ -z "$BUILD_DIR" ] && BUILD_DIR="."
+    [ -z "$EXTRA_CONFIGURE_OPTIONS" ] && EXTRA_CONFIGURE_OPTIONS=""
+    [ -z "$LOG_FILE" ] && LOG_FILE="/dev/null"
+    [ -z "$LOG_MODE" ] && LOG_MODE="both"
+
+    if [ -z "$J" ]; then
+        J=$(grep -c "^processor" /proc/cpuinfo)
+        J=$((J+1));
+    fi
+}
+
+# -----------------------------------------------------------------------------
+
+# Список допустимых настроек, задаваемых извне
+options_list="HOST ACTION CC CFLAGS SRC_DIR BUILD_DIR PREFIX INSTALL_DIR RENAME_DIR LINUX_HEADERS EXTRA_CONFIGURE_OPTIONS LOG_FILE LOG_MODE J DEBIAN_MULTIARCH"
+
+# Разбор опций
+log_parse_cmd_line "$options_list" "$@"
+
+# Проверка опций
+check_options
+
+# Инициализация логов
+log_init "$LOG_MODE" "$LOG_FILE" "1"
+
+# Запишем в логи текущую конфигурацию
+log_print_arg_list "$0" "$@"
+log_print_var_list "$options_list"
+log_line
+
+# -----------------------------------------------------------------------------
+
+
+
+case $HOST in
+    e2k128)
+        hosts=(e2k128-linux)
+        ;;
+    e2k32)
+        hosts=(e2k32-linux)
+        ;;
+    e2k64)
+        hosts=(e2k64-linux)
+        ;;
+    e2k)
+        # Сначала установим в $INSTALL_DIR 128 и 32-х битные компоненты,
+        # а затем - 64-х битные. В итоге у нас останутся 64-х битные версии
+        # общих компонент (утилиты и т.п.).
+        hosts=(e2k128-linux e2k32-linux e2k64-linux)
+        ;;
+    e90-v964)
+        CPU="ultrasparc3"
+        hosts=(v964-linux)
+        ;;
+    e90-v932)
+        CPU="ultrasparc3"
+        hosts=(v932-linux)
+        ;;
+    e90-v9)
+        CPU="ultrasparc3"
+        hosts=(v932-linux v964-linux)
+        ;;
+    r1000)
+        CPU="r1000"
+        hosts=(v932-linux v964-linux)
+        ;;
+    e90-v8)
+        hosts=(v832-linux)
+        ;;
+esac
+
+for h in ${hosts[@]}; do
+    action $h;
+done
+
+if [ "$ACTION" = "build" ]; then
+    copy_linux_headers;
+fi

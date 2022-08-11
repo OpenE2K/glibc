@@ -1,0 +1,1 @@
+#include <string/stpcpy.c>

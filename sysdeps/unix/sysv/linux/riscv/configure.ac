@@ -26,13 +26,6 @@ fi
 
 LIBC_CONFIG_VAR([default-abi], [$libc_cv_riscv_int_abi$libc_cv_riscv_float_abi])
 
-case $libc_cv_riscv_int_abi$libc_cv_riscv_float_abi-$machine in
-lp64-riscv/rv64/*)
-  LIBC_SLIBDIR_RTLDDIR([lib64/lp64], [lib])
-  ;;
-lp64d-riscv/rv64/*)
-  LIBC_SLIBDIR_RTLDDIR([lib64/lp64d], [lib])
-  ;;
-esac
+LIBC_SLIBDIR_RTLDDIR([lib64], [lib64])
 
 ldd_rewrite_script=sysdeps/unix/sysv/linux/riscv/ldd-rewrite.sed

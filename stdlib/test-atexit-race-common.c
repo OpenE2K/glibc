@@ -33,11 +33,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <support/xthread.h>
 #include <limits.h>
 
-const size_t kNumThreads = 1024;
-const size_t kNumHandlers = 1024;
+static size_t kNumThreads = 1024;
+static const size_t kNumHandlers = 1024;
 const size_t kStacksize =
 #ifdef PTHREAD_STACK_MIN
 	0x20000 < PTHREAD_STACK_MIN ? PTHREAD_STACK_MIN :
@@ -67,6 +68,11 @@ do_test (void)
      VM exhausiton on 32-bit machines.  Reduce stack size of each thread to
      128KiB for a maximum required VM size of 128MiB.  */
   xpthread_attr_setstacksize (&attr, kStacksize);
+
+  long nproc = sysconf (_SC_CHILD_MAX);
+
+  if (nproc > 0 && nproc / 8 < kNumThreads)
+    kNumThreads = nproc / 8;
 
   for (i = 0; i < kNumThreads; ++i) {
     xpthread_create (&attr, threadfunc, NULL);

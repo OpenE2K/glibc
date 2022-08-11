@@ -864,7 +864,7 @@ re_string_elem_size_at (const re_string_t *pstr, Idx idx)
 #endif /* RE_ENABLE_I18N */
 
 #ifndef FALLTHROUGH
-# if __GNUC__ < 7
+# if __GNUC__ < 7 || defined __LCC__
 #  define FALLTHROUGH ((void) 0)
 # else
 #  define FALLTHROUGH __attribute__ ((__fallthrough__))

@@ -37,6 +37,11 @@ fwrite_unlocked (const void *buf, size_t size, size_t count, FILE *fp)
   CHECK_FILE (fp, 0);
   if (request == 0)
     return 0;
+#define HALF_INTERNAL_SIZE_T \
+  (((size_t) 1) << (8 * sizeof (size_t) / 2))
+  if (__builtin_expect ((count | size) >= HALF_INTERNAL_SIZE_T, 0))
+    if (request / size != count)
+      return 0;
   if (_IO_fwide (fp, -1) == -1)
     {
       written = _IO_sputn (fp, (const char *) buf, request);

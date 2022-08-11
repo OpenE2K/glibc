@@ -23,7 +23,20 @@
 int
 __libc_msgsnd (int msqid, const void *msgp, size_t msgsz, int msgflg)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+  }
+  args = {(long int) msqid, (long int) msgsz, (long int) msgflg,
+	  (void *) msgp};
+  
+  return SYSCALL_CANCEL (ipc, IPCOP_msgsnd, &args);
+
+#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return SYSCALL_CANCEL (msgsnd, msqid, msgp, msgsz, msgflg);
 #else
   return SYSCALL_CANCEL (ipc, IPCOP_msgsnd, msqid, msgsz, msgflg,

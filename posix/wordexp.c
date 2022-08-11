@@ -305,7 +305,7 @@ parse_tilde (char **word, size_t *word_length, size_t *max_length,
 	 results are unspecified.  We do a lookup on the uid if
 	 HOME is unset. */
 
-      home = getenv ("HOME");
+      home = __libc_secure_getenv ("HOME");
       if (home != NULL)
 	{
 	  *word = w_addstr (*word, word_length, max_length, home);
@@ -1510,7 +1510,7 @@ envsubst:
 	}
     }
   else
-    value = getenv (env);
+    value = __libc_secure_getenv (env);
 
   if (value == NULL && (flags & WRDE_UNDEF))
     {
@@ -2271,7 +2271,7 @@ wordexp (const char *words, wordexp_t *pwordexp, int flags)
   /* Find out what the field separators are.
    * There are two types: whitespace and non-whitespace.
    */
-  ifs = getenv ("IFS");
+  ifs = __libc_secure_getenv ("IFS");
 
   if (ifs == NULL)
     /* IFS unset - use <space><tab><newline>. */

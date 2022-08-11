@@ -41,4 +41,39 @@ extern int __openat64_2 (int __fd, const char *__path, int __oflag);
 extern int __have_atfcts attribute_hidden;
 #endif
 
+#define get_arg								\
+  switch (cmd)								\
+    {									\
+    case F_GETFD:							\
+    case F_GETFL:							\
+    case F_GETOWN:							\
+    case F_GETSIG:							\
+    case F_GETLEASE:							\
+    case F_GETPIPE_SZ:							\
+      /* In `man 2 fcntl' `F{GET,ADD}_SEALS' are said to be available since \
+	 linux-3.17, but their definitions turn out to be missing from glibc \
+	 for some reason . . .						\
+	 case F_GET_SEALS:  */						\
+      arg = NULL;							\
+      break;								\
+      									\
+    case F_DUPFD:							\
+    case F_DUPFD_CLOEXEC:						\
+    case F_SETFD:							\
+    case F_SETFL:							\
+    case F_SETOWN:				\
+    case F_SETSIG:				\
+    case F_SETLEASE:				\
+    case F_NOTIFY:				\
+    case F_SETPIPE_SZ:				\
+      /* See above.				\
+	 case F_ADD_SEALS: */			\
+      arg = (void *) va_arg (ap, int);		\
+      break;					\
+      						\
+    default:					\
+      arg = va_arg (ap, void *);		\
+    }
+
+
 #endif

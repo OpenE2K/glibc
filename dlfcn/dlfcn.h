@@ -88,9 +88,20 @@ extern char *dlerror (void) __THROW;
 typedef struct
 {
   const char *dli_fname;	/* File name of defining object.  */
+
+#if ! defined __ptr128__
   void *dli_fbase;		/* Load address of that object.  */
+#else /* defined __ptr128__  */
+  unsigned int dli_tbase;	/* Text load address of that object.  */
+  unsigned int dli_dbase;	/* Data load address of that object.  */
+#endif /* defined __ptr128__  */
+
   const char *dli_sname;	/* Name of nearest symbol.  */
+#if !defined __ptr128__
   void *dli_saddr;		/* Exact value of nearest symbol.  */
+#else /* defined __ptr128__  */
+  unsigned int dli_saddr;
+#endif /* defined __ptr128__  */
 } Dl_info;
 
 /* Fill in *INFO with the following information about ADDRESS.

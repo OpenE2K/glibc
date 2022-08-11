@@ -34,7 +34,7 @@ __pthread_detach (pthread_t th)
   int result = 0;
 
   /* Mark the thread as detached.  */
-  if (atomic_compare_and_exchange_bool_acq (&pd->joinid, pd, NULL))
+  if (atomic_compare_and_exchange_ptr_bool_acq (&pd->joinid, pd, NULL))
     {
       /* There are two possibilities here.  First, the thread might
 	 already be detached.  In this case we return EINVAL.

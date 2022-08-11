@@ -40,9 +40,17 @@ mq-routines    := mq_open mq_close mq_unlink mq_getattr mq_setattr	\
 
 routines = $(clock-routines)
 
+# lowlevellock stuff is required for PM implementation of mq_notify () in
+# SHARED case.
+ifeq ($(config-machine),e2k128)
+subsidiary = lowlevellock
+else
+subsidiary =
+endif
+
 librt-routines = $(aio-routines) \
 		 $(timer-routines) \
-		 $(shm-routines) $(mq-routines) \
+		 $(shm-routines) $(mq-routines) $(subsidiary) \
 		 clock-compat
 
 tests := tst-shm tst-clock tst-clock_nanosleep tst-timer tst-timer2 \

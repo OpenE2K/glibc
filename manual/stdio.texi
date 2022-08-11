@@ -2486,7 +2486,9 @@ location.
 
 The return value is the number of characters allocated for the buffer, or
 less than zero if an error occurred.  Usually this means that the buffer
-could not be allocated.
+could not be allocated, and the value of @var{ptr} in this situation is
+implementation-dependent (in glibc, @var{ptr} will be set to the null
+pointer, but this behavior should not be relied upon).
 
 Here is how to use @code{asprintf} to get the same result as the
 @code{snprintf} example, but more easily:

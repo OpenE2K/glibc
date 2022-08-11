@@ -60,6 +60,9 @@
    of interest i.e. 0 <= addr < p_memsz.
 
 */
+
+#if ! defined __ptr128__
+
 int
 _dl_addr_inside_object (struct link_map *l, const ElfW(Addr) addr)
 {
@@ -72,3 +75,38 @@ _dl_addr_inside_object (struct link_map *l, const ElfW(Addr) addr)
       return 1;
   return 0;
 }
+
+#else /* defined __ptr128__  */
+
+int
+_dl_addr_inside_object (struct link_map *l, const ElfW(Addr) addr)
+{
+  int addr_in_cud = 0;
+  int n = l->l_phnum;
+  ElfW(Addr) reladdr;
+
+  if (addr >= l->l_text_start && addr < l->l_text_end)
+    {
+      addr_in_cud = 1;
+      reladdr = addr - l->l_code_addr;
+    }
+  else if (addr >= l->l_data_start && addr < l->l_data_end)
+    reladdr = addr - l->l_addr;
+  else
+    return 0;
+
+  /* This code has been stupidly adopted from ordinary modes above. Is it
+     crucial that `l_phdr[].p_vaddr's are sorted for it to work properly?
+     If not, why do they prefer to iterate starting from the end of
+     `l_phdr[]'?  */
+  while (--n >= 0)
+    if (l->l_phdr[n].p_type == PT_LOAD
+	&& ((addr_in_cud && (l->l_phdr[n].p_flags & PF_X))
+	    || (!addr_in_cud && !(l->l_phdr[n].p_flags & PF_X)))
+	&& reladdr - l->l_phdr[n].p_vaddr < l->l_phdr[n].p_memsz)
+      return 1;
+
+  return 0;
+}
+
+#endif /* defined __ptr128__  */

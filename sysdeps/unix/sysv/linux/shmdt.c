@@ -27,7 +27,19 @@
 int
 shmdt (const void *shmaddr)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+  }
+  args = {(long int) 0, (long int) 0, (long int) 0, (void *) shmaddr};
+
+  return INLINE_SYSCALL_CALL (ipc, IPCOP_shmdt, &args);
+
+#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (shmdt, shmaddr);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_shmdt, 0, 0, 0, shmaddr);

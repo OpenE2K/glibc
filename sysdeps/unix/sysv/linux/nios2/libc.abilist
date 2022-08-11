@@ -1,3 +1,5 @@
+ALT_2.24 __strlcat_chk F
+ALT_2.24 __strlcpy_chk F
 GLIBC_2.21 _Exit F
 GLIBC_2.21 _IO_2_1_stderr_ D 0x98
 GLIBC_2.21 _IO_2_1_stdin_ D 0x98
@@ -316,6 +318,7 @@ GLIBC_2.21 __libc_realloc F
 GLIBC_2.21 __libc_sa_len F
 GLIBC_2.21 __libc_start_main F
 GLIBC_2.21 __libc_valloc F
+GLIBC_2.21 __locale_getenv F
 GLIBC_2.21 __longjmp_chk F
 GLIBC_2.21 __lseek F
 GLIBC_2.21 __ltdf2 F
@@ -1773,6 +1776,8 @@ GLIBC_2.21 strfmon_l F
 GLIBC_2.21 strfry F
 GLIBC_2.21 strftime F
 GLIBC_2.21 strftime_l F
+GLIBC_2.21 strlcat F
+GLIBC_2.21 strlcpy F
 GLIBC_2.21 strlen F
 GLIBC_2.21 strncasecmp F
 GLIBC_2.21 strncasecmp_l F

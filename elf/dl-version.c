@@ -87,7 +87,14 @@ checking for version `%s' in file %s [%lu] required by file %s [%lu]\n",
   def_offset = map->l_info[VERSYMIDX (DT_VERDEF)]->d_un.d_ptr;
   assert (def_offset != 0);
 
-  def = (ElfW(Verdef) *) ((char *) map->l_addr + def_offset);
+  def = (ElfW(Verdef) *) ((char *)
+#if ! defined __ptr128__
+			  map->l_addr + (
+#else
+			  map->l_gd + get_offset (map,
+#endif
+			  def_offset));
+
   while (1)
     {
       /* Currently the version number of the definition entry is 1.
@@ -178,7 +185,13 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
   if (dyn != NULL)
     {
       /* This file requires special versions from its dependencies.  */
+#if ! defined __ptr128__
       ElfW(Verneed) *ent = (ElfW(Verneed) *) (map->l_addr + dyn->d_un.d_ptr);
+#else
+      ElfW(Verneed) *ent
+	= (ElfW(Verneed) *) (map->l_gd
+			     + get_offset (map, dyn->d_un.d_ptr));
+#endif
 
       /* Currently the version number of the needed entry is 1.
 	 Make sure all we see is this version.  */
@@ -204,15 +217,15 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
 	     and no stub entry was created.  This should never happen.  */
 	  assert (needed != NULL);
 
-	  /* Make sure this is no stub we created because of a missing
-	     dependency.  */
-	  if (__builtin_expect (! trace_mode, 1)
-	      || ! __builtin_expect (needed->l_faked, 0))
+	  /* NEEDED is the map for the file we need.  Now look for the
+	     dependency symbols.  */
+	  aux = (ElfW (Vernaux) *) ((char *) ent + ent->vn_aux);
+	  while (1)
 	    {
-	      /* NEEDED is the map for the file we need.  Now look for the
-		 dependency symbols.  */
-	      aux = (ElfW(Vernaux) *) ((char *) ent + ent->vn_aux);
-	      while (1)
+	      /* Make sure this is no stub we created because of a missing
+	         dependency.  */
+	      if (__builtin_expect (!trace_mode, 1)
+		  || !__builtin_expect (needed->l_faked, 0))
 		{
 		  /* Match the symbol.  */
 		  result |= match_symbol (DSO_FILENAME (map->l_name),
@@ -220,18 +233,18 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
 					  strtab + aux->vna_name,
 					  needed->l_real, verbose,
 					  aux->vna_flags & VER_FLG_WEAK);
-
-		  /* Compare the version index.  */
-		  if ((unsigned int) (aux->vna_other & 0x7fff) > ndx_high)
-		    ndx_high = aux->vna_other & 0x7fff;
-
-		  if (aux->vna_next == 0)
-		    /* No more symbols.  */
-		    break;
-
-		  /* Next symbol.  */
-		  aux = (ElfW(Vernaux) *) ((char *) aux + aux->vna_next);
 		}
+
+	      /* Compare the version index.  */
+	      if ((unsigned int) (aux->vna_other & 0x7fff) > ndx_high)
+		ndx_high = aux->vna_other & 0x7fff;
+
+	      if (aux->vna_next == 0)
+		/* No more symbols.  */
+		break;
+
+	      /* Next symbol.  */
+	      aux = (ElfW(Vernaux) *) ((char *) aux + aux->vna_next);
 	    }
 
 	  if (ent->vn_next == 0)
@@ -251,7 +264,13 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
   if (def != NULL)
     {
       ElfW(Verdef) *ent;
-      ent = (ElfW(Verdef) *) (map->l_addr + def->d_un.d_ptr);
+      ent = (ElfW(Verdef) *) (
+#if ! defined __ptr128__
+			      map->l_addr + (
+#else
+			      map->l_gd + get_offset (map,
+#endif
+			      def->d_un.d_ptr));
       while (1)
 	{
 	  if ((unsigned int) (ent->vd_ndx & 0x7fff) > ndx_high)
@@ -290,7 +309,13 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
       if (dyn != NULL)
 	{
 	  ElfW(Verneed) *ent;
-	  ent = (ElfW(Verneed) *) (map->l_addr + dyn->d_un.d_ptr);
+	  ent = (ElfW(Verneed) *) (
+#if ! defined __ptr128__
+				   map->l_addr + (
+#else
+				   map->l_gd + get_offset (map,
+#endif
+							   dyn->d_un.d_ptr));
 	  while (1)
 	    {
 	      ElfW(Vernaux) *aux;
@@ -328,7 +353,13 @@ _dl_check_map_versions (struct link_map *map, int verbose, int trace_mode)
       if (def != NULL)
 	{
 	  ElfW(Verdef) *ent;
-	  ent = (ElfW(Verdef)  *) (map->l_addr + def->d_un.d_ptr);
+	  ent = (ElfW(Verdef)  *) (
+#if ! defined __ptr128__
+				   map->l_addr + (
+#else
+				   map->l_gd + get_offset (map,
+#endif
+							   def->d_un.d_ptr));
 	  while (1)
 	    {
 	      ElfW(Verdaux) *aux;

@@ -49,7 +49,7 @@ catopen (const char *cat_name, int flag)
 	  || (__libc_enable_secure && strchr (env_var, '/') != NULL))
 	env_var = "C";
 
-      nlspath = getenv ("NLSPATH");
+      nlspath = __libc_secure_getenv ("NLSPATH");
       if (nlspath != NULL && *nlspath != '\0')
 	{
 	  /* Append the system dependent directory.  */

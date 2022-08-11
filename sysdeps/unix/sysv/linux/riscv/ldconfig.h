@@ -18,7 +18,7 @@
 
 #include <sysdeps/generic/ldconfig.h>
 
-#define LD_SO_PREFIX "/lib/ld-linux-"
+#define LD_SO_PREFIX "/lib64/ld-linux-"
 #define LD_SO_SUFFIX ".so.1"
 
 #if __riscv_xlen == 64

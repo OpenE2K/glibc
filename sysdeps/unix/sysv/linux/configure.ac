@@ -119,4 +119,7 @@ ${ac_prefix}/include directory out of the way.])
 fi
 
 # We have inlined syscalls.
-AC_DEFINE(HAVE_INLINED_SYSCALLS)
+# FIXME: the definition of this macro was disabled approximately 8 years ago
+# because of defective e2k32 syscalls. However, this issue must have already
+# been resolved long ago. Consider removing this hack.
+dnl AC_DEFINE(HAVE_INLINED_SYSCALLS)

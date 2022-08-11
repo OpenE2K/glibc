@@ -49,6 +49,8 @@
 # define readdir(str) __readdir64 (str)
 # define getpwnam_r(name, bufp, buf, len, res) \
     __getpwnam_r (name, bufp, buf, len, res)
+# define getpwuid_r(uid, bufp, buf, len, res) \
+    __getpwuid_r (uid, bufp, buf, len, res)
 # ifndef __lstat64
 #  define __lstat64(fname, buf) __lxstat64 (_STAT_VER, fname, buf)
 # endif
@@ -211,7 +213,7 @@ glob_lstat (glob_t *pglob, int flags, const char *fullname)
 static bool
 size_add_wrapv (size_t a, size_t b, size_t *r)
 {
-#if 5 <= __GNUC__ && !defined __ICC
+#if 5 <= __GNUC__ && !defined __ICC && !defined __LCC__
   return __builtin_add_overflow (a, b, r);
 #else
   *r = a + b;
@@ -605,7 +607,7 @@ __glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 	      && (dirname[2] == '\0' || dirname[2] == '/')))
 	{
 	  /* Look up home directory.  */
-	  char *home_dir = getenv ("HOME");
+	  char *home_dir = __libc_secure_getenv ("HOME");
 	  int malloc_home_dir = 0;
 	  if (home_dir == NULL || home_dir[0] == '\0')
 	    {
@@ -633,19 +635,18 @@ __glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 	      struct passwd pwbuf;
 	      struct scratch_buffer s;
 	      scratch_buffer_init (&s);
+	      uid_t uid = __getuid ();
 	      while (true)
 		{
 		  p = NULL;
-		  err = __getlogin_r (s.data, s.length);
-		  if (err == 0)
 		    {
 # if defined HAVE_GETPWNAM_R || defined _LIBC
 		      size_t ssize = strlen (s.data) + 1;
 		      char *sdata = s.data;
-		      err = getpwnam_r (sdata, &pwbuf, sdata + ssize,
+		      err = getpwuid_r (uid, &pwbuf, sdata + ssize,
 					s.length - ssize, &p);
 # else
-		      p = getpwnam (s.data);
+		      p = getpwuid (uid);
 		      if (p == NULL)
 			err = errno;
 # endif

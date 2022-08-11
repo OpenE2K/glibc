@@ -53,6 +53,13 @@ init (void)
     }
   /* Zero-initialization of the struct is sufficient.  */
   state = ptr;
+
+#if defined __ptr128__
+  /* In PM the above `mmap ()' will set these fields to empty values rather
+     than zero initialize them.  */
+  state->counter = 0;
+  state->failed = 0;
+#endif /* defined __ptr128__  */  
 }
 
 void

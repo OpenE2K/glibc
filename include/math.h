@@ -57,7 +57,7 @@ libm_hidden_proto (__expm1f128)
 # if __HAVE_DISTINCT_FLOAT128
 
 /* __builtin_isinf_sign is broken in GCC < 7 for float128.  */
-#  if ! __GNUC_PREREQ (7, 0)
+#  if ! (__GNUC_PREREQ (7, 0) || (defined __LCC__ && __LCC__ > 123))
 #   include <ieee754_float128.h>
 extern inline int
 __isinff128 (_Float128 x)

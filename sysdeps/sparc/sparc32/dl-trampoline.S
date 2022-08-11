@@ -69,6 +69,24 @@ _dl_runtime_resolve:
 _dl_profile_save_regs:
 	cfi_startproc
 
+#ifdef __LCC__
+	st	%l0, [%sp + ( 0 * 8) + 0]
+	st	%l1, [%sp + ( 0 * 8) + 4]
+	st	%l2, [%sp + ( 1 * 8) + 0]
+	st	%l3, [%sp + ( 1 * 8) + 4]
+	st	%l4, [%sp + ( 2 * 8) + 0]
+	st	%l5, [%sp + ( 2 * 8) + 4]
+	st	%l6, [%sp + ( 3 * 8) + 0]
+	st	%l7, [%sp + ( 3 * 8) + 4]
+	st	%i0, [%sp + ( 4 * 8) + 0]
+	st	%i1, [%sp + ( 4 * 8) + 4]
+	st	%i2, [%sp + ( 5 * 8) + 0]
+	st	%i3, [%sp + ( 5 * 8) + 4]
+	st	%i4, [%sp + ( 6 * 8) + 0]
+	st	%i5, [%sp + ( 6 * 8) + 4]
+	st	%i6, [%sp + ( 7 * 8) + 0]
+	st	%i7, [%sp + ( 7 * 8) + 4]
+#else /* __LCC__  */
 	std	%l0, [%sp + ( 0 * 8)]
 	std	%l2, [%sp + ( 1 * 8)]
 	std	%l4, [%sp + ( 2 * 8)]
@@ -77,6 +95,7 @@ _dl_profile_save_regs:
 	std	%i2, [%sp + ( 5 * 8)]
 	std	%i4, [%sp + ( 6 * 8)]
 	std	%i6, [%sp + ( 7 * 8)]
+#endif /* __LCC__  */
 	ld	[%fp + (8 * 8)], %l4
 	retl
 	 st	%l4, [%sp + (8 * 8)]
@@ -111,17 +130,31 @@ _dl_profile_invoke:
 	mov	%fp, %l2
 	be	2f
 	 add	%sp, (11 * 8), %l3
+#ifdef __LCC__
+1:	ld	[%l2+0], %g2
+	ld	[%l2+4], %g3
+	add	%l2, 0x8, %l2
+	subcc	%l7, 1, %l7
+	st	%g2, [%l3+0]
+	st	%g3, [%l3+4]
+#else /* __LCC__  */
 1:	ldd	[%l2], %g2
 	add	%l2, 0x8, %l2
 	subcc	%l7, 1, %l7
 	std	%g2, [%l3]
+#endif /* __LCC__  */
 	bne	1b
 	 add	%l3, 0x8, %l3
 
 2:	jmpl	%l1, %o7
 	 nop
 
+#ifdef __LCC__
+	st	%o0, [%sp + ( 9 * 8) + 0]
+	st	%o1, [%sp + ( 9 * 8) + 4]
+#else /* __LCC__  */
 	std	%o0, [%sp + ( 9 * 8)]
+#endif /* __LCC__  */
 	std	%f0, [%sp + (10 * 8)]
 
 	mov	%l5, %o0
@@ -130,7 +163,12 @@ _dl_profile_invoke:
 	call	_dl_call_pltexit
 	 add	%sp, ( 9 * 8), %o3
 
+#ifdef __LCC__
+	ld	[%sp + ( 9 * 8) + 0], %i0
+	ld	[%sp + ( 9 * 8) + 4], %i1
+#else /* __LCC__  */
 	ldd	[%sp + ( 9 * 8)], %i0
+#endif /* __LCC__  */
 	ldd	[%sp + (10 * 8)], %f0
 
 	jmpl	%i7 + 8, %g0

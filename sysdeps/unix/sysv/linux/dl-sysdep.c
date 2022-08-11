@@ -28,7 +28,9 @@
 #include <not-cancel.h>
 
 #ifdef SHARED
+#if ! defined __ptr128__
 # define DL_SYSDEP_INIT frob_brk ()
+#endif
 
 static inline void
 frob_brk (void)

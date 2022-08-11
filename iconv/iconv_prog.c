@@ -63,6 +63,7 @@ static const struct argp_option options[] =
   { "list", 'l', NULL, 0, N_("list all known coded character sets") },
   { NULL, 0, NULL, 0, N_("Output control:") },
   { NULL, 'c', NULL, 0, N_("omit invalid characters from output") },
+  { "replace", 'r', N_("SYMBOL"), OPTION_ARG_OPTIONAL, N_("replace invalid characters with specified symbol") },
   { "output", 'o', N_("FILE"), 0, N_("output file") },
   { "silent", 's', NULL, 0, N_("suppress warnings") },
   { "verbose", OPT_VERBOSE, NULL, 0, N_("print progress information") },
@@ -102,6 +103,9 @@ static int list;
 
 /* If nonzero omit invalid character from output.  */
 int omit_invalid;
+
+/* If nonzero replace invalid character.  */
+static char replace_invalid;
 
 /* Prototypes for the functions doing the actual work.  */
 static int process_block (iconv_t cd, char *addr, size_t len, FILE **output,
@@ -381,6 +385,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
       /* Omit invalid characters from output.  */
       omit_invalid = 1;
       break;
+    case 'r':
+      /* Replace invalid characters.  */
+      replace_invalid = (arg && *arg) ? *arg : '?';
+      break;
     case OPT_VERBOSE:
       verbose = 1;
       break;
@@ -464,6 +472,21 @@ conversion stopped due to problem in writing the output"));
 
 
 static int
+write_invalid (iconv_t cd, char **addr, size_t *len, FILE **output,
+	       const char *output_file)
+{
+  if (write_output(&replace_invalid, &replace_invalid + 1, output, output_file))
+    return -1;
+  int needed_from = ((__gconv_t) cd)->__steps->__min_needed_from;
+  if (needed_from > *len)
+    needed_from = *len;
+  *addr += needed_from;
+  *len -= needed_from;
+  return 0;
+}
+
+
+static int
 process_block (iconv_t cd, char *addr, size_t len, FILE **output,
 	       const char *output_file)
 {
@@ -528,12 +551,27 @@ process_block (iconv_t cd, char *addr, size_t len, FILE **output,
 	  switch (errno)
 	    {
 	    case EILSEQ:
+	      if (replace_invalid)
+		{
+		  if (write_invalid(cd, &addr, &len, output, output_file))
+		    return -1;
+		  else
+		    continue;
+		}
 	      if (! omit_invalid)
 		error (0, 0, _("illegal input sequence at position %ld"),
 		       (long int) (addr - start));
 	      break;
 	    case EINVAL:
-	      error (0, 0, _("\
+	      if (replace_invalid)
+		{
+		  if (write_invalid(cd, &addr, &len, output, output_file))
+		    return -1;
+		  else
+		    continue;
+		}
+	      if (! omit_invalid)
+		error (0, 0, _("\
 incomplete character or shift sequence at end of buffer"));
 	      break;
 	    case EBADF:

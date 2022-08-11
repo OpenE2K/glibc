@@ -31,11 +31,17 @@ __wcpcpy (wchar_t *dest, const wchar_t *src)
 {
   wchar_t *wcp = (wchar_t *) dest - 1;
   wint_t c;
+#if ! defined __ptr128__
   const ptrdiff_t off = src - dest + 1;
+#endif /* ! defined __ptr128__  */
 
   do
     {
+#if ! defined __ptr128__
       c = wcp[off];
+#else /* defined __ptr128__  */
+      c = *(src++);
+#endif /* defined __ptr128__  */
       *++wcp = c;
     }
   while (c != L'\0');

@@ -45,7 +45,7 @@
 #define ENTRY(name)						\
   .globl C_SYMBOL_NAME(name);					\
   .type C_SYMBOL_NAME(name),%function;				\
-  .p2align 6;							\
+  .align 4;							\
   C_LABEL(name)							\
   cfi_startproc;						\
   CALL_MCOUNT

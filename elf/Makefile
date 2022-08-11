@@ -483,8 +483,14 @@ $(objpfx)librtld.mk: $(objpfx)librtld.map Makefile
 $(objpfx)rtld-libc.a: $(objpfx)librtld.mk FORCE
 	$(MAKE) -f $< -f rtld-Rules
 
+ifeq (yes,$(compile-with-lcc))
+lgcc = -lgcc -llcc
+else
+lgcc = -lgcc
+endif
+
 $(objpfx)librtld.os: $(objpfx)dl-allobjs.os $(objpfx)rtld-libc.a
-	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ -lgcc '-Wl,-)' \
+	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ $(lgcc) '-Wl,-)' \
 		  -Wl,-Map,$@.map
 
 generated += librtld.map librtld.mk rtld-libc.a librtld.os.map
@@ -526,7 +532,11 @@ $(objpfx)trusted-dirs.st: Makefile $(..)Makeconfig
 	$(make-target-directory)
 	echo "$(subst :, ,$(default-rpath) $(user-defined-trusted-dirs))"    \
 	| $(AWK) -f gen-trusted-dirs.awk > ${@:st=T};
-	echo '#define DL_DST_LIB "$(notdir $(slibdir))"' >> ${@:st=T}
+	if [ "$(enable-debian-multiarch)" = "yes" ] ; then \
+	  echo '#define DL_DST_LIB "$(shell echo $(slibdir) | sed 's,/,,')"' >> ${@:st=T}; \
+	else \
+	  echo '#define DL_DST_LIB "$(notdir $(slibdir))"' >> ${@:st=T}; \
+	fi
 	$(move-if-change) ${@:st=T} ${@:st=h}
 	touch $@
 CPPFLAGS-dl-load.c += -I$(objpfx). -I$(csu-objpfx).
@@ -585,6 +595,13 @@ libof-ldconfig = ldconfig
 CFLAGS-dl-cache.c += $(SYSCONF-FLAGS)
 CFLAGS-cache.c += $(SYSCONF-FLAGS)
 CFLAGS-rtld.c += $(SYSCONF-FLAGS)
+
+ifeq ($(base-machine),e2k)
+ifneq ($(compile-with-lcc),yes)
+# Ensure that -fno-plt-inline is appended when compiling with e2k-linux-gcc
+# CFLAGS-rtld.c += -fno-plt-inline
+endif
+endif
 
 cpp-srcs-left := $(all-rtld-routines:=.os)
 lib := rtld

@@ -35,7 +35,11 @@
 
 /* Scalar type that can hold values which represent locale-specific
    character classifications.  */
+#if ! defined __ptr128__
 typedef unsigned long int wctype_t;
+#else /* defined __ptr128__  */
+typedef void * wctype_t;
+#endif /* defined __ptr128__  */
 
 # ifndef _ISwbit
 /* The characteristics are stored always in network byte order (big

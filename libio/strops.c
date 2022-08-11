@@ -37,8 +37,27 @@ _IO_str_init_static_internal (_IO_strfile *sf, char *ptr, size_t size,
   FILE *fp = &sf->_sbf._f;
   char *end;
 
+#if ! defined __ptr128__
   if (size == 0)
     end = __rawmemchr (ptr, '\0');
+#else /* defined __ptr128__  */
+  if (size == 0)
+    {
+      union
+      {
+	void *ptr;
+	unsigned int arr[4];
+      } ap;
+
+      ap.ptr = ptr;
+
+      if ((end = memchr (ptr, '\0', ap.arr[3] - ap.arr[2])) == NULL)
+	/* In the worst case assume that END should point to the first byte
+	   lying beyond PTR. Hopefully, they won't attempt to access it, will
+	   they?  */
+	end = &ptr[ap.arr[3] - ap.arr[2]];
+    }
+#endif /* defined __ptr128__  */
   else if ((size_t) ptr + size > (size_t) ptr)
     end = ptr + size;
   else

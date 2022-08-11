@@ -58,13 +58,12 @@ static char sccsid[] = "@(#)syslog.c	8.4 (Berkeley) 3/18/94";
 
 #include <kernel-features.h>
 
-#define ftell(s) _IO_ftell (s)
-
 static int	LogType = SOCK_DGRAM;	/* type of socket connection */
 static int	LogFile = -1;		/* fd for log */
 static int	connected;		/* have done connect */
 static int	LogStat;		/* status bits, set by openlog() */
 static const char *LogTag;		/* string to tag the entry with */
+static char	*LogTagDynamic;		/* same as LogTag if malloc()'ed */
 static int	LogFacility = LOG_USER;	/* default facility code */
 static int	LogMask = 0xff;		/* mask of priorities to be logged */
 extern char	*__progname;		/* Program name, from crt0. */
@@ -137,6 +136,52 @@ __syslog_chk(int pri, int flag, const char *fmt, ...)
 	va_end(ap);
 }
 
+static void
+init_syslog_ident(void)
+{
+	char *ident, *safe_progname, *p;
+	uid_t uid, euid;
+	gid_t gid, egid;
+	int rc;
+
+	LogTagDynamic = NULL;
+
+	if (!__libc_enable_secure) {
+		LogTag = __progname;
+		return;
+	}
+
+	safe_progname = __strdup (__progname);
+	if (!safe_progname) {
+		LogTag = "NO MEMORY";
+		return;
+	}
+	for (p = safe_progname; *p; p++)
+		if ((*p & 0x7f) < 0x20 || *p == 0x7f || *p == '"')
+			*p = '?';
+
+	uid = __getuid ();
+	euid = __geteuid ();
+	gid = __getgid ();
+	egid = __getegid ();
+	if (uid != euid || gid == egid)
+		rc = __asprintf (&ident,
+		    "UNSPECIFIED (__progname=\"%s\" uid=%u euid=%u)",
+		    safe_progname, uid, euid);
+	else
+		rc = __asprintf (&ident,
+		    "UNSPECIFIED (__progname=\"%s\" uid=%u gid=%u egid=%u)",
+		    safe_progname, uid, gid, egid);
+	free (safe_progname);
+	if (rc < 0) {
+		LogTag = "NO MEMORY";
+		return;
+	}
+
+	LogTag = ident;
+	LogTagDynamic = ident;
+}
+
 void
 __vsyslog_chk(int pri, int flag, const char *fmt, va_list ap)
 {
@@ -147,7 +192,6 @@ void
 __vsyslog_internal(int pri, const char *fmt, va_list ap,
 		   unsigned int mode_flags)
 {
-	struct tm now_tm;
 	time_t now;
 	int fd;
 	FILE *f;
@@ -159,7 +203,11 @@ __vsyslog_internal(int pri, const char *fmt, va_list ap,
  	int sigpipe;
 #endif
 	int saved_errno = errno;
-	char failbuf[3 * sizeof (pid_t) + sizeof "out of memory []"];
+	/* we use failbuf for 2 things: to hold message in case of
+	 * OOM condition, and for ctime_r() buffer */
+#define FAILMSGSZ (3 * sizeof (pid_t) + sizeof "out of memory []")
+#define CTIMESZ 26
+	char failbuf[FAILMSGSZ > CTIMESZ ? FAILMSGSZ : CTIMESZ];
 
 #define	INTERNALLOG	LOG_ERR|LOG_CONS|LOG_PERROR|LOG_PID
 	/* Check for invalid bits. */
@@ -203,18 +251,36 @@ __vsyslog_internal(int pri, const char *fmt, va_list ap,
 	  }
 	else
 	  {
+	    struct tm now_tm;
+
 	    __fsetlocking (f, FSETLOCKING_BYCALLER);
-	    fprintf (f, "<%d>", pri);
+	    /*
+	     * XXX: syslogd may know better what the current time is.
+	     * User program may be running chrooted w/o proper localtime
+	     * description, or a user may prefer their own timezone.  syslogd
+	     * is able to construct timestamp if there is no timestamp given
+	     * in a message.  So it may be waay better to NOT construct ANY
+	     * timestamp here and allow syslogd to figure out proper time
+	     * for us.  When working with local syslogd (and it IS local
+	     * since we're using either /dev/log or localhost), message
+	     * should be picked up by syslogd very shortly.  And at least
+	     * timestamps in system logs will be in chronological order...
+	     * -- mjt.
+	     */
 	    (void) time (&now);
-	    f->_IO_write_ptr += __strftime_l (f->_IO_write_ptr,
-					      f->_IO_write_end
-					      - f->_IO_write_ptr,
-					      "%h %e %T ",
-					      __localtime_r (&now, &now_tm),
-					      _nl_C_locobj_ptr);
-	    msgoff = ftell (f);
+	    msgoff = fprintf (f, "<%d>%.15s ", pri,
+		__asctime_r (__localtime_r (&now, &now_tm), failbuf) + 4);
+
+	    /* Protect against multiple users and cancellation.  */
+	    __libc_cleanup_push (cancel_handler, NULL);
+	    __libc_lock_lock (syslog_lock);
+
 	    if (LogTag == NULL)
-	      LogTag = __progname;
+	      init_syslog_ident ();
+
+	    /* Free the lock.  */
+	    __libc_cleanup_pop (1);
+
 	    if (LogTag != NULL)
 	      __fputs_unlocked (LogTag, f);
 	    if (LogStat & LOG_PID)
@@ -280,7 +346,7 @@ __vsyslog_internal(int pri, const char *fmt, va_list ap,
 
 	/* Get connected, output the message to the local logger. */
 	if (!connected)
-		openlog_internal(LogTag, LogStat | LOG_NDELAY, 0);
+		openlog_internal(NULL, LogStat | LOG_NDELAY, 0);
 
 	/* If we have a SOCK_STREAM connection, also send ASCII NUL as
 	   a record terminator.  */
@@ -294,7 +360,7 @@ __vsyslog_internal(int pri, const char *fmt, va_list ap,
 		/* Try to reopen the syslog connection.  Maybe it went
 		   down.  */
 		closelog_internal ();
-		openlog_internal(LogTag, LogStat | LOG_NDELAY, 0);
+		openlog_internal(NULL, LogStat | LOG_NDELAY, 0);
 	      }
 
 	    if (!connected || __send(LogFile, buf, bufsize, send_flags) < 0)
@@ -334,8 +400,11 @@ static struct sockaddr_un SyslogAddr;	/* AF_UNIX address of local logger */
 static void
 openlog_internal(const char *ident, int logstat, int logfac)
 {
-	if (ident != NULL)
+	if (ident != NULL) {
+		free (LogTagDynamic);
+		LogTagDynamic = NULL;
 		LogTag = ident;
+	}
 	LogStat = logstat;
 	if (logfac != 0 && (logfac &~ LOG_FACMASK) == 0)
 		LogFacility = logfac;
@@ -417,6 +486,8 @@ closelog (void)
   __libc_lock_lock (syslog_lock);
 
   closelog_internal ();
+  free (LogTagDynamic);
+  LogTagDynamic = NULL;
   LogTag = NULL;
   LogType = SOCK_DGRAM; /* this is the default */
 

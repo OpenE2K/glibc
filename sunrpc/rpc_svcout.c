@@ -887,7 +887,7 @@ write_pm_most (const char *infile, int netflag)
   f_print (fout, "\t\t_rpcpmstart = 1;\n");
   if (logflag)
     open_log_file (infile, "\t\t");
-  f_print (fout, "\t\tif ((netid = getenv(\"NLSPROVIDER\")) == NULL) {\n");
+  f_print (fout, "\t\tif ((netid = __libc_secure_getenv(\"NLSPROVIDER\")) == NULL) {\n");
   sprintf (_errbuf, "cannot get transport name");
   print_err_message ("\t\t\t");
   f_print (fout, "\t\t} else if ((nconf = getnetconfigent(netid)) == NULL) {\n");

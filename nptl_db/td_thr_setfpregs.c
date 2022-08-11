@@ -23,6 +23,12 @@
 td_err_e
 td_thr_setfpregs (const td_thrhandle_t *th, const prfpregset_t *fpregs)
 {
+  /* GDB for E2K doesn't seem to have a notion of "fp" regs distinct from
+     "ordinary" ones, which makes this function fail somehow.  The failure
+     of this function in its turn doesn't let libthread_db be successfully
+     loaded when debugging multi-threaded programs for no good reason. Prevent
+     this from happening by means of such a primitive hack for now.  */
+#if ! defined __e2k__
   psaddr_t cancelhandling, tid;
   td_err_e err;
 
@@ -49,6 +55,7 @@ td_thr_setfpregs (const td_thrhandle_t *th, const prfpregset_t *fpregs)
       if (ps_lsetfpregs (th->th_ta_p->ph, (uintptr_t) tid, fpregs) != PS_OK)
 	return TD_ERR;
     }
+#endif /* ! defined __e2k__  */
 
   return TD_OK;
 }

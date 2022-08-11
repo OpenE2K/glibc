@@ -1,3 +1,5 @@
+ALT_2.24 __strlcat_chk F
+ALT_2.24 __strlcpy_chk F
 GCC_3.0 _Unwind_Find_FDE F
 GCC_3.0 __deregister_frame_info_bases F
 GCC_3.0 __register_frame_info_bases F
@@ -1828,9 +1830,12 @@ GLIBC_2.2.3 __rpc_thread_svc_max_pollfd F
 GLIBC_2.2.3 __rpc_thread_svc_pollfd F
 GLIBC_2.2.3 fnmatch F
 GLIBC_2.2.3 sprofil F
+GLIBC_2.2.4 __locale_getenv F
 GLIBC_2.2.4 dl_iterate_phdr F
 GLIBC_2.2.4 getgrouplist F
 GLIBC_2.2.4 sockatmark F
+GLIBC_2.2.5 strlcat F
+GLIBC_2.2.5 strlcpy F
 GLIBC_2.2.6 __nanosleep F
 GLIBC_2.22 fmemopen F
 GLIBC_2.23 fts64_children F

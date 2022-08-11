@@ -217,7 +217,7 @@ int_handler (int signo)
 static void
 me (void)
 {
-  const char *env = getenv ("MEMUSAGE_PROG_NAME");
+  const char *env = __libc_secure_getenv ("MEMUSAGE_PROG_NAME");
   size_t prog_len = strlen (__progname);
 
   initialized = -1;
@@ -253,7 +253,7 @@ me (void)
       if (!start_sp)
         start_sp = GETSP ();
 
-      outname = getenv ("MEMUSAGE_OUTPUT");
+      outname = __libc_secure_getenv ("MEMUSAGE_OUTPUT");
       if (outname != NULL && outname[0] != '\0'
           && (access (outname, R_OK | W_OK) == 0 || errno == ENOENT))
         {
@@ -276,7 +276,7 @@ me (void)
               /* Determine the buffer size.  We use the default if the
                  environment variable is not present.  */
               buffer_size = DEFAULT_BUFFER_SIZE;
-              const char *str_buffer_size = getenv ("MEMUSAGE_BUFFER_SIZE");
+              const char *str_buffer_size = __libc_secure_getenv ("MEMUSAGE_BUFFER_SIZE");
               if (str_buffer_size != NULL)
                 {
                   buffer_size = atoi (str_buffer_size);
@@ -285,7 +285,7 @@ me (void)
                 }
 
               /* Possibly enable timer-based stack pointer retrieval.  */
-              if (getenv ("MEMUSAGE_NO_TIMER") == NULL)
+              if (__libc_secure_getenv ("MEMUSAGE_NO_TIMER") == NULL)
                 {
                   struct sigaction act;
 
@@ -306,7 +306,7 @@ me (void)
             }
         }
 
-      if (!not_me && getenv ("MEMUSAGE_TRACE_MMAP") != NULL)
+      if (!not_me && __libc_secure_getenv ("MEMUSAGE_TRACE_MMAP") != NULL)
         trace_mmap = true;
     }
 }

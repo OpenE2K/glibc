@@ -29,7 +29,20 @@
 int
 __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ptr128__ && ! defined __ptr128_new_abi__
+  struct
+  {
+    long int a;
+    long int b;
+    long int c;
+    void *d;
+  }
+  args = {(long int) msqid, (long int) (cmd | __IPC_64), (long int) 0,
+	  (void *) buf};
+  
+  return INLINE_SYSCALL_CALL (ipc, IPCOP_msgctl, &args);
+
+#elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (msgctl, msqid, cmd | __IPC_64, buf);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgctl, msqid, cmd | __IPC_64, 0,

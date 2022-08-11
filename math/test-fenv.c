@@ -760,8 +760,16 @@ feholdexcept_tests (void)
 static void
 initial_tests (void)
 {
+#ifndef __e2k__
   test_exceptions ("Initially all exceptions should be cleared",
                    NO_EXC, 0);
+#else /* __e2k__  */
+  /* See Bug #60872 (pay attetion to Comment #22), Bug #64382, Comment #1
+     (the corresponding commit fixing the latter issue in glibc is r1500 to
+     gnu.svn) for why all these exceptions should be initially set at E2k.  */
+  test_exceptions ("Initially all exceptions should be set at E2k",
+                   ALL_EXC, 0);
+#endif /* __e2k__  */
 #ifdef FE_TONEAREST
   test_rounding ("Rounding direction should be initalized to nearest",
                  FE_TONEAREST);

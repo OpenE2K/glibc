@@ -356,8 +356,8 @@ write_gmon (void)
     int fd = -1;
     char *env;
 
-    env = getenv ("GMON_OUT_PREFIX");
-    if (env != NULL && !__libc_enable_secure)
+    env = __libc_secure_getenv ("GMON_OUT_PREFIX");
+    if (env != NULL)
       {
 	size_t len = strlen (env);
 	char buf[len + 20];

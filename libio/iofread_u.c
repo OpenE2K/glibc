@@ -37,6 +37,11 @@ __fread_unlocked (void *buf, size_t size, size_t count, FILE *fp)
   CHECK_FILE (fp, 0);
   if (bytes_requested == 0)
     return 0;
+#define HALF_INTERNAL_SIZE_T \
+  (((size_t) 1) << (8 * sizeof (size_t) / 2))
+  if (__builtin_expect ((count | size) >= HALF_INTERNAL_SIZE_T, 0))
+    if (bytes_requested / size != count)
+      return 0;
   bytes_read = _IO_sgetn (fp, (char *) buf, bytes_requested);
   return bytes_requested == bytes_read ? count : bytes_read / size;
 }

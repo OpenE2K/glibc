@@ -34,6 +34,7 @@ _sysctl
 accept
 accept4
 access
+access_hw_stacks
 acct
 acl_get
 acl_set
@@ -80,6 +81,7 @@ dipc
 dup
 dup2
 dup3
+el_posix
 epoll_create
 epoll_create1
 epoll_ctl
@@ -257,6 +259,7 @@ munmap
 name_to_handle_at
 nanosleep
 newfstatat
+newuselib
 nfsservctl
 ni_syscall
 nice
@@ -475,6 +478,7 @@ sendfile64
 sendmmsg
 sendmsg
 sendto
+set_backtrace
 set_mempolicy
 set_robust_list
 set_thread_area

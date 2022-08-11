@@ -1,0 +1,4 @@
+# Make `sysdeps/sparc/fpu' immediately follow us in SYSDIRS. Otherwise
+# it'll be superseded by `sysdeps/ieee754' subdirs specified in
+# `sysdeps/sparc/sparc64/Implies' (see Bug #61614).
+sparc/fpu

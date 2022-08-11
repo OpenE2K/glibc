@@ -24,7 +24,18 @@
 ssize_t
 __libc_sendmsg (int fd, const struct msghdr *msg, int flags)
 {
-# ifdef __ASSUME_SENDMSG_SYSCALL
+# if defined __ptr128__ && ! defined __ptr128_new_abi__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+  }
+  args = {(long int) fd, (void *) msg, (long int) flags};
+  
+  return SYSCALL_CANCEL (socketcall, SOCKOP_sendmsg, &args);
+
+# elif defined __ASSUME_SENDMSG_SYSCALL
   return SYSCALL_CANCEL (sendmsg, fd, msg, flags);
 # else
   return SOCKETCALL_CANCEL (sendmsg, fd, msg, flags);

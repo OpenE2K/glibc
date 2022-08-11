@@ -30,6 +30,7 @@ headers	:= execinfo.h
 routines  = backtrace backtracesyms backtracesymsfd noophooks \
 	    memcpy_chk memmove_chk mempcpy_chk memset_chk stpcpy_chk \
 	    strcat_chk strcpy_chk strncat_chk strncpy_chk stpncpy_chk \
+	    strlcpy_chk strlcat_chk \
 	    sprintf_chk vsprintf_chk snprintf_chk vsnprintf_chk \
 	    printf_chk fprintf_chk vprintf_chk vfprintf_chk \
 	    gets_chk chk_fail readonly-area fgets_chk fgets_u_chk \
@@ -67,6 +68,9 @@ elide-routines.o := stack_chk_fail_local
 CFLAGS-stack_chk_fail.c += $(no-stack-protector)
 
 CFLAGS-backtrace.c += -fno-omit-frame-pointer -funwind-tables
+ifeq ($(base-machine),e2k)
+CFLAGS-backtrace.c += -O0 -D__OPTIMIZE__
+endif
 CFLAGS-sprintf_chk.c += $(libio-mtsafe)
 CFLAGS-snprintf_chk.c += $(libio-mtsafe)
 CFLAGS-vsprintf_chk.c += $(libio-mtsafe)
@@ -133,13 +137,32 @@ LDLIBS-tst-lfschk4 = -lstdc++
 LDLIBS-tst-lfschk5 = -lstdc++
 LDLIBS-tst-lfschk6 = -lstdc++
 
+# When using LCC libcxa is required to link C++ tests.
+ifeq ($(compile-with-lcc),yes)
+LDLIBS-tst-chk4 += -lcxa
+LDLIBS-tst-chk5 += -lcxa
+LDLIBS-tst-chk6 += -lcxa
+LDLIBS-tst-lfschk4 += -lcxa
+LDLIBS-tst-lfschk5 += -lcxa
+LDLIBS-tst-lfschk6 += -lcxa
+endif
+
 # backtrace_symbols only works if we link with -rdynamic.  backtrace
 # requires unwind tables on most architectures.
+
+# LCC doesn't support the '-funwind-tables' option meanwhile. Note that
+# '-fasynchronous-unwind-tables', which is also used to compile a number of
+# tests in this Makefile, has been supported as a stub for more than four
+# years now. Luckily, backtrace shouldn't require this option at E2K. But can
+# we do without it at Sparc?
+ifneq ($(compile-with-lcc),yes)
 CFLAGS-tst-backtrace2.c += -funwind-tables
 CFLAGS-tst-backtrace3.c += -funwind-tables
 CFLAGS-tst-backtrace4.c += -funwind-tables
 CFLAGS-tst-backtrace5.c += -funwind-tables
 CFLAGS-tst-backtrace6.c += -funwind-tables
+endif
+
 LDFLAGS-tst-backtrace2 = -rdynamic
 LDFLAGS-tst-backtrace3 = -rdynamic
 LDFLAGS-tst-backtrace4 = -rdynamic
@@ -190,12 +213,9 @@ include ../gen-locales.mk
 $(objpfx)tst-chk1.out: $(gen-locales)
 endif
 
-sLIBdir := $(shell echo $(slibdir) | sed 's,lib\(\|64\)$$,\\\\$$LIB,')
-
 $(objpfx)catchsegv: catchsegv.sh $(common-objpfx)soversions.mk \
 		    $(common-objpfx)config.make
-	slibpfx=`echo $(slibdir)|sed 's/lib\(64\|\)$$/\\\\\\\\$$LIB/'`; \
-	sed -e 's|@VERSION@|$(version)|' -e "s|@SLIB@|$$slibpfx|" \
+	sed -e 's|@VERSION@|$(version)|' -e 's|@SLIB@|$(libdir)|' \
 	    -e 's|@PKGVERSION@|$(PKGVERSION)|' \
 	    -e 's|@REPORT_BUGS_TO@|$(REPORT_BUGS_TO)|' $< > $@.new
 	chmod 555 $@.new
@@ -206,7 +226,7 @@ $(objpfx)pcprofiledump: $(objpfx)pcprofiledump.o
 $(objpfx)xtrace: xtrace.sh
 	rm -f $@.new
 	sed -e 's|@BASH@|$(BASH)|' -e 's|@VERSION@|$(version)|' \
-	    -e 's|@SLIBDIR@|$(sLIBdir)|' -e 's|@BINDIR@|$(bindir)|' \
+	    -e 's|@SLIBDIR@|$(libdir)|' -e 's|@BINDIR@|$(bindir)|' \
 	    -e 's|@PKGVERSION@|$(PKGVERSION)|' \
 	    -e 's|@REPORT_BUGS_TO@|$(REPORT_BUGS_TO)|' $^ > $@.new \
 	&& rm -f $@ && mv $@.new $@ && chmod +x $@

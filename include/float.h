@@ -15,7 +15,7 @@
    in TS 18661-3.  */
 #include <features.h>
 #include <bits/floatn.h>
-#if !__GNUC_PREREQ (7, 0) && __GLIBC_USE (IEC_60559_TYPES_EXT)
+#if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) && __GLIBC_USE (IEC_60559_TYPES_EXT)
 
 # if __HAVE_FLOAT128
 #  define FLT128_MANT_DIG	113

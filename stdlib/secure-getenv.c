@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <shlib-compat.h>
 
@@ -32,5 +33,16 @@ weak_alias (__libc_secure_getenv, secure_getenv)
 libc_hidden_weak (__libc_secure_getenv)
 
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_17)
-compat_symbol (libc, __libc_secure_getenv, __secure_getenv, GLIBC_2_0);
+weak_alias (__libc_secure_getenv, __secure_getenv)
 #endif
+
+char *
+__locale_getenv (const char *name)
+{
+  char *value = getenv (name);
+  if ( value &&
+      __libc_enable_secure && (('.' == value[0]) || strchr(value, '/')) )
+    return NULL;
+  return value;
+}
+libc_hidden_def (__locale_getenv)

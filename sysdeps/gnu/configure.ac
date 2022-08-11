@@ -8,19 +8,19 @@ GLIBC_PROVIDES dnl See aclocal.m4 in the top level source directory.
 # in /lib and /etc.
 LIBC_SLIBDIR_RTLDDIR([lib], [lib])
 case "$prefix" in
-/usr | /usr/)
+*/usr | */usr/)
   # Allow the user to override the path with --sysconfdir.
   if test "$sysconfdir" = '${prefix}/etc'; then
-    libc_cv_sysconfdir=/etc
+    libc_cv_sysconfdir=${prefix_wo_usr}/etc
   else
     libc_cv_sysconfdir=$sysconfdir
    fi
   # Allow the user to override the path with --localstatedir.
   if test "$localstatedir" = '${prefix}/var'; then
-    libc_cv_localstatedir=/var
+    libc_cv_localstatedir=${prefix_wo_usr}/var
   else
     libc_cv_localstatedir=$localstatedir
    fi
-  libc_cv_rootsbindir=/sbin
+  libc_cv_rootsbindir=${prefix_wo_usr}/sbin
   ;;
 esac

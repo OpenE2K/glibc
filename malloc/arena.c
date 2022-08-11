@@ -116,7 +116,7 @@ int __malloc_initialized = -1;
   } while (0)
 
 #define arena_lock(ptr, size) do {					      \
-      if (ptr)								      \
+      if (__glibc_always ((ptr) != NULL))				      \
         __libc_lock_lock (ptr->mutex);					      \
       else								      \
         ptr = arena_get2 ((size), NULL);				      \
@@ -328,7 +328,8 @@ ptmalloc_init (void)
   TUNABLE_GET (mxfast, size_t, TUNABLE_CALLBACK (set_mxfast));
 #else
   const char *s = NULL;
-  if (__glibc_likely (_environ != NULL))
+  if (__glibc_likely (_environ != NULL)
+      && ! __glibc_unlikely (__libc_enable_secure))
     {
       char **runp = _environ;
       char *envline;

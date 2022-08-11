@@ -52,11 +52,19 @@ __pselect (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
      be created.  */
   struct
   {
+# if defined __ptr128__
+    void *ss;
+# else /* ! defined __ptr128__  */
     __syscall_ulong_t ss;
+# endif /* ! defined __ptr128__  */
     __syscall_ulong_t ss_len;
   } data;
 
+# if defined __ptr128__
+  data.ss = (void *) sigmask;
+# else /* ! defined __ptr128__  */
   data.ss = (__syscall_ulong_t) (uintptr_t) sigmask;
+# endif /* ! defined __ptr128__  */
   data.ss_len = _NSIG / 8;
 
   int result;
@@ -82,7 +90,7 @@ weak_alias (__pselect, pselect)
 # ifndef __ASSUME_PSELECT
 #  define __pselect static __generic_pselect
 # endif
-#endif
+#endif /* defined __NR_pselect6  */
 
 #ifndef __ASSUME_PSELECT
 # include <misc/pselect.c>

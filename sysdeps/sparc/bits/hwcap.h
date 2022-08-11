@@ -49,3 +49,6 @@
 #define HWCAP_SPARC_CBCOND	0x02000000
 #define HWCAP_SPARC_CRYPTO	0x04000000
 #define HWCAP_SPARC_ADP		0x08000000
+
+#define HWCAP_SPARC_SYS_ATOMIC	0x10000000 /* E90 with `sys_atomic' support
+                                              (see Bug #54479).  */

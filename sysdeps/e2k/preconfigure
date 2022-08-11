@@ -1,0 +1,10 @@
+# preconfigure fragment for e2k.
+
+case "$machine" in
+e2k32)
+		base_machine=e2k machine=e2k/e2k32 ;;
+e2k | e2k64)
+		base_machine=e2k machine=e2k/e2k64 ;;
+e2k128)
+		base_machine=e2k machine=e2k/e2k128 ;;
+esac

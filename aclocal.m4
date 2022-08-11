@@ -123,6 +123,8 @@ OBJCOPY=`$CC -print-prog-name=objcopy`
 AC_SUBST(OBJCOPY)
 GPROF=`$CC -print-prog-name=gprof`
 AC_SUBST(GPROF)
+READELF=`$CC -print-prog-name=readelf`
+AC_SUBST(READELF)
 
 # Determine whether we are using GNU binutils.
 AC_CACHE_CHECK(whether $AS is GNU as, libc_cv_prog_as_gnu,
@@ -292,9 +294,10 @@ dnl LIBC_SLIBDIR_RTLDDIR([slibdir], [rtlddir])
 AC_DEFUN([LIBC_SLIBDIR_RTLDDIR],
 [test -n "$libc_cv_slibdir" ||
 case "$prefix" in
-/usr | /usr/)
-  libc_cv_slibdir='/$1'
-  libc_cv_rtlddir='/$2'
+*/usr | */usr/)
+  prefix_wo_usr=`echo "$prefix" | sed 's/\(.*\)\/usr.*/\1/'`
+  libc_cv_slibdir=${prefix_wo_usr}'/$1'
+  libc_cv_rtlddir=${prefix_wo_usr}'/$2'
   if test "$libdir" = '${exec_prefix}/lib'; then
     libdir='${exec_prefix}/$1';
     # Locale data can be shared between 32-bit and 64-bit libraries.

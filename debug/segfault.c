@@ -145,7 +145,7 @@ __attribute__ ((constructor))
 install_handler (void)
 {
   struct sigaction sa;
-  const char *sigs = getenv ("SEGFAULT_SIGNALS");
+  const char *sigs = __libc_secure_getenv ("SEGFAULT_SIGNALS");
   const char *name;
 
   sa.sa_handler = (void *) catch_segfault;
@@ -153,7 +153,7 @@ install_handler (void)
   sa.sa_flags = SA_RESTART;
 
   /* Maybe we are expected to use an alternative stack.  */
-  if (getenv ("SEGFAULT_USE_ALTSTACK") != 0)
+  if (__libc_secure_getenv ("SEGFAULT_USE_ALTSTACK") != 0)
     {
       void *stack_mem = malloc (2 * SIGSTKSZ);
       stack_t ss;
@@ -199,7 +199,7 @@ install_handler (void)
     }
 
   /* Preserve the output file name if there is any given.  */
-  name = getenv ("SEGFAULT_OUTPUT_NAME");
+  name = __libc_secure_getenv ("SEGFAULT_OUTPUT_NAME");
   if (name != NULL && name[0] != '\0')
     {
       int ret = access (name, R_OK | W_OK);

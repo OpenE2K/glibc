@@ -24,7 +24,10 @@
 #include "../nss/nsswitch.h"
 
 /* Type of the lookup function we need here.  */
-typedef int (*lookup_function) (const char *, struct etherent *, char *, int,
+/* FIXME: the original int in place of size_t argument makes one of the actual
+   handlers accepting size_t fail in PM because of tagged junk in HI 32-bit
+   word. */
+typedef int (*lookup_function) (const char *, struct etherent *, char *, /* int  */ size_t,
 				int *);
 
 int

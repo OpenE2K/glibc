@@ -274,7 +274,7 @@ do_init (void)
 
   memset (&_res_hconf, '\0', sizeof (_res_hconf));
 
-  hconf_name = getenv (ENV_HOSTCONF);
+  hconf_name = __libc_secure_getenv (ENV_HOSTCONF);
   if (hconf_name == NULL)
     hconf_name = _PATH_HOSTCONF;
 
@@ -293,19 +293,19 @@ do_init (void)
       fclose (fp);
     }
 
-  envval = getenv (ENV_MULTI);
+  envval = __libc_secure_getenv (ENV_MULTI);
   if (envval)
     arg_bool (ENV_MULTI, 1, envval, HCONF_FLAG_MULTI);
 
-  envval = getenv (ENV_REORDER);
+  envval = __libc_secure_getenv (ENV_REORDER);
   if (envval)
     arg_bool (ENV_REORDER, 1, envval, HCONF_FLAG_REORDER);
 
-  envval = getenv (ENV_TRIM_ADD);
+  envval = __libc_secure_getenv (ENV_TRIM_ADD);
   if (envval)
     arg_trimdomain_list (ENV_TRIM_ADD, 1, envval);
 
-  envval = getenv (ENV_TRIM_OVERR);
+  envval = __libc_secure_getenv (ENV_TRIM_OVERR);
   if (envval)
     {
       _res_hconf.num_trimdomains = 0;

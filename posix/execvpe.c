@@ -89,7 +89,7 @@ __execvpe_common (const char *file, char *const argv[], char *const envp[],
       return -1;
     }
 
-  const char *path = getenv ("PATH");
+  const char *path = __libc_secure_getenv ("PATH");
   if (!path)
     path = CS_PATH;
   /* Although GLIBC does not enforce NAME_MAX, we set it as the maximum

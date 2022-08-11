@@ -295,7 +295,13 @@ __MATHCALL (nearbyint,, (_Mdouble_ __x));
 
 /* Round X to nearest integral value, rounding halfway cases away from
    zero.  */
+/* FIXME: a conflicting perverted function declaration of the same name is
+   present in some PM E2KT tests defining psrmode macro. The conditional
+   allows to stupidly eliminate this conflict for now without fixing those
+   tests.  */
+# if ! defined psrmode
 __MATHCALLX (round,, (_Mdouble_ __x), (__const__));
+#endif /* ! defined psrmode  */
 
 /* Round X to the integral value in floating-point format nearest but
    not larger in magnitude.  */

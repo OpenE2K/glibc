@@ -47,6 +47,21 @@
 
 #include <stdlib.h>
 
+#if (! defined __LCC__)
+
+#define ABORT() abort ()
+
+#else /* __LCC__ */
+
+#define ABORT() \
+  ({            \
+    int *p = 0; \
+    *p = 0;     \
+   })
+
+#endif /* __LCC__ */
+
+
 #include <atomic-machine.h>
 
 /* Wrapper macros to call pre_NN_post (mem, ...) where NN is the
@@ -64,7 +79,7 @@
     else if (sizeof (*mem) == 8)					      \
       __atg1_result = pre##_64_##post (mem, __VA_ARGS__);		      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg1_result;							      \
   })
 #define __atomic_bool_bysize(pre, post, mem, ...)			      \
@@ -79,7 +94,7 @@
     else if (sizeof (*mem) == 8)					      \
       __atg2_result = pre##_64_##post (mem, __VA_ARGS__);		      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg2_result;							      \
   })
 
@@ -540,7 +555,15 @@
 
 /* We require 32b atomic operations; some archs also support 64b atomic
    operations.  */
+#if ! defined __LCC__
 void __atomic_link_error (void);
+#else /* __LCC__  */
+/* When building glibc with non-optimizing lcc the use of the original
+   '__atomic_link_error ()' leads to an ureasonable link error due to the
+   compiler's inability to eliminate dead code.  */
+#define __atomic_link_error() ABORT ()
+#endif /* __LCC__  */
+
 # if __HAVE_64B_ATOMICS == 1
 #  define __atomic_check_size(mem) \
    if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8))			      \
@@ -811,6 +834,46 @@ void __atomic_link_error (void);
 #endif
 
 #endif /* !USE_ATOMIC_COMPILER_BUILTINS  */
+
+/* The underlying `*_ptr_*' macros should be defined specially in PM until
+   we've got workable 128-bit atomic builtins. In other cases they are
+   equivalent to their non-`_ptr_' counterparts.  */
+#ifndef atomic_compare_and_exchange_ptr_bool_acq
+# define atomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval)	\
+  atomic_compare_and_exchange_bool_acq (mem, newval, oldval)
+#endif
+
+#ifndef catomic_compare_and_exchange_ptr_bool_acq
+# define catomic_compare_and_exchange_ptr_bool_acq(mem, newval, oldval)	\
+  catomic_compare_and_exchange_bool_acq (mem, newval, oldval)
+#endif
+
+#ifndef atomic_exchange_ptr_acq
+# define atomic_exchange_ptr_acq(mem, newvalue) \
+  atomic_exchange_acq (mem, newvalue)
+#endif
+
+#if ! defined atomic_load_ptr_relaxed
+# define atomic_load_ptr_relaxed(mem) atomic_load_relaxed (mem)
+#endif
+
+#if ! defined atomic_load_ptr_acquire
+# define atomic_load_ptr_acquire(mem) atomic_load_acquire (mem)
+#endif
+
+#if ! defined atomic_store_ptr_relaxed
+# define atomic_store_ptr_relaxed(mem, val) atomic_store_relaxed (mem, val)
+#endif
+
+#if ! defined atomic_compare_exchange_ptr_weak_acquire
+# define atomic_compare_exchange_ptr_weak_acquire(mem, expected, desired) \
+  atomic_compare_exchange_weak_acquire (mem, expected, desired)
+#endif
+
+#if ! defined atomic_compare_exchange_ptr_weak_release
+# define atomic_compare_exchange_ptr_weak_release(mem, expected, desired) \
+  atomic_compare_exchange_weak_release (mem, expected, desired)
+#endif
 
 /* This operation does not affect synchronization semantics but can be used
    in the body of a spin loop to potentially improve its efficiency.  */

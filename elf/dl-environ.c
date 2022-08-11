@@ -82,3 +82,33 @@ unsetenv (const char *name)
 
   return 0;
 }
+
+void
+unset_unsafe_env (const char *name)
+{
+  char **ep;
+
+  ep = __environ;
+  while (*ep != NULL)
+    {
+      size_t cnt = 0;
+
+      while ((*ep)[cnt] == name[cnt] && name[cnt] != '\0')
+	++cnt;
+
+      if (name[cnt] == '\0' && (*ep)[cnt] == '=' &&
+	  ((*ep)[++cnt] == '.' || strchr((*ep)+cnt, '/')))
+	{
+	  /* Found it.  Remove this pointer by moving later ones to
+	     the front.  */
+	  char **dp = ep;
+
+	  do
+	    dp[0] = dp[1];
+	  while (*dp++);
+	  /* Continue the loop in case NAME appears again.  */
+	}
+      else
+	++ep;
+    }
+}

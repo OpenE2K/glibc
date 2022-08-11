@@ -97,12 +97,17 @@
    and a limit, beyond which the write pointer cannot move.  */
 struct alloc_buffer
 {
+#if ! defined __ptr128__
   /* uintptr_t is used here to simplify the alignment code, and to
      avoid issues undefined subtractions if the buffer covers more
      than half of the address space (which would result in differences
      which could not be represented as a ptrdiff_t value).  */
   uintptr_t __alloc_buffer_current;
   uintptr_t __alloc_buffer_end;
+#else /* defined __ptr128__  */
+  char *__alloc_buffer_current;
+  char *__alloc_buffer_end;
+#endif /* defined __ptr128__  */
 };
 
 enum
@@ -126,7 +131,13 @@ alloc_buffer_create (void *start, size_t size)
   uintptr_t end = (uintptr_t) start + size;
   if (end < current)
     __libc_alloc_buffer_create_failure (start, size);
-  return (struct alloc_buffer) { current, end };
+  return (struct alloc_buffer) {
+#if ! defined __ptr128__
+    current, end
+#else /* defined __ptr128__  */
+      (char *) start, (char *) start + size
+#endif /* defined __ptr128__  */
+      };
 }
 
 /* Internal function.  See alloc_buffer_allocate below.  */
@@ -147,8 +158,16 @@ struct alloc_buffer alloc_buffer_allocate (size_t size, void **pptr)
 static inline void __attribute__ ((nonnull (1)))
 alloc_buffer_mark_failed (struct alloc_buffer *buf)
 {
-  buf->__alloc_buffer_current = __ALLOC_BUFFER_INVALID_POINTER;
-  buf->__alloc_buffer_end = __ALLOC_BUFFER_INVALID_POINTER;
+  buf->__alloc_buffer_current =
+#if defined __ptr128__
+    (char *)
+#endif
+    __ALLOC_BUFFER_INVALID_POINTER;
+  buf->__alloc_buffer_end =
+#if defined __ptr128__
+    (char *)
+#endif
+    __ALLOC_BUFFER_INVALID_POINTER;
 }
 
 /* Return the remaining number of bytes in the buffer.  */
@@ -162,7 +181,11 @@ alloc_buffer_size (const struct alloc_buffer *buf)
 static inline bool __attribute__ ((nonnull (1)))
 alloc_buffer_has_failed (const struct alloc_buffer *buf)
 {
-  return buf->__alloc_buffer_current == __ALLOC_BUFFER_INVALID_POINTER;
+  return ((
+#if defined __ptr128__
+	   (uintptr_t)
+#endif
+	   buf->__alloc_buffer_current) == __ALLOC_BUFFER_INVALID_POINTER);
 }
 
 /* Add a single byte to the buffer (consuming the space for this
@@ -170,7 +193,8 @@ alloc_buffer_has_failed (const struct alloc_buffer *buf)
 static inline void __attribute__ ((nonnull (1)))
 alloc_buffer_add_byte (struct alloc_buffer *buf, unsigned char b)
 {
-  if (__glibc_likely (buf->__alloc_buffer_current < buf->__alloc_buffer_end))
+  if (__glibc_likely (((uintptr_t) buf->__alloc_buffer_current)
+		      < ((uintptr_t) buf->__alloc_buffer_end)))
     {
       *(unsigned char *) buf->__alloc_buffer_current = b;
       ++buf->__alloc_buffer_current;
@@ -200,17 +224,28 @@ alloc_buffer_alloc_bytes (struct alloc_buffer *buf, size_t length)
     }
 }
 
+/* FIXME: the use of the original `_errordecl ()' relying on `__attribute__
+   ((__error__ ()))' leads to spurious errors when compiling `resolv/
+   resolv_conf.c' including this file with `e2k-linux-gcc -O0'.  */
+#if defined __e2k__ && ! defined __LCC__
+# undef __errordecl
+# define __errordecl(name, msg) extern void name (void)
+#endif
+
 /* Internal function.  Statically assert that the type size is
    constant and valid.  */
 static __always_inline size_t
 __alloc_buffer_assert_size (size_t size)
 {
+#if ! defined __LCC__
   if (!__builtin_constant_p (size))
     {
       __errordecl (error, "type size is not constant");
       error ();
     }
-  else if (size == 0)
+  else
+#endif
+    if (size == 0)
     {
       __errordecl (error, "type size is zero");
       error ();
@@ -223,12 +258,15 @@ __alloc_buffer_assert_size (size_t size)
 static __always_inline size_t
 __alloc_buffer_assert_align (size_t align)
 {
+#if ! defined __LCC__
   if (!__builtin_constant_p (align))
     {
       __errordecl (error, "type alignment is not constant");
       error ();
     }
-  else if (align == 0)
+  else
+#endif
+    if (align == 0)
     {
       __errordecl (error, "type alignment is zero");
       error ();
@@ -248,15 +286,24 @@ __alloc_buffer_alloc (struct alloc_buffer *buf, size_t size, size_t align)
   if (size == 1 && align == 1)
     return alloc_buffer_alloc_bytes (buf, size);
 
-  size_t current = buf->__alloc_buffer_current;
+  size_t current = (size_t) buf->__alloc_buffer_current;
   size_t aligned = roundup (current, align);
   size_t new_current = aligned + size;
   if (aligned >= current        /* No overflow in align step.  */
       && new_current >= size    /* No overflow in size computation.  */
-      && new_current <= buf->__alloc_buffer_end) /* Room in buffer.  */
+      && new_current <= (size_t) buf->__alloc_buffer_end) /* Room in buffer.  */
     {
+#if ! defined __ptr128__
       buf->__alloc_buffer_current = new_current;
       return (void *) aligned;
+#else /* defined __ptr128__  */
+      {
+	void *res = (void *) (buf->__alloc_buffer_current
+			      + (aligned - current));
+	buf->__alloc_buffer_current += new_current - current;
+	return res;
+      }
+#endif /* defined __ptr128__  */
     }
   else
     {
@@ -282,13 +329,19 @@ __alloc_buffer_next (struct alloc_buffer *buf, size_t align)
   if (align == 1)
     return (const void *) buf->__alloc_buffer_current;
 
-  size_t current = buf->__alloc_buffer_current;
+  size_t current = (size_t) buf->__alloc_buffer_current;
   size_t aligned = roundup (current, align);
   if (aligned >= current        /* No overflow in align step.  */
-      && aligned <= buf->__alloc_buffer_end) /* Room in buffer.  */
+      && aligned <= (size_t) buf->__alloc_buffer_end) /* Room in buffer.  */
     {
+#if ! defined __ptr128__
       buf->__alloc_buffer_current = aligned;
       return (const void *) aligned;
+#else /* defined __ptr128__  */
+      buf->__alloc_buffer_current += aligned - current;
+      return (const void *) buf->__alloc_buffer_current;
+      
+#endif /* defined __ptr128__  */
     }
   else
     {

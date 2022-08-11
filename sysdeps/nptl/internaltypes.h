@@ -85,6 +85,10 @@ struct pthread_rwlockattr
 };
 
 
+/* For Sparc V8 we use an old erroneous implementation of pthread_barriers.
+   It's better than nothing.  */
+#if ! defined _INTERNAL_TYPES_H_SPARC_V8_
+
 /* Barrier data structure.  See pthread_barrier_wait for a description
    of how these fields are used.  */
 struct pthread_barrier
@@ -95,8 +99,11 @@ struct pthread_barrier
   int shared;
   unsigned int out;
 };
+
 /* See pthread_barrier_wait for a description.  */
 #define BARRIER_IN_THRESHOLD (UINT_MAX/2)
+
+#endif /* ! defined _INTERNAL_TYPES_H_SPARC_V8_  */
 
 
 /* Barrier variable attribute data structure.  */
@@ -139,7 +146,7 @@ struct pthread_key_struct
 /* Semaphore variable structure.  */
 struct new_sem
 {
-#if __HAVE_64B_ATOMICS
+#if __HAVE_64B_ATOMICS && ! defined __NEW_SEM_ALIGN_32
   /* The data field holds both value (in the least-significant 32 bits) and
      nwaiters.  */
 # if __BYTE_ORDER == __LITTLE_ENDIAN

@@ -117,10 +117,8 @@ struct r_scope_elem _dl_initial_searchlist =
     .r_nlist = 1,
   };
 
-#ifndef HAVE_INLINED_SYSCALLS
 /* Nonzero during startup.  */
 int _dl_starting_up = 1;
-#endif
 
 /* Random data provided by the kernel.  */
 void *_dl_random;
@@ -227,12 +225,28 @@ int _dl_clktck;
 void
 _dl_aux_init (ElfW(auxv_t) *av)
 {
+  int security_mask = 0;
   int seen = 0;
   uid_t uid = 0;
   gid_t gid = 0;
+#if defined __ptr128__
+  /* FIXME: can't switch to __builtin_e2k_get_ap_base () here because of the
+     need to keep support for SAPs meanwhile.  */
+  size_t auxv_end = (__builtin_e2k_get_ap_base (av)
+		     + __builtin_e2k_get_ap_size (av));
+#endif
 
   _dl_auxv = av;
-  for (; av->a_type != AT_NULL; ++av)
+  for (;
+#if defined __ptr128__
+	 /* Avoid `exc_array_bounds' on faulty Kernels providing AP not
+	    including the AT_NULL element of AUXV (see Bug #93881,
+	    Comments #2 and #3).  */
+	 (size_t) av < auxv_end
+	 &&
+#endif
+	 av->a_type != AT_NULL
+	 ; ++av)
     switch (av->a_type)
       {
       case AT_PAGESZ:
@@ -243,7 +257,19 @@ _dl_aux_init (ElfW(auxv_t) *av)
 	GLRO(dl_clktck) = av->a_un.a_val;
 	break;
       case AT_PHDR:
+#if defined __e2k__ && defined __ptr128__
+	GL(dl_phdr) = ({
+	    const void *res;
+	    const void *gd;
+	    __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+	    __asm__ ("gdtoap %1, %0\n\t"
+		     : "=r" (res)
+		     : "r" (av->a_un.a_val - (uintptr_t) gd));
+	    res;
+	  });
+#else
 	GL(dl_phdr) = (const void *) av->a_un.a_val;
+#endif
 	break;
       case AT_PHNUM:
 	GL(dl_phnum) = av->a_un.a_val;
@@ -271,25 +297,27 @@ _dl_aux_init (ElfW(auxv_t) *av)
 	break;
 #endif
       case AT_UID:
+	if (seen & 1) break;
 	uid ^= av->a_un.a_val;
 	seen |= 1;
 	break;
       case AT_EUID:
+	if (seen & 2) break;
 	uid ^= av->a_un.a_val;
 	seen |= 2;
 	break;
       case AT_GID:
+	if (seen & 4) break;
 	gid ^= av->a_un.a_val;
 	seen |= 4;
 	break;
       case AT_EGID:
+	if (seen & 8) break;
 	gid ^= av->a_un.a_val;
 	seen |= 8;
 	break;
       case AT_SECURE:
-	seen = -1;
-	__libc_enable_secure = av->a_un.a_val;
-	__libc_enable_secure_decided = 1;
+	security_mask |= av->a_un.a_val != 0;
 	break;
       case AT_RANDOM:
 	_dl_random = (void *) av->a_un.a_val;
@@ -300,7 +328,9 @@ _dl_aux_init (ElfW(auxv_t) *av)
       }
   if (seen == 0xf)
     {
-      __libc_enable_secure = uid != 0 || gid != 0;
+      security_mask |= ((uid != 0) << 1) | ((gid != 0) << 2);
+      __libc_security_mask = security_mask;
+      __libc_enable_secure = __libc_security_mask != 0;
       __libc_enable_secure_decided = 1;
     }
 }
@@ -317,7 +347,7 @@ _dl_non_dynamic_init (void)
   if (HP_SMALL_TIMING_AVAIL)
     HP_TIMING_NOW (_dl_cpuclock_offset);
 
-  _dl_verbose = *(getenv ("LD_WARN") ?: "") == '\0' ? 0 : 1;
+  _dl_verbose = *(__libc_secure_getenv ("LD_WARN") ?: "") == '\0' ? 0 : 1;
 
   /* Set up the data structures for the system-supplied DSO early,
      so they can influence _dl_init_paths.  */
@@ -325,18 +355,18 @@ _dl_non_dynamic_init (void)
 
   /* Initialize the data structures for the search paths for shared
      objects.  */
-  _dl_init_paths (getenv ("LD_LIBRARY_PATH"));
+  _dl_init_paths (__libc_secure_getenv ("LD_LIBRARY_PATH"));
 
   /* Remember the last search directory added at startup.  */
   _dl_init_all_dirs = GL(dl_all_dirs);
 
-  _dl_lazy = *(getenv ("LD_BIND_NOW") ?: "") == '\0';
+  _dl_lazy = *(__libc_secure_getenv ("LD_BIND_NOW") ?: "") == '\0';
 
-  _dl_bind_not = *(getenv ("LD_BIND_NOT") ?: "") != '\0';
+  _dl_bind_not = *(__libc_secure_getenv ("LD_BIND_NOT") ?: "") != '\0';
 
-  _dl_dynamic_weak = *(getenv ("LD_DYNAMIC_WEAK") ?: "") == '\0';
+  _dl_dynamic_weak = *(__libc_secure_getenv ("LD_DYNAMIC_WEAK") ?: "") == '\0';
 
-  _dl_profile_output = getenv ("LD_PROFILE_OUTPUT");
+  _dl_profile_output = __libc_secure_getenv ("LD_PROFILE_OUTPUT");
   if (_dl_profile_output == NULL || _dl_profile_output[0] == '\0')
     _dl_profile_output
       = &"/var/tmp\0/var/profile"[__libc_enable_secure ? 9 : 0];
@@ -349,6 +379,8 @@ _dl_non_dynamic_init (void)
 	EXTRA_UNSECURE_ENVVARS
 #endif
 	;
+      static const char restricted_envvars[] =
+	RESTRICTED_ENVVARS;
       const char *cp = unsecure_envvars;
 
       while (cp < unsecure_envvars + sizeof (unsecure_envvars))
@@ -357,10 +389,31 @@ _dl_non_dynamic_init (void)
 	  cp = (const char *) __rawmemchr (cp, '\0') + 1;
 	}
 
-#if !HAVE_TUNABLES
-      if (__access ("/etc/suid-debug", F_OK) != 0)
-	__unsetenv ("MALLOC_CHECK_");
-#endif
+      if (__libc_security_mask & 2)
+	{
+	  static const char unsecure_uid_envvars[] =
+	    UNSECURE_UID_ENVVARS;
+
+	  cp = unsecure_uid_envvars;
+	  while (cp < unsecure_uid_envvars + sizeof (unsecure_uid_envvars))
+	    {
+	      __unsetenv (cp);
+	      cp = (const char *) __rawmemchr (cp, '\0') + 1;
+	    }
+	}
+
+      /* This loop is buggy: it will only check the first occurrence of each
+	 variable (but will correctly remove all in case of a match).  This
+	 may be a problem if the list is later re-ordered or accessed by an
+	 application with something other than the glibc getenv().  */
+      cp = restricted_envvars;
+      while (cp < restricted_envvars + sizeof (restricted_envvars))
+	{
+	  const char *value = getenv (cp);
+	  if (value && (value[0] == '.' || strchr(value, '/')))
+	    __unsetenv (cp);
+	  cp = (const char *) __rawmemchr (cp, '\0') + 1;
+	}
     }
 
 #ifdef DL_PLATFORM_INIT

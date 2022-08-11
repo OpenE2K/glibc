@@ -272,6 +272,16 @@ __confstr (int name, char *buf, size_t len)
       string_len = sizeof ("POSIXLY_CORRECT=1");
       break;
 
+    case _CS_LIBDIR:
+      string = LIBDIR;
+      string_len = sizeof LIBDIR;
+      break;
+
+    case _CS_SLIB:
+      string = SLIB;
+      string_len = sizeof SLIB;
+      break;
+
     default:
       __set_errno (EINVAL);
       return 0;

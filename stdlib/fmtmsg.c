@@ -209,8 +209,8 @@ fmtmsg (long int classification, const char *label, int severity,
 static void
 init (void)
 {
-  const char *msgverb_var = getenv ("MSGVERB");
-  const char *sevlevel_var = getenv ("SEV_LEVEL");
+  const char *msgverb_var = __libc_secure_getenv ("MSGVERB");
+  const char *sevlevel_var = __libc_secure_getenv ("SEV_LEVEL");
 
   if (msgverb_var != NULL && msgverb_var[0] != '\0')
     {

@@ -35,6 +35,7 @@ extern __typeof (qsort_r) __qsort_r;
 libc_hidden_proto (__qsort_r)
 libc_hidden_proto (lrand48_r)
 libc_hidden_proto (wctomb)
+libc_hidden_proto (__locale_getenv)
 
 extern long int __random (void) attribute_hidden;
 extern void __srandom (unsigned int __seed);

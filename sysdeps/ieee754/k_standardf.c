@@ -20,7 +20,7 @@
 #include <math-svid-compat.h>
 
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT || defined __e2k__ || defined __sparc__
 /* Handle errors for a libm function as specified by TYPE (see
    comments in k_standard.c for details), with arguments X and Y,
    returning the appropriate return value for that function.  */

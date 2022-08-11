@@ -71,7 +71,7 @@ const char *alias_file;
 static struct localedef_t *locales;
 
 /* If true don't add locale data to archive.  */
-bool no_archive;
+bool no_archive = true;
 
 /* If true add named locales to archive.  */
 static bool add_to_archive;
@@ -104,6 +104,7 @@ void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
 #define OPT_REPLACE 307
 #define OPT_DELETE_FROM_ARCHIVE 308
 #define OPT_LIST_ARCHIVE 309
+#define OPT_ARCHIVE 310
 #define OPT_LITTLE_ENDIAN 400
 #define OPT_BIG_ENDIAN 401
 #define OPT_NO_WARN 402
@@ -139,6 +140,8 @@ static const struct argp_option options[] =
        "supported warnings are: ascii, intcurrsym") },
 
   { NULL, 0, NULL, 0, N_("Archive control:") },
+  { "archive", OPT_ARCHIVE, NULL, 0,
+    N_("Add new data to archive") },
   { "no-archive", OPT_NO_ARCHIVE, NULL, 0,
     N_("Don't add new data to archive") },
   { "add-to-archive", OPT_ADD_TO_ARCHIVE, NULL, 0,
@@ -365,6 +368,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case OPT_PREFIX:
       output_prefix = arg;
+      break;
+    case OPT_ARCHIVE:
+      no_archive = false;
       break;
     case OPT_NO_ARCHIVE:
       no_archive = true;

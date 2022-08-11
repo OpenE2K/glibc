@@ -144,7 +144,7 @@ __tzfile_read (const char *file, size_t extra, char **extrap)
     {
       const char *tzdir;
 
-      tzdir = getenv ("TZDIR");
+      tzdir = __libc_secure_getenv ("TZDIR");
       if (tzdir == NULL || *tzdir == '\0')
 	tzdir = default_tzdir;
       if (__asprintf (&new, "%s/%s", tzdir, file) == -1)

@@ -75,12 +75,18 @@ t3 (void)
 
 volatile double qnanval;
 volatile long double lqnanval;
+
+/* Because of Bug #65636 (`__builtin_nans{,f,l}' are not supported in
+   edg_4.4) temporarely replace `__builtin_nans' with `__builtin_nan' below.
+   This will hopefully let me compile this test, though I have no illusions
+   about the final result.  */
+
 /* A sNaN is only guaranteed to be representable in variables with static (or
    thread-local) storage duration.  */
-static volatile double snanval = __builtin_nans ("");
-static volatile double msnanval = -__builtin_nans ("");
-static volatile long double lsnanval = __builtin_nansl ("");
-static volatile long double lmsnanval = -__builtin_nansl ("");
+static volatile double snanval = __builtin_nan ("");
+static volatile double msnanval = -__builtin_nan ("");
+static volatile long double lsnanval = __builtin_nanl ("");
+static volatile long double lmsnanval = -__builtin_nanl ("");
 volatile double infval;
 volatile long double linfval;
 

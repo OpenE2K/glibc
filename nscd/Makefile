@@ -41,7 +41,9 @@ nscd-modules := nscd connections pwdcache getpwnam_r getpwuid_r grpcache \
 ifeq ($(build-nscd)$(have-thread-library),yesyes)
 
 others += nscd
+ifneq ($(config-machine),e2k128)
 others-pie += nscd
+endif
 install-sbin := nscd
 
 extra-objs = $(nscd-modules:=.o)
@@ -79,7 +81,11 @@ CFLAGS-nscd_gethst_r.c += -fexceptions
 CFLAGS-nscd_getai.c += -fexceptions
 CFLAGS-nscd_initgroups.c += -fexceptions
 
-CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
+# `FORTIFY_SOURCE=2' makes one use `open ()' implemented in `io/bits/fcntl2.h',
+# which contains a call to `__open_too_many_args ()' declared with
+# `__attribute__ ((__error (. . .)))'. A non-optimizing compiler may be unable
+# to recognize the case when this call is dead and get rid of it.
+# CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
 
 ifeq (yesyes,$(have-fpie)$(build-shared))
 CFLAGS-nscd += $(pie-ccflag)

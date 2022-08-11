@@ -303,7 +303,7 @@ elf_machine_plt_value (struct link_map *map, const Elf32_Rel *reloc,
 
 #ifdef RESOLVE_MAP
 /* Handle a PC24 reloc, including the out-of-range case.  */
-auto void
+static void
 relocate_pc24 (struct link_map *map, Elf32_Addr value,
                Elf32_Addr *const reloc_addr, Elf32_Sword addend)
 {
@@ -357,11 +357,11 @@ relocate_pc24 (struct link_map *map, Elf32_Addr value,
 /* Perform the relocation specified by RELOC and SYM (which is fully resolved).
    MAP is the object containing the reloc.  */
 
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 		 const Elf32_Sym *sym, const struct r_found_version *version,
-		 void *const reloc_addr_arg, int skip_ifunc)
+		 void *const reloc_addr_arg, int skip_ifunc,
+                 struct r_scope_elem *scope[], const char *strtab)
 {
   Elf32_Addr *const reloc_addr = reloc_addr_arg;
   const unsigned int r_type = ELF32_R_TYPE (reloc->r_info);
@@ -534,11 +534,15 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 }
 
 # ifndef RTLD_BOOTSTRAP
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 		  const Elf32_Sym *sym, const struct r_found_version *version,
-		  void *const reloc_addr_arg, int skip_ifunc)
+		  void *const reloc_addr_arg, int skip_ifunc,
+                  struct r_scope_elem *scope[], const char *strtab
+#ifdef RESOLVE_CONFLICT_FIND_MAP
+                  , struct link_map **resolve_conflict_map
+#endif
+)
 {
   Elf32_Addr *const reloc_addr = reloc_addr_arg;
   const unsigned int r_type = ELF32_R_TYPE (reloc->r_info);
@@ -626,8 +630,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 }
 # endif
 
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rel_relative (Elf32_Addr l_addr, const Elf32_Rel *reloc,
 			  void *const reloc_addr_arg)
 {
@@ -636,8 +639,7 @@ elf_machine_rel_relative (Elf32_Addr l_addr, const Elf32_Rel *reloc,
 }
 
 # ifndef RTLD_BOOTSTRAP
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rela_relative (Elf32_Addr l_addr, const Elf32_Rela *reloc,
 			   void *const reloc_addr_arg)
 {
@@ -646,11 +648,11 @@ elf_machine_rela_relative (Elf32_Addr l_addr, const Elf32_Rela *reloc,
 }
 # endif
 
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_lazy_rel (struct link_map *map,
 		      Elf32_Addr l_addr, const Elf32_Rel *reloc,
-		      int skip_ifunc)
+		      int skip_ifunc, struct r_scope_elem *scope[],
+                      const char *strtab)
 {
   Elf32_Addr *const reloc_addr = (void *) (l_addr + reloc->r_offset);
   const unsigned int r_type = ELF32_R_TYPE (reloc->r_info);

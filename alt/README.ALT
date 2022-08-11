@@ -1,0 +1,37 @@
+                                                                   -*- text -*-
+Aside from the standard modifications of paths, default editor and
+terminal, fixes for tmp issues, and such, this package contains the
+following essential modifications (no particular order):
+
+libc:
++ Change tmpfile(3) to allow use $TMPDIR.
++ Change asprintf(3)/vasprintf(3) error handling to match *BSD behaviour.
++ Check for potential integer overflow in fread*/fwrite* functions.
++ If syslog(3) is called by a SUID/SGID program without a preceding call
+  to openlog(3), don't blindly trust __progname for the syslog ident.
++ Use ctime_r(3) instead of strftime_r(3) in vsyslog(3) so that
+  month names will not depend on current locale settings.
++ Import strlcpy(3) and strlcat(3) from OpenBSD.
++ Improved res_randomid.
++ Change fnmatch: if conversion to wide character fails, fall back to
+  single byte matching.
++ Correct versioning to fit real life kernels and applications.
++ Sanitize the environment in a paranoid way.
+
+crypt:
++ Blowfish support.
++ Gensalt interface.
+
+iconv:
++ Add new option "--replace" to iconv utility.
+
+locale:
++ Support more ru/uk locales.
+
+localedef:
++ Add new option --archive.
++ Change default to --no-archive.
+
+getconf:
++ Add new option -a to print the names of the current system configuration
+  variables to stdout.

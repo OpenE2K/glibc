@@ -56,6 +56,7 @@
 /* Extra unsecure variables.  The names are all stuffed in a single
    string which means they have to be terminated with a '\0' explicitly.  */
 #define EXTRA_UNSECURE_ENVVARS \
+  "LD_LIBRARY_VERSION\0"						      \
   "LD_AOUT_LIBRARY_PATH\0"						      \
   "LD_AOUT_PRELOAD\0"
 

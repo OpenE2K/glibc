@@ -359,7 +359,7 @@ __nis_default_owner (char *defaults)
 
   char *cptr = defaults;
   if (cptr == NULL)
-    cptr = getenv ("NIS_DEFAULTS");
+    cptr = __libc_secure_getenv ("NIS_DEFAULTS");
 
   if (cptr != NULL)
     {
@@ -386,7 +386,7 @@ __nis_default_group (char *defaults)
 
   char *cptr = defaults;
   if (cptr == NULL)
-    cptr = getenv ("NIS_DEFAULTS");
+    cptr = __libc_secure_getenv ("NIS_DEFAULTS");
 
   if (cptr != NULL)
     {
@@ -418,7 +418,7 @@ __nis_default_ttl (char *defaults)
 	return searchttl (defaults);
     }
 
-  cptr = getenv ("NIS_DEFAULTS");
+  cptr = __libc_secure_getenv ("NIS_DEFAULTS");
   if (cptr == NULL)
     return DEFAULT_TTL;
 
@@ -447,7 +447,7 @@ __nis_default_access (char *param, unsigned int defaults)
     result = searchaccess (param, result);
   else
     {
-      cptr = getenv ("NIS_DEFAULTS");
+      cptr = __libc_secure_getenv ("NIS_DEFAULTS");
       if (cptr != NULL && strstr (cptr, "access=") != NULL)
 	result = searchaccess (cptr, result);
     }

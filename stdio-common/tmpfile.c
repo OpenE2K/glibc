@@ -48,7 +48,7 @@ tmpfile (void)
     {
       char buf[FILENAME_MAX];
 
-      if (__path_search (buf, sizeof buf, NULL, "tmpf", 0))
+      if (__path_search (buf, sizeof buf, NULL, "tmpf", 1))
 	return NULL;
 
       fd = __gen_tempname (buf, 0, flags, __GT_FILE);

@@ -201,6 +201,11 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      hwcap and platform fields available in the TCB.  */
   ARCH_APPLY_IREL ();
 
+  /* Until I have an idea on how a pointer to a random sequence of numbers
+     which is normally allocated on stack could be passed by the Kernel via
+     `AT_RANDOM' in Protected Mode, `void *_dl_random' remains equal to NULL.
+     So don't care about setting up all these canaries for now in PM.  */
+#if ! defined __ptr128__
   /* Set up the stack checker's canary.  */
   uintptr_t stack_chk_guard = _dl_setup_stack_chk_guard (_dl_random);
 # ifdef THREAD_SET_STACK_GUARD
@@ -218,10 +223,14 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
     }
 # endif
 
+#endif /* __ptr128__  */
+
   /* Initialize libpthread if linked in.  */
   if (__pthread_initialize_minimal != NULL)
     __pthread_initialize_minimal ();
 
+  /* See my comment above.  */
+#if ! defined __ptr128__
   /* Set up the pointer guard value.  */
   uintptr_t pointer_chk_guard = _dl_setup_pointer_guard (_dl_random,
 							 stack_chk_guard);
@@ -232,6 +241,8 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 # endif
 
 #endif /* !SHARED  */
+
+#endif /* __ptr128__  */
 
   /* Register the destructor of the dynamic linker if there is any.  */
   if (__glibc_likely (rtld_fini != NULL))
@@ -289,6 +300,13 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #endif
 #ifdef HAVE_CLEANUP_JMP_BUF
   /* Memory for the cancellation buffer.  */
+# if defined __ptr128__
+  /* FIXME: stupidly make it static for now (I guess that it should be located
+     on stack to do its job; see THREAD_SETMEM below where a pointer to it is
+     saved into `self->cleanup_jmp_buf') so as to make it possible to run PM
+     programs on LSIM without `-cg' as it happens to be in E2KT.  */
+  static
+# endif
   struct pthread_unwind_buf unwind_buf;
 
   int not_first_call;

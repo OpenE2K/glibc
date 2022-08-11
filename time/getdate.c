@@ -117,7 +117,7 @@ __getdate_r (const char *string, struct tm *tp)
   struct stat64 st;
   int mday_ok = 0;
 
-  datemsk = getenv ("DATEMSK");
+  datemsk = __libc_secure_getenv ("DATEMSK");
   if (datemsk == NULL || *datemsk == '\0')
     return 1;
 

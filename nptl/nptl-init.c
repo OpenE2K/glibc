@@ -403,6 +403,19 @@ __pthread_initialize_minimal_internal (void)
   limit.rlim_cur = ALIGN_UP (limit.rlim_cur, pagesz);
   lll_lock (__default_pthread_attr_lock, LLL_PRIVATE);
   __default_pthread_attr.stacksize = limit.rlim_cur;
+#if defined __ptr128__
+  /* In PM there's very little space left for mmap () at the top of the lower
+     4G due to some unobvious reasons. At the same time if the allocated stack
+     crosses 4G boundary, this is likely to make it unusable at least if SAPs
+     (rather than APs) are used. The Kernel will attempt to overcome this by
+     allocating appropriate stack itself, but these efforts will make it panic
+     in the end . . . Prevent this from happening as long as possible by
+     drastically reducing the default stack size determined by `RLIMIT_STACK ==
+     16M' in PM. FIXME: it would be much better to allocate stack of a double
+     size  if the initially `mmap ()'ped stack turns out to cross 4G boundary
+     and pass the Kernel a subAP which doesn't.  */
+  __default_pthread_attr.stacksize >>= 5; 
+#endif  
   __default_pthread_attr.guardsize = GLRO (dl_pagesize);
   lll_unlock (__default_pthread_attr_lock, LLL_PRIVATE);
 

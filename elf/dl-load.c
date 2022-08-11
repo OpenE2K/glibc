@@ -878,7 +878,8 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 
   /* Get file information.  */
   struct r_file_id id;
-  if (__glibc_unlikely (!_dl_get_file_id (fd, &id)))
+  struct stat64 st;
+  if (__glibc_unlikely (!_dl_get_file_id (fd, &id, &st)))
     {
       errstring = N_("cannot stat shared object");
     call_lose_errno:
@@ -1061,6 +1062,9 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	  break;
 
 	case PT_PHDR:
+	  /* Note that l_gd hasn't been initialized yet, which is why l_phdr
+	     can't be set to its final value here and should be adjusted
+	     below.  */
 	  l->l_phdr = (void *) ph->p_vaddr;
 	  break;
 
@@ -1077,6 +1081,16 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	    {
 	      errstring
 		= N_("ELF load command address/offset not properly aligned");
+	      goto call_lose;
+	    }
+	  if (__glibc_unlikely (ph->p_offset + ph->p_filesz > st.st_size))
+	    {
+	      /* If the segment requires zeroing of part of its last
+		 page, we'll crash when accessing the unmapped page.
+		 There's still a possibility of a race, if the shared
+		 object is truncated between the fxstat above and the
+		 memset below.  */
+	      errstring = N_("ELF load command past end of file");
 	      goto call_lose;
 	    }
 
@@ -1208,9 +1222,73 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	}
     }
   else
-    l->l_ld = (ElfW(Dyn) *) ((ElfW(Addr)) l->l_ld + l->l_addr);
+    {
+#if ! defined __ptr128__
+      l->l_ld = (ElfW(Dyn) *) ((ElfW(Addr)) l->l_ld + l->l_addr);
+#else /* defined __ptr128__  */
+      if (! (header->e_flags & EF_E2K_PACK_SEGMENTS))
+	{
+	  /* If l_phdr still contains "NULL" there's no PT_PHDR in its ELF as
+	     it takes place in libm.so. In such a case there's no other way of
+	     getting access to Program Headers in legacy PM case (as well as in
+	     ordinary modes) except for `malloc ()'ing and memcpy ()'ing them
+	     from PHDR (the temporary  buffer they were read to above) even
+	     though  they are almost sure to be present in GD (see the
+	     evaluation in the packed case relying on the latter).  */
+	  if (l->l_phdr != NULL)
+	    l->l_phdr = l->l_gd + (long) l->l_phdr;
+	  else
+	    {
+	      /* FIXME(?): this is an ugly copy/paste of the analogous code in
+		 ordinary modes below. See if the evaluation of "runtime"
+		 l_phdr value at an earlier stage (at which it's needed in PM)
+		 is going to break anything in ordinary modes. */
+
+	      /* The program header is not contained in any of the segments.
+		 We have to allocate memory ourself and copy it over from out
+		 temporary place.  */
+	      ElfW(Phdr) *newp = (ElfW(Phdr) *) malloc (header->e_phnum
+							* sizeof (ElfW(Phdr)));
+	      if (newp == NULL)
+		{
+		  errstring = N_("cannot allocate memory for program header");
+		  goto call_lose_errno;
+		}
+
+	      l->l_phdr = memcpy (newp, phdr,
+				  (header->e_phnum * sizeof (ElfW(Phdr))));
+	      l->l_phdr_allocated = 1;
+	    }
+    }
+      else
+	/* In packed case rely on the assumption that the containing segment
+	   is mapped starting from 0 offset in GD. Note that get_offset ()
+	   can't be used before l_phdr is set.  */
+	l->l_phdr = l->l_gd + header->e_phoff;
+
+      l->l_ld = (ElfW(Dyn) *) (l->l_gd
+			       + get_offset (l, (ElfW(Addr)) l->l_ld));
+#endif /* defined __ptr128__  */
+    }
 
   elf_get_dynamic_info (l, NULL);
+
+#if defined __ptr128__
+  /* FIXME: elaborate a better condition if possible . . .  */
+  if (l->l_code_addr)
+    {
+      ElfW(Addr) selfinit_addr
+	= get_offset (l, l->l_info[DT_E2K_INIT_GOT - DT_LOPROC
+				   + DT_NUM]->d_un.d_ptr);
+
+      l->l_code_addr -= selfinit_addr;
+
+      /* These ones are set based on `l_code_addr' in `_dl_map_segments ()' and
+	 should be adjusted accordingly.  */
+      l->l_text_start -= selfinit_addr;
+      l->l_text_end -= selfinit_addr;
+    }
+#endif
 
   /* Make sure we are not dlopen'ing an object that has the
      DF_1_NOOPEN flag set, or a PIE object.  */
@@ -1254,8 +1332,19 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
       l->l_phdr_allocated = 1;
     }
   else
-    /* Adjust the PT_PHDR value by the runtime load address.  */
-    l->l_phdr = (ElfW(Phdr) *) ((ElfW(Addr)) l->l_phdr + l->l_addr);
+    {
+#if ! defined __ptr128__
+      /* Adjust the PT_PHDR value by the runtime load address.  */
+      l->l_phdr = (ElfW(Phdr) *) ((ElfW(Addr)) l->l_phdr + l->l_addr);
+#else
+      /* Do the same but in PM-specific way for legacy and packed ELFs. In
+	 packed case l_phdr was already finalized before obtaining l_ld as
+         there is no other way of getting AP for the latter.  */
+
+      /* The actual l_phdr is used in PM before we come here. Therefore,
+         it has already been set above.  */
+#endif
+    }
 
   if (__glibc_unlikely ((stack_flags &~ GL(dl_stack_flags)) & PF_X))
     {
@@ -1266,6 +1355,14 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 #ifdef SHARED
       if ((mode & (__RTLD_DLOPEN | __RTLD_AUDIT)) == __RTLD_DLOPEN)
 	{
+# if defined __LCC__ && defined __ptr128__
+	  /* 69 stands for `ec_integer_truncated' here and let's one suppress
+	     "integer conversion resulted in truncation" warning when compiling
+	     the next two lines in PM. TODO: find out why LCC generates this
+	     warning in a rather inconsistent way, i.e. only when converting
+	     `&var' and assigning the result to a _local_ integer variable.  */
+#  pragma diag_suppress 69
+# endif
 	  const uintptr_t p = (uintptr_t) &__stack_prot & -GLRO(dl_pagesize);
 	  const size_t s = (uintptr_t) (&__stack_prot + 1) - p;
 
@@ -1291,7 +1388,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 #endif
 	__stack_prot |= PROT_READ|PROT_WRITE|PROT_EXEC;
 
-#ifdef check_consistency
+#if defined check_consistency && ! defined __i386__
       check_consistency ();
 #endif
 
@@ -1306,7 +1403,13 @@ cannot enable executable stack as shared object requires");
 
   /* Adjust the address of the TLS initialization image.  */
   if (l->l_tls_initimage != NULL)
-    l->l_tls_initimage = (char *) l->l_tls_initimage + l->l_addr;
+    l->l_tls_initimage =
+#if !defined __ptr128__
+      (char *) l->l_tls_initimage + l->l_addr
+#else
+      (char *) l->l_gd + get_offset (l, (unsigned long) l->l_tls_initimage);
+#endif
+      ;
 
   /* We are done mapping in the file.  We no longer need the descriptor.  */
   if (__glibc_unlikely (__close_nocancel (fd) != 0))
@@ -1320,22 +1423,59 @@ cannot enable executable stack as shared object requires");
   /* If this is ET_EXEC, we should have loaded it as lt_executable.  */
   assert (type != ET_EXEC || l->l_type == lt_executable);
 
+#if ! defined __ptr128__
   l->l_entry += l->l_addr;
+#else
+  l->l_entry += l->l_code_addr;
+#endif
 
   if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_FILES))
     _dl_debug_printf ("\
-  dynamic: 0x%0*lx  base: 0x%0*lx   size: 0x%0*Zx\n\
+  dynamic: 0x%0*lx  "
+#if defined __ptr128__
+		      "code base: 0x%0*lx   data "
+#endif
+		      "base: 0x%0*lx   size: 0x%0*Zx\n\
     entry: 0x%0*lx  phdr: 0x%0*lx  phnum:   %*u\n\n",
+#if defined __ptr128__
+			   8,
+#else
 			   (int) sizeof (void *) * 2,
+#endif
 			   (unsigned long int) l->l_ld,
+#if defined __ptr128__
+			   8,
+			   (unsigned long int) l->l_code_addr,
+			   8,
+#else
 			   (int) sizeof (void *) * 2,
+#endif
 			   (unsigned long int) l->l_addr,
-			   (int) sizeof (void *) * 2, maplength,
+#if defined __ptr128__
+			   8,
+#else
 			   (int) sizeof (void *) * 2,
+#endif
+			   maplength,
+#if defined __ptr128__
+			   8,
+#else
+			   (int) sizeof (void *) * 2,
+#endif
 			   (unsigned long int) l->l_entry,
+#if defined __ptr128__
+			   8,
+#else
 			   (int) sizeof (void *) * 2,
+#endif
 			   (unsigned long int) l->l_phdr,
-			   (int) sizeof (void *) * 2, l->l_phnum);
+#if defined __ptr128__
+			   8,
+#else
+
+			   (int) sizeof (void *) * 2,
+#endif
+			   l->l_phnum);
 
   /* Set up the symbol hash table.  */
   _dl_setup_hash (l);
@@ -1579,7 +1719,12 @@ open_verify (const char *name, int fd,
 	}
 
       /* See whether the ELF header is what we expect.  */
+#if defined _LINUX_E2K32_SYSDEP_H || defined _LINUX_E2K64_SYSDEP_H \
+  || defined _LINUX_E2K128_SYSDEP_H
+      if (__glibc_unlikely (! VALID_ELF_HEADER (ehdr, expected,
+#else /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
       if (__glibc_unlikely (! VALID_ELF_HEADER (ehdr->e_ident, expected,
+#endif /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
 						EI_ABIVERSION)
 			    || !VALID_ELF_ABIVERSION (ehdr->e_ident[EI_OSABI],
 						      ehdr->e_ident[EI_ABIVERSION])
@@ -1623,7 +1768,12 @@ open_verify (const char *name, int fd,
 	      = N_("ELF file version ident does not match current one");
 	  /* XXX We should be able so set system specific versions which are
 	     allowed here.  */
+#if defined _LINUX_E2K32_SYSDEP_H || defined _LINUX_E2K64_SYSDEP_H \
+  || defined _LINUX_E2K128_SYSDEP_H
+	  else if (!VALID_ELF_OSABI (ehdr, ehdr->e_ident[EI_OSABI]))
+#else /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
 	  else if (!VALID_ELF_OSABI (ehdr->e_ident[EI_OSABI]))
+#endif /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
 	    errstring = N_("ELF file OS ABI invalid");
 	  else if (!VALID_ELF_ABIVERSION (ehdr->e_ident[EI_OSABI],
 					  ehdr->e_ident[EI_ABIVERSION]))
@@ -1631,6 +1781,13 @@ open_verify (const char *name, int fd,
 	  else if (memcmp (&ehdr->e_ident[EI_PAD], &expected[EI_PAD],
 			   EI_NIDENT - EI_PAD) != 0)
 	    errstring = N_("nonzero padding in e_ident");
+#ifdef WITH_BUG_75842
+# if defined _LINUX_E2K32_SYSDEP_H || defined _LINUX_E2K64_SYSDEP_H \
+  || defined _LINUX_E2K128_SYSDEP_H
+	  else if ((ehdr->e_flags & EF_E2K_BUG_75842) == 0)
+	    errstring = N_("Bug #75842 unsafe ELF file");
+# endif /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
+#endif /* WITH_BUG_75842  */
 	  else
 	    /* Otherwise we don't know what went wrong.  */
 	    errstring = N_("internal error");

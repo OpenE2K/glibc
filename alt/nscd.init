@@ -1,0 +1,96 @@
+#!/bin/sh
+#
+# nscd:		Starts the Name Switch Cache Daemon
+#
+# chkconfig: - 30 74
+# description:  This is a daemon which handles passwd and group lookups \
+#		for running programs and cache the results for the next \
+#		query.  You should start this daemon if you use \
+#		slow naming services like NIS, NIS+, LDAP, or hesiod.
+# processname: /usr/sbin/nscd
+# config: /etc/nscd.conf
+#
+
+WITHOUT_RC_COMPAT=1
+
+# Source function library.
+. /etc/init.d/functions
+
+NSCD_OPTIONS=
+SourceIfNotEmpty /etc/sysconfig/nscd
+
+CONFIG=/etc/nscd.conf
+PIDFILE=/var/run/nscd/nscd.pid
+LOCKFILE=/var/lock/subsys/nscd
+RETVAL=0
+
+start()
+{
+	[ -s "$CONFIG" ] || return 0
+	install -d -m711 /var/run/nscd
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user nscd -- nscd $NSCD_OPTIONS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user nscd -- nscd
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ]; then
+		# nscd won't be able to remove these when it is running
+		# as a non-privileged user
+		rm -f /var/run/nscd/socket
+	fi
+	return $RETVAL
+}
+
+reload()
+{
+	msg_reloading nscd
+	local i
+	RETVAL=0
+	for i in passwd group hosts services; do
+		nscd -i $i || RETVAL=$?
+	done
+	[ "$RETVAL" -eq 0 ] && echo_success || echo_failure
+	echo
+	return $RETVAL
+}
+
+restart()
+{
+	stop
+	start
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	reload)
+		reload
+		;;
+	restart)
+		restart
+		;;
+	condstop|condrestart|condreload)
+		if [ -e "$LOCKFILE" ]; then
+			${1#cond}
+		fi
+		;;
+	status)
+		status --pidfile "$PIDFILE" --expect-user nscd -- nscd
+		RETVAL=$?
+		;;
+	*)
+		msg_usage "${0##*/} {start|stop|status|restart|reload|condstop|condrestart|condreload}"
+		RETVAL=1
+		;;
+esac
+
+exit $RETVAL

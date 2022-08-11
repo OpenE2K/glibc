@@ -32,7 +32,14 @@ __ieee754_exp10 (double arg)
   if (!isfinite (arg))
     return __ieee754_exp (arg);
   if (arg < DBL_MIN_10_EXP - DBL_DIG - 10)
-    return DBL_MIN * DBL_MIN;
+    {
+#if defined __LCC__
+      double d = DBL_MIN;
+      return d * d;
+#else
+      return DBL_MIN * DBL_MIN;
+#endif
+    }
   else if (arg > DBL_MAX_10_EXP + 1)
     return DBL_MAX * DBL_MAX;
   else if (fabs (arg) < 0x1p-56)

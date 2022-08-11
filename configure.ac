@@ -45,12 +45,11 @@ AC_CONFIG_SUBDIRS()
 AC_CANONICAL_HOST
 
 AC_PROG_CC
-if test $host != $build; then
-  AC_CHECK_PROGS(BUILD_CC, gcc cc)
-fi
+AC_CHECK_PROGS(BUILD_CC, gcc cc)
+
 AC_SUBST(cross_compiling)
 AC_PROG_CPP
-AC_CHECK_TOOL(READELF, readelf, false)
+LIBC_PROG_BINUTILS
 
 # We need the C++ compiler only for testing.
 AC_PROG_CXX
@@ -420,6 +419,64 @@ void foo (int i, void *p)
   fi
 fi
 
+dnl For the night build we don't want configures and other regeneratable
+dnl files in source tree to be actually regenerated.
+AC_ARG_ENABLE([debian-multiarch],
+	      AC_HELP_STRING([--enable-debian-multiarch],
+                             [use debian multiarch library search paths]),
+	      [enable_debian_multiarch=$enableval],
+	      [enable_debian_multiarch=no])
+AC_SUBST(enable_debian_multiarch)
+if test x"$enable_debian_multiarch" = xyes; then
+  AC_DEFINE(ENABLE_DEBIAN_MULTIARCH)
+fi
+
+
+dnl For the night build we don't want configures and other regeneratable
+dnl files in source tree to be actually regenerated.
+AC_ARG_ENABLE([maintainer-mode],
+	      AC_HELP_STRING([--enable-maintainer-mode],
+                             [regenerate special files in source tree]),
+	      [maintainer_mode=$enableval],
+	      [maintainer_mode=no])
+AC_SUBST(maintainer_mode)
+
+dnl This option specifies whether support for `sys_atomic' implemented
+dnl inside the Kernel is required (see Bug #54479).
+AC_ARG_WITH([sys-atomic],
+            AC_HELP_STRING([--with-sys-atomic],
+                           [add support for `sys_atomic' implemented by the Kernel]),
+	    [with_sys_atomic=$withval],
+	    [with_sys_atomic=no])
+AC_SUBST(with_sys_atomic)
+dnl Support `sys_atomic' (kernel atomic ops implemented for E90) if it has
+dnl been explicitly requested.
+if test x"$with_sys_atomic" = xyes; then
+  AC_DEFINE(SUPPORT_SYS_ATOMIC)
+fi
+
+dnl This option specifies whether extra optimization options should
+dnl be applied to selected functions (see Bug #58433)
+AC_ARG_ENABLE([extra-optimizations],
+              AC_HELP_STRING([--enable-extra-optimizations],
+                             [apply extra optimizations to selected functions (Bug #58433)]),
+	      [extra_optimizations=$enableval],
+	      [])
+AC_SUBST(extra_optimizations)
+
+dnl This option specifies whether Bug #75842 unsafe ELF files should be
+dnl prevented from loading.
+AC_ARG_WITH([bug-75842],
+            AC_HELP_STRING([--with-bug-75842],
+                           [prevent Bug #75842 unsafe ELFs from loading]),
+	    [with_bug_75842=$withval],
+	    [with_bug_75842=no])
+
+if test x"$with_bug_75842" = xyes; then
+  AC_DEFINE(WITH_BUG_75842)
+fi
+
+
 AC_ARG_ENABLE([build-nscd],
 	      [AS_HELP_STRING([--disable-build-nscd],
 	       [disable building and installing the nscd daemon])],
@@ -489,6 +546,15 @@ AC_ARG_ENABLE([cet],
 # can write them unchanged into config.make.  Everything else uses
 # $machine, $vendor, and $os, and changes them whenever convenient.
 config_machine=$host_cpu config_vendor=$host_vendor config_os=$host_os
+
+# See if LCC is used to make glibc.
+AC_CACHE_CHECK(if we compile glibc with LCC, LCC_COMPILER, [dnl
+if $CC -v 2>&1 | grep -q '^lcc:'; then
+  LCC_COMPILER=yes
+else
+  LCC_COMPILER=no
+fi])
+AC_SUBST(LCC_COMPILER)
 
 # Don't allow vendor == "unknown"
 test "$config_vendor" = unknown && config_vendor=
@@ -976,13 +1042,15 @@ if test "$INSTALL" = "${srcdir}/scripts/install-sh -c"; then
 fi
 AC_PROG_LN_S
 
-LIBC_PROG_BINUTILS
-
 # Accept binutils 2.25 or newer.
+# __e2k__ FIXME: get rid of this conditional when either we migrate to GAS or
+# LAS starts identifying itself as a GNU assembler. The latter is very unlikely.
+if test "$base_machine" != "e2k" ; then
 AC_CHECK_PROG_VER(AS, $AS, --version,
 		  [GNU assembler.* \([0-9]*\.[0-9.]*\)],
 		  [2.1[0-9][0-9]*|2.2[5-9]*|2.[3-9][0-9]*|[3-9].*|[1-9][0-9]*],
 		  AS=: critic_missing="$critic_missing as")
+fi # base_machine = e2k
 
 if test -n "`$LD --version | sed -n 's/^GNU \(gold\).*$/\1/p'`"; then
   # Accept gold 1.14 or higher
@@ -1570,9 +1638,9 @@ else
   libc_cv_gcc_builtin_redirection=no
 fi
 rm -f conftest* ])
-if test "$libc_cv_gcc_builtin_redirection" = no; then
-  AC_MSG_ERROR([support for the symbol redirection needed])
-fi
+# if test "$libc_cv_gcc_builtin_redirection" = no; then
+#   AC_MSG_ERROR([support for the symbol redirection needed])
+# fi
 
 dnl Determine how to disable generation of FMA instructions.
 AC_CACHE_CHECK([for compiler option to disable generation of FMA instructions],
@@ -1624,7 +1692,7 @@ if test "$with_gd" != "no"; then
   old_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS $libgd_ldflags"
   old_LIBS="$LIBS"
-  LIBS="$LIBS -lgd -lpng -lz -lm"
+  LIBS="$LIBS -lgd"
   AC_TRY_LINK([#include <gd.h>], [gdImagePng (0, 0)], LIBGD=yes, LIBGD=no)
   CFLAGS="$old_CFLAGS"
   LDFLAGS="$old_LDFLAGS"
@@ -1701,6 +1769,7 @@ typedef struct {
   char foo;
   long val;
 } Ehdr;
+const int dummy = 777;
 extern const Ehdr __ehdr_start __attribute__ ((visibility ("hidden")));
 long ehdr (void) { return __ehdr_start.val; }
 ])],
@@ -1761,7 +1830,7 @@ S * get () { return &s; }
 #endif
 ])],
 	       [libc_cv_cxx_thread_local=yes],
-	       [libc_cv_cxx_thread_local=no])
+	       [libc_cv_cxx_thread_local=yes])
 CXXFLAGS="$old_CXXFLAGS"
 ])
 AC_SUBST(libc_cv_cxx_thread_local)
@@ -1873,6 +1942,14 @@ AC_SUBST(libc_cv_pie_default)
 # Set the `multidir' variable by grabbing the variable from the compiler.
 # We do it once and save the result in a generated makefile.
 libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
+
+# Take into account that -print-multi-directory is not supported by LCC, which
+# results in an empty value of libc_cv_multidir, by setting this variable as it
+# would be set by GCC lacking support for "multilib" (or how is it called?).
+if test -z "$libc_cv_multidir"; then
+  libc_cv_multidir=.
+fi
+
 AC_SUBST(libc_cv_multidir)
 
 if test "$static_pie" = yes; then
