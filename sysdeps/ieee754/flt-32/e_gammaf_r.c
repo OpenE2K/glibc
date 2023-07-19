@@ -168,8 +168,17 @@ __ieee754_gammaf_r (float x, int *signgamp)
 	  float tx = truncf (x);
 	  *signgamp = (tx == 2.0f * truncf (tx / 2.0f)) ? -1 : 1;
 	  if (x <= -42.0f)
-	    /* Underflow.  */
-	    ret = FLT_MIN * FLT_MIN;
+	    {
+	      /* Underflow.  */
+#if ! defined __LCC__
+	      ret = FLT_MIN * FLT_MIN;
+#else /* defined __LCC__  */
+	      /* Suppress "floating point operation result is out of range" EDG
+		 warning this way.  */
+	      float flt_min = FLT_MIN;
+	      ret = flt_min * flt_min;
+#endif /* defined __LCC__  */
+	    }
 	  else
 	    {
 	      float frac = tx - x;

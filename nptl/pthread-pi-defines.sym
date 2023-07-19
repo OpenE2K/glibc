@@ -3,7 +3,13 @@
 -- These PI macros are used by assembly code.
 
 MUTEX_KIND	offsetof (pthread_mutex_t, __data.__kind)
+
+-- integer
 ROBUST_BIT	PTHREAD_MUTEX_ROBUST_NORMAL_NP
+
+-- integer
 PI_BIT		PTHREAD_MUTEX_PRIO_INHERIT_NP
+
+-- integer
 PS_BIT		PTHREAD_MUTEX_PSHARED_BIT
 TID_MASK	FUTEX_TID_MASK

@@ -28,6 +28,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
+
 
 int *condition;
 
@@ -74,17 +76,20 @@ do_test (void)
       exit (1);
     }
 
-  mut1 = (pthread_mutex_t *) (((uintptr_t) mem
-			       + __alignof (pthread_mutex_t))
-			      & ~(__alignof (pthread_mutex_t) - 1));
+  mut1 = (pthread_mutex_t *) ADJUST_PTR (( mem
+					   + __alignof (pthread_mutex_t)),
+					 &,
+					 ~(__alignof (pthread_mutex_t) - 1));
   mut2 = mut1 + 1;
 
-  cond = (pthread_cond_t *) (((uintptr_t) (mut2 + 1)
-			      + __alignof (pthread_cond_t))
-			     & ~(__alignof (pthread_cond_t) - 1));
+  cond = (pthread_cond_t *) ADJUST_PTR (((char *) (mut2 + 1)
+					 + __alignof (pthread_cond_t)),
+					&,
+					~(__alignof (pthread_cond_t) - 1));
 
-  condition = (int *) (((uintptr_t) (cond + 1) + __alignof (int))
-		       & ~(__alignof (int) - 1));
+  condition = (int *) ADJUST_PTR (((char *) (cond + 1) + __alignof (int)),
+				  &,
+				  ~(__alignof (int) - 1));
 
   if (pthread_mutexattr_init (&ma) != 0)
     {

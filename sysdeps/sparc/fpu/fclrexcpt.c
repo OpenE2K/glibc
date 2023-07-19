@@ -18,8 +18,9 @@
 
 #include <fenv.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __feclearexcept (int excepts)
 {
   fenv_t tmp;

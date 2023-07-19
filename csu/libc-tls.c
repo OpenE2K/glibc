@@ -115,6 +115,14 @@ __libc_setup_tls (void)
   const ElfW(Phdr) *phdr;
 
   struct link_map *main_map = GL(dl_ns)[LM_ID_BASE]._ns_loaded;
+#if defined __e2k__ && defined __ptr128__
+  /* These fields in MAIN_MAP will be set later in `_dl_non_dynamic_init
+     ()' but we need them here for uniform implementation of get_offset ()
+     in static and dynamic cases.  */
+  main_map->l_phdr = GL(dl_phdr);
+  main_map->l_phnum = GL(dl_phnum);
+  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (main_map->l_gd));
+#endif
 
   /* Look through the TLS segment if there is any.  */
   if (_dl_phdr != NULL)
@@ -124,7 +132,16 @@ __libc_setup_tls (void)
 	  /* Remember the values we need.  */
 	  memsz = phdr->p_memsz;
 	  filesz = phdr->p_filesz;
+#if defined __e2k__ && defined __ptr128__
+	  ElfW(Addr) tls_off = get_offset (main_map, phdr->p_vaddr);
+	  initimage = ({
+	      void *res;
+	      __asm__ ("gdtoap %1, %0\n\t" : "=r" (res) : "r" (tls_off));
+	      res;
+	    });
+#else
 	  initimage = (void *) phdr->p_vaddr + main_map->l_addr;
+#endif
 	  align = phdr->p_align;
 	  if (phdr->p_align > max_align)
 	    max_align = phdr->p_align;
@@ -148,8 +165,19 @@ __libc_setup_tls (void)
   tlsblock = __sbrk (tcb_offset + TLS_INIT_TCB_SIZE + max_align);
 #elif TLS_DTV_AT_TP
   tcb_offset = roundup (TLS_INIT_TCB_SIZE, align ?: 1);
+# if defined __e2k__ && defined __ptr128__
+  {
+    size_t tlsblock_size = (tcb_offset + memsz + max_align
+			    + TLS_PRE_TCB_SIZE + GL(dl_tls_static_size));
+    tlsblock = INLINE_BOGUS_SYSCALL (mmap, 6, NULL, tlsblock_size,
+				     PROT_READ | PROT_WRITE,
+				     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  }
+# else
   tlsblock = __sbrk (tcb_offset + memsz + max_align
 		     + TLS_PRE_TCB_SIZE + GL(dl_tls_static_size));
+# endif
+
   tlsblock += TLS_PRE_TCB_SIZE;
 #else
   /* In case a model with a different layout for the TCB and DTV
@@ -158,8 +186,16 @@ __libc_setup_tls (void)
 #endif
 
   /* Align the TLS block.  */
+#if defined __e2k__ && defined __ptr128__
+  {
+    uintptr_t delta = ((((uintptr_t) tlsblock + max_align - 1)
+			& ~(max_align - 1)) - (uintptr_t) tlsblock);
+    tlsblock = (char *) tlsblock + delta;
+  }
+#else
   tlsblock = (void *) (((uintptr_t) tlsblock + max_align - 1)
 		       & ~(max_align - 1));
+#endif
 
   /* Initialize the dtv.  [0] is the length, [1] the generation counter.  */
   _dl_static_dtv[0].counter = (sizeof (_dl_static_dtv) / sizeof (_dl_static_dtv[0])) - 2;
@@ -178,6 +214,11 @@ __libc_setup_tls (void)
 #endif
   _dl_static_dtv[2].pointer.to_free = NULL;
   /* sbrk gives us zero'd memory, so we don't need to clear the remainder.  */
+#if defined __ptr128__
+  /* In PM the memory returned by `sys_get_mem ()', employed instead of `sbrk
+     ()' has explicitly been zeroed out above for the sake of LSIM.  */
+#endif /* defined __ptr128__  */
+
   memcpy (_dl_static_dtv[2].pointer.val, initimage, filesz);
 
   /* Install the pointer to the dtv.  */

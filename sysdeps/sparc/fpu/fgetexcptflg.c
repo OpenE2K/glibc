@@ -18,8 +18,9 @@
 
 #include <fenv.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __fegetexceptflag (fexcept_t *flagp, int excepts)
 {
   fexcept_t tmp;

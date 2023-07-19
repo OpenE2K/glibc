@@ -867,7 +867,13 @@ hol_append (struct hol *hol, struct hol *more)
 
 	  /* Fix up the short options pointers from HOL.  */
 	  for (e = entries, left = hol->num_entries; left > 0; e++, left--)
-	    e->short_options += (short_options - hol->short_options);
+	    {
+#if ! defined __ptr128__
+	      e->short_options += (short_options - hol->short_options);
+#else /* defined __ptr128__  */
+	      e->short_options = &short_options[e->short_options - hol->short_options];
+#endif /* defined __ptr128__  */
+	    }
 
 	  /* Now add the short options from MORE, fixing up its entries
 	     too.  */

@@ -367,6 +367,7 @@ typedef struct
 /* Old spellings/synonyms.  */
 
 #define EM_ARC_A5	EM_ARC_COMPACT
+#define EM_E2K_OLD	49	/* `e_machine' used in old binaries for E2K  */
 
 /* If it is necessary to assign new unofficial EM_* values, please
    pick large random numbers (0x8523, 0xa7f2, etc.) to minimize the
@@ -3542,6 +3543,126 @@ enum
 					   with signed low */
 #define R_M32R_GOTOFF_LO	64	/* Low 16 bit offset to GOT */
 #define R_M32R_NUM		256	/* Keep this the last entry. */
+
+/* E2k specific definitions.  */
+
+/* Values for Elf32/64_Ehdr.e_flags.  */
+
+#define EF_E2K_IPD              3
+#define EF_E2K_X86APP           4
+#define EF_E2K_4MB_PAGES        8
+#define EF_E2K_INCOMPAT         16
+#define EF_E2K_PM               32
+#define EF_E2K_BUG_75842        64
+#define EF_E2K_PACK_SEGMENTS    64
+
+/* A particular E2K machine ELF is intended for is determined by the 8
+   uppermost bits of its header's e_flags containing one of
+   E_E2K_MACH_* codes listed below.  */
+#define EF_E2K_MACH_TO_FLAG(x)      ((x) << 24)
+#define EF_E2K_FLAG_TO_MACH(x)      (((x) >> 24) & 255)
+
+/* Codes of supported E2K machines.  */
+#define E_E2K_MACH_BASE     0	/* Legacy. Shouldn't be created nowadays.  */
+#define E_E2K_MACH_EV1      1	/* Legacy. Shouldn't be created nowadays.  */
+#define E_E2K_MACH_EV2      2	/* -march=elbrus-v2 code.  */
+#define E_E2K_MACH_EV3      3	/* -march=elbrus-v3 code.  */
+#define E_E2K_MACH_EV4      4	/* -march=elbrus-v4 code.  */
+#define E_E2K_MACH_EV5      5	/* -march=elbrus-v5 code.  */
+#define E_E2K_MACH_EV6      6	/* -march=elbrus-v6 code.  */
+#define E_E2K_MACH_EV7      7	/* -march=elbrus-v7 code.  */
+
+/* Values 16, 17 and 18 used to be reserved for `E_E2K_MACH_CUBE_{1,2,3}'
+   respectively, which have never been used in ELF files in practice. However,
+   they can't be reused right now because they are recognized in all Kernel
+   versions installed on many E2K hosts all over the World and at MCST.
+   Otherwise, it would be possible to mistakenly execute ELFs for `elbrus-{8c,
+   1c+}' at respective iterations of `elbrus-2c+'. Reuse them a few years later
+   after they are eliminated from the Kernel.  */
+
+#define E_E2K_MACH_8C	    19	/* -mtune=elbrus-8c code.  */
+#define E_E2K_MACH_1CPLUS   20	/* -mtune=elbrus-1c+ code.  */
+#define E_E2K_MACH_12C	    21	/* -mtune=elbrus-12c code.  */
+#define E_E2K_MACH_16C	    22	/* -mtune=elbrus-16c code.  */
+#define E_E2K_MACH_2C3	    23	/* -mtune=elbrus-2c3 code.  */
+
+/* E2k relocs.  */
+
+#define R_E2K_32_ABS		0	/* Direct 32 bit.  */
+#define R_E2K_32_PC		2	/* PC relative 32 bit.  */
+#define R_E2K_AP_GOT		3	/* 32-bit offset of AP GOT entry.  */
+#define R_E2K_PL_GOT		4	/* 32-bit offset of PL GOT entry.  */
+#define R_E2K_32_JMP_SLOT	8	/* Create PLT entry.  */
+#define R_E2K_32_COPY		9	/* Copy relocation, 32-bit case.  */
+#define R_E2K_32_RELATIVE	10	/* Adjust by program base, 32-bit case.  */
+#define R_E2K_32_IRELATIVE	11	/* Adjust indirectly by program base, 32-bit case.  */
+#define R_E2K_32_SIZE		12	/* Size of symbol plus 32-bit addend.  */
+#define R_E2K_32_DYNOPT		13	/* Symbol value if resolved by the definition in the same
+					   compilation unit or NULL otherwise, 32-bit case.  */
+#define R_E2K_64_ABS		50	/* Direct 64 bit.  */
+#define R_E2K_64_ABS_LIT	51	/* Direct 64 bit for literal.  */
+#define R_E2K_64_PC_LIT		54	/* PC relative 64 bit for literal.  */
+#define R_E2K_64_JMP_SLOT	63	/* Create PLT entry, 64-bit case.  */
+#define R_E2K_64_COPY		64	/* Copy relocation, 64-bit case.  */
+#define R_E2K_64_RELATIVE	65	/* Adjust by program base, 64-bit case.  */
+#define R_E2K_64_RELATIVE_LIT	66	/* Adjust by program base for literal, 64-bit case.  */
+#define R_E2K_64_IRELATIVE	67	/* Adjust indirectly by program base, 64-bit case.  */
+#define R_E2K_64_SIZE		68	/* Size of symbol plus 64-bit addend.  */
+#define R_E2K_64_GOTOFF		69	/* 64-bit offset of the symbol from GOT.  */
+
+#define R_E2K_TLS_GDMOD		70	/* GOT entry for ID of module containing symbol.  */
+#define R_E2K_TLS_GDREL		71	/* GOT entry for offset in module TLS block.  */
+#define R_E2K_TLS_IE		74	/* Static TLS block offset GOT entry.  */
+#define R_E2K_32_TLS_LE		75	/* Offset relative to static TLS block, 32-bit case.  */
+#define R_E2K_64_TLS_LE		76	/* Offset relative to static TLS block, 64-bit case.  */
+#define R_E2K_TLS_32_DTPMOD     80	/* ID of module containing symbol, 32-bit case.  */
+#define R_E2K_TLS_32_DTPREL     81	/* Offset in module TLS block, 32-bit case.  */
+#define R_E2K_TLS_64_DTPMOD     82	/* ID of module containing symbol, 64-bit case.  */
+#define R_E2K_TLS_64_DTPREL     83	/* Offset in module TLS block, 64-bit case.  */
+#define R_E2K_TLS_32_TPREL      84	/* Offset in static TLS block, 32-bit case.  */
+#define R_E2K_TLS_64_TPREL      85	/* Offset in static TLS block, 64-bit case.  */
+
+#define R_E2K_AP		100	/* Direct AP.  */
+#define R_E2K_PL		101	/* Direct PL.  */
+
+#define R_E2K_GOT		108	/* 32-bit offset of the symbol's entry in GOT.  */
+#define R_E2K_GOTOFF		109	/* 32-bit offset of the symbol from GOT.  */
+#define R_E2K_DISP		110	/* PC relative 28 bit for DISP.  */
+#define R_E2K_PREF		111	/* Prefetch insn line containing the label (symbol).  */
+#define R_E2K_NONE		112	/* No reloc.  */
+#define R_E2K_GOTPLT		114	/* 32-bit offset of the symbol's entry in .got.plt.  */
+#define R_E2K_ISLOCAL		115	/* Is symbol resolved locally during the link.
+					   The result is encoded in 5-bit ALS.src1.  */
+#define R_E2K_ISLOCAL32		118	/* Is symbol resloved locally during the link.
+					   The result is encoded in a long 32-bit LTS.  */
+#define R_E2K_64_GOTOFF_LIT	256	/* The symbol's offset from GOT encoded within a 64-bit
+					   literal.  */
+#define R_E2K_64_DYNOPT		257	/* Symbol value if resolved by the definition in the same
+					   compilation unit or NULL otherwise, 64-bit case.  */
+#define R_E2K_64_PC		258	/* PC relative 64 bit in data.  */
+
+
+/* Legal values for d_tag field of Elf32_Dyn.  */
+
+/* FIXME: find out whether old dynamic tags may be renamed and their names
+   be used by modern ones or new names should be customized for modern tags.
+   This concerns DT_E2K_LAZY renamed to DT_E2K_LAZY_DEFECTIVE.  */
+#define DT_E2K_LAZY_DEFECTIVE   (DT_LOPROC + 0)
+#define DT_E2K_LAZY             (DT_LOPROC + 1)
+
+/* This tag will be hopefully used for a limited period of time. `DT_LOPROC + 1'
+   has already been reserved in glibc-2.16 and binutils-2.23.1 to mark
+   non-defective lazy binding implementation without this awful Bug #75842 taken
+   into account.  */
+#define DT_E2K_LAZY_BUG_75842   (DT_LOPROC + 2)
+#define DT_E2K_LAZY_GOT         (DT_LOPROC + 3)
+
+#define DT_E2K_INIT_GOT		(DT_LOPROC + 0x101c)
+#define DT_E2K_EXPORT_PL	(DT_LOPROC + 0x101d)
+#define DT_E2K_EXPORT_PLSZ	(DT_LOPROC + 0x101e)
+#define DT_E2K_REAL_PLTGOT	(DT_LOPROC + 0x101f)
+
+#define DT_E2K_NUM		0x1020
 
 /* MicroBlaze relocations */
 #define R_MICROBLAZE_NONE		0	/* No reloc. */

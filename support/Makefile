@@ -169,7 +169,10 @@ CFLAGS-support_paths.c = \
 		-DINSTDIR_PATH=\"$(prefix)\" \
 		-DLIBDIR_PATH=\"$(libdir)\"
 
-ifeq (,$(CXX))
+# The original `ifeq (,$(CXX))' isn't adequate here if glibc is made as a part
+# of self-consistent toolchain created from scratch in which case libstdc++
+# headers and libraries are not available yet.
+ifneq (,$(no_cxx_headers))
 LINKS_DSO_PROGRAM = links-dso-program-c
 else
 LINKS_DSO_PROGRAM = links-dso-program

@@ -1884,6 +1884,16 @@ __vfscanf_internal (FILE *s, const char *format, va_list argptr,
 		}
 	      else
 		{
+#if defined __e2k__ && defined  __ptr128__
+		  /* It's crucial that in PM a `sscanf ()'ed fake pointer was
+		     initialized via a pointer to a pointer, not to an integer
+		     so as to avoid junk in its hi part (Bug #144786). Here one
+		     implicitly makes use of the fact that only LONG flag is
+		     set for "%p" and that `need_long == 1' in PM.  */
+		  if (flags & READ_POINTER)
+		    *ARG (void **) = (void *) num.ul;
+		  else
+#endif /* defined __e2k__ && defined __ptr128__  */
 		  if (need_longlong && (flags & LONGDBL))
 		    *ARG (unsigned LONGLONG int *) = num.uq;
 		  else if (need_long && (flags & LONG))

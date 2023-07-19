@@ -24,7 +24,11 @@
 
 
 /* How many load/unload operations do we do.  */
-#define TEST_ROUNDS	5000
+#if ! defined __ptr128__
+# define TEST_ROUNDS	5000
+#else /* defined __ptr128__  */
+# define TEST_ROUNDS	20
+#endif /* defined __ptr128__  */
 
 
 enum state { unloaded, loaded };

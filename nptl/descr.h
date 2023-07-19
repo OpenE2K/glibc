@@ -31,7 +31,9 @@
 #include <dl-sysdep.h>
 #include "../nptl_db/thread_db.h"
 #include <tls.h>
-#include <unwind.h>
+#if ! defined __LCC_SJLJ_EXCEPTIONS__
+# include <unwind.h>
+#endif
 #include <bits/types/res_state.h>
 #include <kernel-features.h>
 
@@ -91,10 +93,18 @@ struct pthread_unwind_buf
 
 /* Opcodes and data types for communication with the signal handler to
    change user/group IDs.  */
+
+#if ! (defined __e2k__ && defined __ptr128__)
+# define __XID_COMMAND_ID_TYPE long int
+#else /* defined __e2k__ && defined __ptr128__  */
+# define __XID_COMMAND_ID_TYPE void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+
+
 struct xid_command
 {
   int syscall_no;
-  long int id[3];
+  __XID_COMMAND_ID_TYPE id[3];
   volatile int cntr;
   volatile int error; /* -1: no call yet, 0: success seen, >0: error seen.  */
 };
@@ -115,6 +125,21 @@ struct priority_protection_data
   int priomax;
   unsigned int priomap[];
 };
+
+#if ! defined __ptr128__
+# define ADJUST_PTR(ptr, op, num) ((uintptr_t) (ptr) op (num))
+#else /* defined __ptr128__  */
+# define ADJUST_PTR(ptr, op, num)		\
+  ({						\
+    const char *__ptr = (const char *) (ptr);	\
+    uintptr_t __num = (uintptr_t) (num);	\
+    uintptr_t __delta = (uintptr_t) __ptr;	\
+    __delta = (__delta op __num) - __delta;	\
+    __ptr + (long) __delta;			\
+  })
+#endif /* defined __ptr128__  */
+
+
 
 
 /* Thread descriptor data structure.  */
@@ -189,8 +214,8 @@ struct pthread
 # define ENQUEUE_MUTEX_BOTH(mutex, val)					      \
   do {									      \
     __pthread_list_t *next = (__pthread_list_t *)			      \
-      ((((uintptr_t) THREAD_GETMEM (THREAD_SELF, robust_head.list)) & ~1ul)   \
-       - QUEUE_PTR_ADJUST);						      \
+      (ADJUST_PTR (THREAD_GETMEM (THREAD_SELF, robust_head.list), &, ~1ul) \
+       - QUEUE_PTR_ADJUST);						\
     next->__prev = (void *) &mutex->__data.__list.__next;		      \
     mutex->__data.__list.__next = THREAD_GETMEM (THREAD_SELF,		      \
 						 robust_head.list);	      \
@@ -198,18 +223,17 @@ struct pthread
     /* Ensure that the new list entry is ready before we insert it.  */	      \
     __asm ("" ::: "memory");						      \
     THREAD_SETMEM (THREAD_SELF, robust_head.list,			      \
-		   (void *) (((uintptr_t) &mutex->__data.__list.__next)	      \
-			     | val));					      \
+		   (void *) ADJUST_PTR (&mutex->__data.__list.__next, |, val));	\
   } while (0)
 # define DEQUEUE_MUTEX(mutex) \
   do {									      \
     __pthread_list_t *next = (__pthread_list_t *)			      \
-      ((char *) (((uintptr_t) mutex->__data.__list.__next) & ~1ul)	      \
-       - QUEUE_PTR_ADJUST);						      \
+      ((char *) ADJUST_PTR (mutex->__data.__list.__next, &, ~1ul)	\
+       - QUEUE_PTR_ADJUST);						\
     next->__prev = mutex->__data.__list.__prev;				      \
     __pthread_list_t *prev = (__pthread_list_t *)			      \
-      ((char *) (((uintptr_t) mutex->__data.__list.__prev) & ~1ul)	      \
-       - QUEUE_PTR_ADJUST);						      \
+      ((char *) ADJUST_PTR (mutex->__data.__list.__prev, &, ~1ul)	\
+       - QUEUE_PTR_ADJUST);						\
     prev->__next = mutex->__data.__list.__next;				      \
     /* Ensure that we remove the entry from the list before we change the     \
        __next pointer of the entry, which is read by the kernel.  */	      \
@@ -231,22 +255,22 @@ struct pthread
     /* Ensure that the new list entry is ready before we insert it.  */	      \
     __asm ("" ::: "memory");						      \
     THREAD_SETMEM (THREAD_SELF, robust_list.__next,			      \
-		   (void *) (((uintptr_t) &mutex->__data.__list) | val));     \
+		   (void *) ADJUST_PTR (&mutex->__data.__list, |, val)); \
   } while (0)
 # define DEQUEUE_MUTEX(mutex) \
   do {									      \
     __pthread_slist_t *runp = (__pthread_slist_t *)			      \
-      (((uintptr_t) THREAD_GETMEM (THREAD_SELF, robust_list.__next)) & ~1ul); \
+      ADJUST_PTR (THREAD_GETMEM (THREAD_SELF, robust_list.__next), &, ~1ul); \
     if (runp == &mutex->__data.__list)					      \
       THREAD_SETMEM (THREAD_SELF, robust_list.__next, runp->__next);	      \
     else								      \
       {									      \
-	__pthread_slist_t *next = (__pthread_slist_t *)		      \
-	  (((uintptr_t) runp->__next) & ~1ul);				      \
+	__pthread_slist_t *next = (__pthread_slist_t *)			\
+	  ADJUST_PTR (runp->__next, &, ~1ul);				\
 	while (next != &mutex->__data.__list)				      \
 	  {								      \
 	    runp = next;						      \
-	    next = (__pthread_slist_t *) (((uintptr_t) runp->__next) & ~1ul); \
+	    next = (__pthread_slist_t *) ADJUST_PTR(runp->__next, &, ~1ul); \
 	  }								      \
 									      \
 	runp->__next = next->__next;					      \
@@ -374,8 +398,10 @@ struct pthread
   /* Next descriptor with a pending event.  */
   struct pthread *nextevent;
 
+#if ! defined __LCC_SJLJ_EXCEPTIONS__
   /* Machine-specific unwind info.  */
   struct _Unwind_Exception exc;
+#endif
 
   /* If nonzero, pointer to the area allocated for the stack and guard. */
   void *stackblock;

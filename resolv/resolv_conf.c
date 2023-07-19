@@ -25,6 +25,12 @@
 #include <sys/stat.h>
 #include <libc-symbols.h>
 
+typedef union
+{
+  struct resolv_conf *ptr;
+  uintptr_t idx;
+} dummy_t;
+
 /* _res._u._ext.__glibc_extension_index is used as an index into a
    struct resolv_conf_array object.  The intent of this construction
    is to make reasonably sure that even if struct __res_state objects
@@ -34,7 +40,7 @@
    free list entries (if the LSB is set).  The free list is used to
    speed up finding available entries in the array.  */
 #define DYNARRAY_STRUCT resolv_conf_array
-#define DYNARRAY_ELEMENT uintptr_t
+#define DYNARRAY_ELEMENT dummy_t
 #define DYNARRAY_PREFIX resolv_conf_array_
 #define DYNARRAY_INITIAL_SIZE 0
 #include <malloc/dynarray-skeleton.c>
@@ -63,7 +69,7 @@ struct resolv_conf_global
      empty.  Otherwise, free_list_start >> 1 is the first element of
      the free list (and the free list entries all have their LSB set
      and are shifted one to the left).  */
-  uintptr_t free_list_start;
+  dummy_t free_list_start;
 
   /* Cached current configuration object for /etc/resolv.conf.  */
   struct resolv_conf *conf_current;
@@ -207,10 +213,10 @@ resolv_conf_get_1 (const struct __res_state *resp)
   struct resolv_conf *conf = NULL;
   if (index < resolv_conf_array_size (&global_copy->array))
     {
-      uintptr_t *slot = resolv_conf_array_at (&global_copy->array, index);
-      if (!(*slot & 1))
+      dummy_t *slot = resolv_conf_array_at (&global_copy->array, index);
+      if (!(slot->idx & 1))
         {
-          conf = (struct resolv_conf *) *slot;
+          conf = slot->ptr;
           assert (conf->__refcount > 0);
           ++conf->__refcount;
         }
@@ -581,15 +587,15 @@ decrement_at_index (struct resolv_conf_global *global_copy, size_t index)
   if (index < resolv_conf_array_size (&global_copy->array))
     {
       /* Index found.  */
-      uintptr_t *slot = resolv_conf_array_at (&global_copy->array, index);
+      dummy_t *slot = resolv_conf_array_at (&global_copy->array, index);
       /* Check that the slot is not already part of the free list.  */
-      if (!(*slot & 1))
+      if (!(slot->idx & 1))
         {
-          struct resolv_conf *conf = (struct resolv_conf *) *slot;
+          struct resolv_conf *conf = slot->ptr;
           conf_decrement (conf);
           /* Put the slot onto the free list.  */
           *slot = global_copy->free_list_start;
-          global_copy->free_list_start = (index << 1) | 1;
+          global_copy->free_list_start.idx = (index << 1) | 1;
         }
     }
 }
@@ -606,22 +612,24 @@ __resolv_conf_attach (struct __res_state *resp, struct resolv_conf *conf)
   /* Try to find an unused index in the array.  */
   size_t index;
   {
-    if (global_copy->free_list_start & 1)
+    if (global_copy->free_list_start.idx & 1)
       {
         /* Unlink from the free list.  */
-        index = global_copy->free_list_start >> 1;
-        uintptr_t *slot = resolv_conf_array_at (&global_copy->array, index);
+        index = global_copy->free_list_start.idx >> 1;
+        dummy_t *slot = resolv_conf_array_at (&global_copy->array, index);
         global_copy->free_list_start = *slot;
-        assert (global_copy->free_list_start == 0
-                || global_copy->free_list_start & 1);
+        assert (global_copy->free_list_start.idx == 0
+                || global_copy->free_list_start.idx & 1);
         /* Install the configuration pointer.  */
-        *slot = (uintptr_t) conf;
+        slot->ptr = conf;
       }
     else
       {
         size_t size = resolv_conf_array_size (&global_copy->array);
+        dummy_t dummy;
+        dummy.ptr = conf;
         /* No usable index found.  Increase the array size.  */
-        resolv_conf_array_add (&global_copy->array, (uintptr_t) conf);
+        resolv_conf_array_add (&global_copy->array, dummy);
         if (resolv_conf_array_has_failed (&global_copy->array))
           {
             put_locked_global (global_copy);

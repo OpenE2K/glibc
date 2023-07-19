@@ -95,7 +95,13 @@ nscd_getpw_r (const char *key, size_t keylen, request_type type,
  retry:;
   const char *pw_name = NULL;
   int retval = -1;
-  const char *recend = (const char *) ~UINTMAX_C (0);
+  const char *recend = (const char *) ~
+#if ! defined __LCC__
+    UINTMAX_C (0)
+#else
+    (unsigned long) (0)
+#endif
+    ;
   pw_response_header pw_resp;
 
   if (mapped != NO_MAPPING)

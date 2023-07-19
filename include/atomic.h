@@ -47,7 +47,30 @@
 
 #include <stdlib.h>
 
+#if (! defined __LCC__)
+
+#define ABORT() abort ()
+
+#else /* __LCC__ */
+
+#define ABORT() \
+  ({            \
+    int *p = 0; \
+    *p = 0;     \
+   })
+
+#endif /* __LCC__ */
+
+
 #include <atomic-machine.h>
+
+#ifndef __atomic_val_by16
+# define __atomic_val_by16(pre, post, mem, ...)
+#endif
+
+#ifndef __atomic_bool_by16
+# define __atomic_bool_by16(pre, post, mem, ...)
+#endif
 
 /* Wrapper macros to call pre_NN_post (mem, ...) where NN is the
    bit width of *MEM.  The calling macro puts parens around MEM
@@ -63,8 +86,9 @@
       __atg1_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg1_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_val_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg1_result;							      \
   })
 #define __atomic_bool_bysize(pre, post, mem, ...)			      \
@@ -78,8 +102,9 @@
       __atg2_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg2_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_bool_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg2_result;							      \
   })
 
@@ -540,8 +565,20 @@
 
 /* We require 32b atomic operations; some archs also support 64b atomic
    operations.  */
+#if ! defined __LCC__
 void __atomic_link_error (void);
-# if __HAVE_64B_ATOMICS == 1
+#else /* __LCC__  */
+/* When building glibc with non-optimizing lcc the use of the original
+   '__atomic_link_error ()' leads to an ureasonable link error due to the
+   compiler's inability to eliminate dead code.  */
+#define __atomic_link_error() ABORT ()
+#endif /* __LCC__  */
+
+# if defined __e2k__ && defined __ptr128__
+#  define __atomic_check_size(mem) \
+   if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8) && (sizeof (*mem) != 16)) \
+     __atomic_link_error ();
+# elif __HAVE_64B_ATOMICS == 1
 #  define __atomic_check_size(mem) \
    if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8))			      \
      __atomic_link_error ();
@@ -555,9 +592,14 @@ void __atomic_link_error (void);
    loads and stores makes this easier for archs that do not have native
    support for atomic operations to less-than-word-sized data.  */
 # if __HAVE_64B_ATOMICS == 1
+
+#  if ! defined __atomic_check_size_ls_16
+#   define __atomic_check_size_ls_16(mem)
+#  endif
+
 #  define __atomic_check_size_ls(mem) \
    if ((sizeof (*mem) != 1) && (sizeof (*mem) != 2) && (sizeof (*mem) != 4)   \
-       && (sizeof (*mem) != 8))						      \
+       && (sizeof (*mem) != 8) __atomic_check_size_ls_16 (mem))		      \
      __atomic_link_error ();
 # else
 #  define __atomic_check_size_ls(mem) \

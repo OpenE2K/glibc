@@ -35,7 +35,12 @@ __BEGIN_DECLS
 typedef unsigned int tss_t;
 typedef void (*tss_dtor_t) (void*);
 
+#if ! (defined __e2k__ && defined __ptr128__)
 typedef unsigned long int thrd_t;
+#else
+typedef void * thrd_t;
+#endif
+
 typedef int (*thrd_start_t) (void*);
 
 /* Exit and error codes.  */
@@ -65,7 +70,11 @@ typedef struct
 typedef union
 {
   char __size[__SIZEOF_PTHREAD_MUTEX_T];
+#if ! (defined __e2k__ && defined __ptr128__)
   long int __align __LOCK_ALIGNMENT;
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *__align;
+#endif /* defined __e2k__ && defined __ptr128__  */
 } mtx_t;
 
 typedef union

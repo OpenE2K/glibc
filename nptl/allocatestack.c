@@ -379,7 +379,11 @@ setup_stack_prot (char *mem, size_t size, char *guard, size_t guardsize,
 
 /* Mark the memory of the stack as usable to the kernel.  It frees everything
    except for the space used for the TCB itself.  */
-static inline void
+static
+#ifndef __LCC__
+inline
+#endif
+void
 __always_inline
 advise_stack_range (void *mem, size_t size, uintptr_t pd, size_t guardsize)
 {
@@ -467,7 +471,11 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       pd = (struct pthread *) ((uintptr_t) stackaddr
 			       - TLS_TCB_SIZE - adj);
 #elif TLS_DTV_AT_TP
-      pd = (struct pthread *) (((uintptr_t) stackaddr
+      pd = (struct pthread *) ((
+#if ! defined __ptr128__
+				(uintptr_t)
+#endif
+				stackaddr
 				- __static_tls_size - adj)
 			       - TLS_PRE_TCB_SIZE);
 #endif
@@ -520,6 +528,9 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
     {
       /* Allocate some anonymous memory.  If possible use the cache.  */
       size_t guardsize;
+#if defined __ptr128__
+      size_t reported_guardsize;
+#endif /* defined __ptr128__  */
       size_t reqsize;
       void *mem;
       const int prot = (PROT_READ | PROT_WRITE
@@ -535,6 +546,15 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       if (guardsize < attr->guardsize || size + guardsize < guardsize)
 	/* Arithmetic overflow.  */
 	return EINVAL;
+#if defined __ptr128__
+      /* Ensure that `pthread_getattr_np ()' sets the value of iattr->guardsize
+	 according to the user's expectations.  */
+      reported_guardsize = guardsize;
+      /* This stupidly prevents subsequent manipulations with mprotect ()
+	 unworkable in PM due to readonly AP returned by the initial mmap ()
+	 from taking place.  */
+      guardsize = 0;
+#endif /* defined __ptr128__  */
       size += guardsize;
       if (__builtin_expect (size < ((guardsize + __static_tls_size
 				     + MINIMAL_REST_STACK + pagesize_m1)
@@ -578,6 +598,11 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 				    - __static_tls_size)
 				    & ~__static_tls_align_m1)
 				   - TLS_PRE_TCB_SIZE);
+# if defined __ptr128__
+	  pd = (struct pthread *) ((char *) mem + (unsigned long) pd
+				   - (unsigned long) mem);
+# endif
+
 #endif
 
 	  /* Now mprotect the required region excluding the guard area.  */
@@ -737,7 +762,14 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       /* The pthread_getattr_np() calls need to get passed the size
 	 requested in the attribute, regardless of how large the
 	 actually used guardsize is.  */
+#if ! defined __ptr128__
       pd->reported_guardsize = guardsize;
+#else /* defined __ptr128__  */
+      /* Ensure that `pthread_getattr_np ()' sets the value of iattr->guardsize
+	 according to the user's expectations despite the fact that the actual
+	 guardsize was zeroed out above.  */
+      pd->reported_guardsize = reported_guardsize;
+#endif /* defined __ptr128__  */
     }
 
   /* Initialize the lock.  We have to do this unconditionally since the

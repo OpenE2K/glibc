@@ -242,6 +242,8 @@ futex_wake (unsigned int *futex_word, int processes_to_wake, int private)
 		     act in this case.  */
       return;
     case -ENOSYS: /* Must have been caused by a glibc bug.  */
+      /* This may have been caused by LSIM bug as well . . .  */
+      return;
     /* No other errors are documented at this time.  */
     default:
       futex_fatal_error ();

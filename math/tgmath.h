@@ -39,7 +39,10 @@
    blowup of the size of expansions when calls to such macros are
    nested inside arguments to such macros).  */
 
-#define __HAVE_BUILTIN_TGMATH __GNUC_PREREQ (8, 0)
+/* This macro shouldn't be set to 1 when compiling source files including
+   this header with LCC until __builtin_tgmath () is actually implemented
+   (Bug #122866).  */
+#define __HAVE_BUILTIN_TGMATH ((!defined __LCC__) &&  __GNUC_PREREQ (8, 0))
 
 #if __GNUC_PREREQ (2, 7)
 

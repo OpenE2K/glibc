@@ -66,7 +66,7 @@
 /* Defined to 1 if any _FloatN or _FloatNx types that are not
    ABI-distinct are however distinct types at the C language level (so
    for the purposes of __builtin_types_compatible_p and _Generic).  */
-#if __GNUC_PREREQ (7, 0) && !defined __cplusplus
+#if (__GNUC_PREREQ (7, 0) && ! defined __LCC__) && !defined __cplusplus
 # define __HAVE_FLOATN_NOT_TYPEDEF 1
 #else
 # define __HAVE_FLOATN_NOT_TYPEDEF 0
@@ -78,7 +78,7 @@
    or _FloatNx types, if __HAVE_<type> is 1.  The corresponding
    literal suffixes exist since GCC 7, for C only.  */
 # if __HAVE_FLOAT16
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 /* No corresponding suffix available for this type.  */
 #   define __f16(x) ((_Float16) x##f)
 #  else
@@ -87,7 +87,7 @@
 # endif
 
 # if __HAVE_FLOAT32
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   define __f32(x) x##f
 #  else
 #   define __f32(x) x##f32
@@ -95,7 +95,7 @@
 # endif
 
 # if __HAVE_FLOAT64
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   ifdef __NO_LONG_DOUBLE_MATH
 #    define __f64(x) x##l
 #   else
@@ -107,7 +107,7 @@
 # endif
 
 # if __HAVE_FLOAT32X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   define __f32x(x) x
 #  else
 #   define __f32x(x) x##f32x
@@ -115,7 +115,7 @@
 # endif
 
 # if __HAVE_FLOAT64X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   if __HAVE_FLOAT64X_LONG_DOUBLE
 #    define __f64x(x) x##l
 #   else
@@ -127,7 +127,7 @@
 # endif
 
 # if __HAVE_FLOAT128X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   error "_Float128X supported but no constant suffix"
 #  else
 #   define __f128x(x) x##f128x
@@ -136,7 +136,7 @@
 
 /* Defined to a complex type if __HAVE_<type> is 1.  */
 # if __HAVE_FLOAT16
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 #   define __CFLOAT16 __cfloat16
 #  else
@@ -145,7 +145,7 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 # endif
 
 # if __HAVE_FLOAT32
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   define __CFLOAT32 _Complex float
 #  else
 #   define __CFLOAT32 _Complex _Float32
@@ -153,7 +153,7 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 # endif
 
 # if __HAVE_FLOAT64
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   ifdef __NO_LONG_DOUBLE_MATH
 #    define __CFLOAT64 _Complex long double
 #   else
@@ -165,7 +165,7 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 # endif
 
 # if __HAVE_FLOAT32X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   define __CFLOAT32X _Complex double
 #  else
 #   define __CFLOAT32X _Complex _Float32x
@@ -173,7 +173,7 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 # endif
 
 # if __HAVE_FLOAT64X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   if __HAVE_FLOAT64X_LONG_DOUBLE
 #    define __CFLOAT64X _Complex long double
 #   else
@@ -185,7 +185,7 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 # endif
 
 # if __HAVE_FLOAT128X
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   error "_Float128X supported but no complex type"
 #  else
 #   define __CFLOAT128X _Complex _Float128x
@@ -195,11 +195,11 @@ typedef _Complex float __cfloat16 __attribute__ ((__mode__ (__HC__)));
 /* The remaining of this file provides support for older compilers.  */
 # if __HAVE_FLOAT16
 
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef float _Float16 __attribute__ ((__mode__ (__HF__)));
 #  endif
 
-#  if !__GNUC_PREREQ (7, 0)
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #   define __builtin_huge_valf16() ((_Float16) __builtin_huge_val ())
 #   define __builtin_inff16() ((_Float16) __builtin_inf ())
 #   define __builtin_nanf16(x) ((_Float16) __builtin_nan (x))
@@ -210,11 +210,11 @@ typedef float _Float16 __attribute__ ((__mode__ (__HF__)));
 
 # if __HAVE_FLOAT32
 
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef float _Float32;
 #  endif
 
-#  if !__GNUC_PREREQ (7, 0)
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #   define __builtin_huge_valf32() (__builtin_huge_valf ())
 #   define __builtin_inff32() (__builtin_inff ())
 #   define __builtin_nanf32(x) (__builtin_nanf (x))
@@ -234,11 +234,11 @@ typedef float _Float32;
 
 #  ifdef __NO_LONG_DOUBLE_MATH
 
-#   if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef long double _Float64;
 #   endif
 
-#   if !__GNUC_PREREQ (7, 0)
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #    define __builtin_huge_valf64() (__builtin_huge_vall ())
 #    define __builtin_inff64() (__builtin_infl ())
 #    define __builtin_nanf64(x) (__builtin_nanl (x))
@@ -247,11 +247,11 @@ typedef long double _Float64;
 
 #  else
 
-#   if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef double _Float64;
 #   endif
 
-#   if !__GNUC_PREREQ (7, 0)
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #    define __builtin_huge_valf64() (__builtin_huge_val ())
 #    define __builtin_inff64() (__builtin_inf ())
 #    define __builtin_nanf64(x) (__builtin_nan (x))
@@ -264,11 +264,11 @@ typedef double _Float64;
 
 # if __HAVE_FLOAT32X
 
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef double _Float32x;
 #  endif
 
-#  if !__GNUC_PREREQ (7, 0)
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #   define __builtin_huge_valf32x() (__builtin_huge_val ())
 #   define __builtin_inff32x() (__builtin_inf ())
 #   define __builtin_nanf32x(x) (__builtin_nan (x))
@@ -281,11 +281,11 @@ typedef double _Float32x;
 
 #  if __HAVE_FLOAT64X_LONG_DOUBLE
 
-#   if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef long double _Float64x;
 #   endif
 
-#   if !__GNUC_PREREQ (7, 0)
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #    define __builtin_huge_valf64x() (__builtin_huge_vall ())
 #    define __builtin_inff64x() (__builtin_infl ())
 #    define __builtin_nanf64x(x) (__builtin_nanl (x))
@@ -294,11 +294,11 @@ typedef long double _Float64x;
 
 #  else
 
-#   if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef _Float128 _Float64x;
 #   endif
 
-#   if !__GNUC_PREREQ (7, 0)
+#   if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #    define __builtin_huge_valf64x() (__builtin_huge_valf128 ())
 #    define __builtin_inff64x() (__builtin_inff128 ())
 #    define __builtin_nanf64x(x) (__builtin_nanf128 (x))
@@ -311,11 +311,11 @@ typedef _Float128 _Float64x;
 
 # if __HAVE_FLOAT128X
 
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   error "_Float128x supported but no type"
 #  endif
 
-#  if !__GNUC_PREREQ (7, 0)
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #   define __builtin_huge_valf128x() ((_Float128x) __builtin_huge_val ())
 #   define __builtin_inff128x() ((_Float128x) __builtin_inf ())
 #   define __builtin_nanf128x(x) ((_Float128x) __builtin_nan (x))

@@ -38,8 +38,7 @@ __select (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	  struct timeval *timeout)
 {
 #ifdef __NR_select
-  return SYSCALL_CANCEL (select, nfds, readfds, writefds, exceptfds,
-			 timeout);
+  return SYSCALL_CANCEL (select, nfds, readfds, writefds, exceptfds, timeout);
 #else
   int result;
   struct timespec ts, *tsp = NULL;

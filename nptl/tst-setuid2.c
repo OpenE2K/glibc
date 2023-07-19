@@ -108,6 +108,11 @@ static void
 get_thread_ids (void)
 {
   if (getresuid (&ruid, &euid, &suid) < 0)
+#if defined __LCC__
+    /* Stupidly suppress `ec_bad_printf_format_string' as LCC in unaware of
+       `%m' format specifier being a GNU extension.  */
+# pragma diag_suppress 226
+#endif /* defined __LCC__  */
     FAIL ("getresuid: %m (%d)", errno);
 }
 

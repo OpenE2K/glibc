@@ -33,7 +33,11 @@ wctob (wint_t c)
   struct __gconv_step_data data;
   wchar_t inbuf[1];
   wchar_t *inptr = inbuf;
-  size_t dummy;
+  size_t dummy
+#ifdef __ptr128__
+    = 0
+#endif /* __ptr128__  */
+    ;
   int status;
   const struct gconv_fcts *fcts;
 

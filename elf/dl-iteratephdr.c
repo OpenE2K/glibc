@@ -52,17 +52,38 @@ __dl_iterate_phdr (int (*callback) (struct dl_phdr_info *info,
 	/* We have to count the total number of loaded objects.  */
 	nloaded += GL(dl_ns)[cnt]._ns_nloaded;
 
-	if (caller >= (const void *) l->l_map_start
+	if (
+#if ! defined __ptr128__
+	    caller >= (const void *) l->l_map_start
 	    && caller < (const void *) l->l_map_end
-	    && (l->l_contiguous
-		|| _dl_addr_inside_object (l, (ElfW(Addr)) caller)))
+#else /* defined __ptr128__  */
+	    /* FIXME: stupidly adapt the above test to PM for now, though
+	     CALLER shouldn't probably be allowed to belong to the data part
+	     of the mapped address space.  */
+	    (((ElfW(Addr)) caller >= l->l_text_start
+	      && (ElfW(Addr)) caller <= l->l_text_end)
+	     || ((ElfW(Addr)) caller >= l->l_data_start
+		 && (ElfW(Addr)) caller <= l->l_data_end))
+
+#endif /* defined __ptr128__  */
+	    && (
+#if ! defined __ptr128__
+		l->l_contiguous
+		||
+#endif
+		_dl_addr_inside_object (l, (ElfW(Addr)) caller)))
 	  ns = cnt;
       }
 #endif
 
   for (l = GL(dl_ns)[ns]._ns_loaded; l != NULL; l = l->l_next)
     {
+#if ! defined __ptr128__
       info.dlpi_addr = l->l_real->l_addr;
+#else /* defined __ptr128__  */
+      info.dlpi_addr = l->l_real->l_code_addr;
+      info.dlpi_gd = l->l_real->l_gd;
+#endif /* defined __ptr128__  */
       info.dlpi_name = l->l_real->l_name;
       info.dlpi_phdr = l->l_real->l_phdr;
       info.dlpi_phnum = l->l_real->l_phnum;

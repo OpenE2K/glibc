@@ -65,7 +65,13 @@ __nscd_getai (const char *key, struct nscd_ai_result **result, int *h_errnop)
 
  retry:;
   struct nscd_ai_result *resultbuf = NULL;
-  const char *recend = (const char *) ~UINTMAX_C (0);
+  const char *recend = (const char *) ~
+#if ! defined __LCC__
+    UINTMAX_C (0)
+#else
+    (unsigned long) (0)
+#endif
+    ;
   char *respdata = NULL;
   int retval = -1;
   int sock = -1;

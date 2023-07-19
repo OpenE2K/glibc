@@ -45,12 +45,20 @@ fi
 case "$1" in
     (c)
         lang_modes="$c_modes"
-        cih_test_c=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX.c)
+        # At MCST an ancient mktemp is incapable of using "cih_test_XXXXXX.c"
+        # template. This hack overcomes this somehow.
+        cih_test=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX)
+        cih_test_c=${cih_test}.c
+        mv $cih_test $cih_test_c
         already="$skip_obsolete_type_check"
     ;;
     (c++)
         lang_modes="$cxx_modes"
-        cih_test_c=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX.cc)
+        # At MCST an ancient mktemp is incapable of using "cih_test_XXXXXX.c"
+        # template. This hack overcomes this somehow.
+        cih_test=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX)
+        cih_test_c=${cih_test}.cc
+        mv $cih_test $cih_test_c
         # The obsolete-type check can be skipped for C++; it is
         # sufficient to do it for C.
         already="*"

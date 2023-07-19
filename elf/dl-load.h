@@ -118,7 +118,12 @@ static const char *_dl_map_segments (struct link_map *l, int fd,
                                      size_t nloadcmds,
                                      const size_t maplength,
                                      bool has_holes,
-                                     struct link_map *loader);
+                                     struct link_map *loader
+#if defined __ptr128__
+				     , const ElfW(Phdr) *phdr,
+				     int *perrval
+#endif /* defined __ptr128__  */
+				     );
 
 /* All the error message strings _dl_map_segments might return are
    listed here so that different implementations in different sysdeps

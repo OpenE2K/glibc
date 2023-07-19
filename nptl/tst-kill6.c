@@ -131,6 +131,9 @@ do_test (void)
     {
       receiver = th[i % N];
 
+      /* receiver->tid contains a diagnostic value starting from some i in
+	 PM. An attempt to insert a watchpoint at this location halts the
+	 machine!  */
       if (pthread_kill (receiver, SIGUSR1) != 0)
 	{
 	  puts ("kill failed");

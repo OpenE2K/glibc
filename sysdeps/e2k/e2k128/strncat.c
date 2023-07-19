@@ -1,0 +1,1 @@
+#include <string/strncat.c>

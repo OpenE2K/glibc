@@ -52,12 +52,18 @@ typedef uintmax_t uatomic_max_t;
 
 
 #define __arch_compare_and_exchange_val_8_acq(mem, newval, oldval) \
-  (abort (), (__typeof (*mem)) 0)
+  (ABORT (), (__typeof (*mem)) 0)
+
+#define __arch_compare_and_exchange_val_8_rel(mem, newval, oldval) \
+  (ABORT (), (__typeof (*mem)) 0)
 
 #define __arch_compare_and_exchange_val_16_acq(mem, newval, oldval) \
-  (abort (), (__typeof (*mem)) 0)
+  (ABORT (), (__typeof (*mem)) 0)
 
-#define __arch_compare_and_exchange_val_32_acq(mem, newval, oldval) \
+#define __arch_compare_and_exchange_val_16_rel(mem, newval, oldval) \
+  (ABORT (), (__typeof (*mem)) 0)
+
+#define __v9_compare_and_exchange_val_32(mem, newval, oldval) \
 ({									      \
   __typeof (*(mem)) __acev_tmp;						      \
   __typeof (mem) __acev_mem = (mem);					      \
@@ -73,7 +79,21 @@ typedef uintmax_t uatomic_max_t;
 		        "0" (newval) : "memory");			      \
   __acev_tmp; })
 
-#define __arch_compare_and_exchange_val_64_acq(mem, newval, oldval) \
+#define __arch_compare_and_exchange_val_32_acq(mem, newval, oldval) \
+({ \
+  __typeof (*(mem)) __a; \
+  __a = __v9_compare_and_exchange_val_32(mem, newval, oldval); \
+  atomic_read_barrier(); \
+  __a; \
+})
+
+#define __arch_compare_and_exchange_val_32_rel(mem, newval, oldval) \
+({ \
+  atomic_write_barrier();\
+  __v9_compare_and_exchange_val_32(mem, newval, oldval); \
+})
+
+#define __v9_compare_and_exchange_val_64(mem, newval, oldval) \
 ({									      \
   __typeof (*(mem)) __acev_tmp;						      \
   __typeof (mem) __acev_mem = (mem);					      \
@@ -89,7 +109,26 @@ typedef uintmax_t uatomic_max_t;
 		        "r" (__acev_mem), "0" ((long) (newval)) : "memory");  \
   __acev_tmp; })
 
-#define atomic_exchange_acq(mem, newvalue) \
+#define __arch_compare_and_exchange_val_64_acq(mem, newval, oldval) \
+({ \
+  __typeof (*(mem)) __a; \
+ __a = __v9_compare_and_exchange_val_64(mem, newval, oldval); \
+  atomic_read_barrier(); \
+  __a; \
+})
+
+#define __arch_compare_and_exchange_val_64_rel(mem, newval, oldval) \
+({ \
+  atomic_write_barrier();\
+  __v9_compare_and_exchange_val_64(mem, newval, oldval); \
+})
+
+/* The acq variant of this macro is defined by `include/atomic.h'.  */
+# define atomic_compare_and_exchange_val_rel(mem, newval, oldval) \
+  __atomic_val_bysize (__arch_compare_and_exchange_val,rel,		      \
+		       mem, newval, oldval)
+
+#define __v9_atomic_exchange(mem, newvalue) \
   ({ __typeof (*(mem)) __oldval, __val;					      \
      __typeof (mem) __memp = (mem);					      \
      __typeof (*(mem)) __value = (newvalue);				      \
@@ -98,18 +137,86 @@ typedef uintmax_t uatomic_max_t;
        __asm ("swap %0, %1"						      \
 	      : "=m" (*__memp), "=r" (__oldval)				      \
 	      : "m" (*__memp), "1" (__value) : "memory");		      \
-     else								      \
+     else if (sizeof (*(mem)) == 8)					      \
        {								      \
 	 __val = *__memp;						      \
 	 do								      \
 	   {								      \
 	     __oldval = __val;						      \
-	     __val = atomic_compare_and_exchange_val_acq (__memp, __value,    \
-							  __oldval);	      \
+	     __val = __v9_compare_and_exchange_val_64 (__memp, __value,	      \
+						       __oldval);	      \
 	   }								      \
          while (__builtin_expect (__val != __oldval, 0));		      \
        }								      \
-     __oldval; })
+       else								      \
+	 ABORT ();							      \
+									      \
+       __oldval; })
+
+#define atomic_exchange_acq(mem, newvalue) \
+({ \
+  __typeof (*(mem)) __a; \
+ __a = __v9_atomic_exchange(mem, newvalue); \
+  atomic_read_barrier(); \
+  __a; \
+})
+
+#define atomic_exchange_rel(mem, newvalue) \
+({ \
+  atomic_write_barrier();\
+  __v9_atomic_exchange(mem, newvalue); \
+})
+
+#define __cas_add_32(oldval, uaddr, oparg)	\
+	__asm__ __volatile__(				\
+	"\n1:	lduw	[%2], %1\n"			\
+	"	add	%1, %3, %0\n"			\
+	"	cas	[%2], %1, %0\n"			\
+	"	cmp	%1, %0\n"			\
+	"	bne,pn	%%icc, 1b\n"			\
+	"	 nop\n"					\
+	: "=&r" (oldval), "=&r" (tem)			\
+	: "r" (uaddr), "r" (oparg)			\
+	: "memory")
+
+#define __cas_add_64(oldval, uaddr, oparg)	\
+	__asm__ __volatile__(				\
+	"\n1:	ldx	[%2], %1\n"			\
+	"	add	%1, %3, %0\n"			\
+	"	casx	[%2], %1, %0\n"			\
+	"	cmp	%1, %0\n"			\
+	"	bne,pn	%%icc, 1b\n"			\
+	"	 nop\n"					\
+	: "=&r" (oldval), "=&r" (tem)			\
+	: "r" (uaddr), "r" (oparg)			\
+	: "memory")
+
+/* Add VALUE to *MEM and return the old value of *MEM.  */
+#define atomic_exchange_and_add(mem, value) \
+  ({									      \
+    __typeof (*(mem)) tem, __old = 0;					      \
+    if (sizeof (*mem) == 4)						      \
+      __cas_add_32 (__old, mem, value);					      \
+    else if (sizeof (*mem) == 8)					      \
+      __cas_add_64 (__old, mem, value);					      \
+    else 								      \
+       ABORT ();							      \
+    __old;								      \
+  })
+
+#define atomic_exchange_and_add_acq(mem, value) \
+({ \
+  __typeof (*(mem)) __a; \
+ __a = atomic_exchange_and_add(mem, value); \
+  atomic_read_barrier(); \
+  __a; \
+})
+
+#define atomic_exchange_and_add_rel(mem, value) \
+({ \
+  atomic_write_barrier();\
+  atomic_exchange_and_add(mem, value); \
+})
 
 #define atomic_compare_and_exchange_val_24_acq(mem, newval, oldval) \
   atomic_compare_and_exchange_val_acq (mem, newval, oldval)

@@ -166,9 +166,18 @@ _dl_find_dso_for_object (const ElfW(Addr) addr)
   /* Find the highest-addressed object that ADDR is not below.  */
   for (Lmid_t ns = 0; ns < GL(dl_nns); ++ns)
     for (l = GL(dl_ns)[ns]._ns_loaded; l != NULL; l = l->l_next)
-      if (addr >= l->l_map_start && addr < l->l_map_end
+      if (
+#if ! defined __ptr128__
+	  addr >= l->l_map_start && addr < l->l_map_end
 	  && (l->l_contiguous
-	      || _dl_addr_inside_object (l, (ElfW(Addr)) addr)))
+	      || _dl_addr_inside_object (l, (ElfW(Addr)) addr))
+#else /* defined __ptr128__  */
+	  /*   */
+	  (addr >= l->l_text_start && addr < l->l_text_end
+	   || addr >= l->l_data_start && addr < l->l_data_end)
+	  && _dl_addr_inside_object (l, (ElfW(Addr)) addr)
+#endif /* defined __ptr128__  */
+	  )
 	{
 	  assert (ns == l->l_ns);
 	  return l;

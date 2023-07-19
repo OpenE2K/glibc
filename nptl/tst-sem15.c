@@ -61,6 +61,11 @@ do_test (void)
     }
   else
     {
+#if defined __LCC__
+      /* Stupidly suppress `ec_bad_printf_format_string' as LCC in unaware of
+	 `%m' format specifier being a GNU extension.  */
+# pragma diag_suppress 226
+#endif /* defined __LCC__  */
       printf ("sem_post at SEM_VALUE_MAX: %m (%d)\n", errno);
       if (errno != EOVERFLOW)
 	{

@@ -84,7 +84,21 @@ struct __locale_data
     const char *string;
     unsigned int word;		/* Note endian issues vs 64-bit pointers.  */
   }
-  values __flexarr;	/* Items, usually pointers into `filedata'.  */
+  values
+#if ! defined __ptr128__
+  __flexarr
+#else /* defined __ptr128__  */
+  /* The above `_flexarr' is expanded into `[]', but `lcc -mptr128 -fPIC' is
+     incapable of producing `AP's of the right size for structures containing
+     variable-length arrays defined in a different compilation module, but in
+     the _same_ dynamic object. Indeed, to make such an AP `gdtoap & aptoapb'
+     instructions are used, but where will it take the size for `aptoapb' from?
+     Presumably some sort of "size" relocation instructing ld to substitute the
+     actual size of the object could help. For now just stupidly reserve
+     excessive space sufficient for all use cases of this struct.  */
+  [1024]
+#endif /* defined __ptr128__  */
+  ;	/* Items, usually pointers into `filedata'.  */
 };
 
 /* This alignment is used for 32-bit integers in locale files, both

@@ -127,6 +127,11 @@ volatile int global;
 
 static int back_in_main;
 
+#ifdef __e2k__
+static int first_context_allocated;
+static int second_context_allocated;
+#endif /* __e2k__  */
+
 
 static void
 check_called (void)
@@ -136,6 +141,14 @@ check_called (void)
       puts ("program did not reach main again");
       _exit (1);
     }
+
+#ifdef __e2k__
+  if (first_context_allocated)
+    freecontext_e2k (&ctx[1]);
+
+  if (second_context_allocated)
+    freecontext_e2k (&ctx[2]);
+#endif /* __e2k__  */
 }
 
 
@@ -182,7 +195,17 @@ main (void)
   ctx[1].uc_link = &ctx[0];
   {
     ucontext_t tempctx = ctx[1];
+#ifndef __e2k__
     makecontext (&ctx[1], (void (*) (void)) f1, 4, 1, 2, 3, -4);
+#else /* __e2k__  */
+    if (makecontext_e2k (&ctx[1], (void (*) (void)) f1, 4, 1, 2, 3, -4) != 0)
+      {
+        printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+        exit (1);
+      }
+
+    first_context_allocated = 1;
+#endif /* __e2k__  */
 
     /* Without this check, a stub makecontext can make us spin forever.  */
     if (memcmp (&tempctx, &ctx[1], sizeof ctx[1]) == 0)
@@ -200,7 +223,17 @@ main (void)
   ctx[2].uc_stack.ss_sp = st2;
   ctx[2].uc_stack.ss_size = sizeof st2;
   ctx[2].uc_link = &ctx[1];
+#ifndef __e2k__
   makecontext (&ctx[2], f2, 0);
+#else /* __e2k__  */
+  if (makecontext_e2k (&ctx[2], f2, 0) != 0)
+    {
+      printf ("%s: makecontext: %m\n", __FUNCTION__);
+      exit (1);
+    }
+
+  second_context_allocated = 1;
+#endif /* __e2k__  */
 
   puts ("swapping contexts");
   if (swapcontext (&ctx[0], &ctx[2]) != 0)

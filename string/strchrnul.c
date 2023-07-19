@@ -74,7 +74,17 @@ STRCHRNUL (const char *s, int c_in)
     /* Do the shift in two steps to avoid a warning if long has 32 bits.  */
     charmask |= (charmask << 16) << 16;
   if (sizeof (longword) > 8)
-    abort ();
+    {
+#if ! defined __LCC__
+      abort ();
+#else /* defined __LCC__  */
+      /* The above `abort ()', if not removed as dead code by the non-optimizing
+	 LCC, eventually brings `elf/dl-error.os' from `libc_pic.a' into play
+	 conflicting with `elf/dl-error-minimal.os' living in `elf/dl-allobjs.
+	 os', when linking `elf/librtld.map.o'.  */
+      ((int *) 0)[0] = 1;
+#endif /* defined __LCC__  */
+    }
 
   /* Instead of the traditional loop which tests each character,
      we will test a longword at a time.  The tricky part is testing

@@ -41,11 +41,24 @@ __mmap64 (void *addr, size_t len, int prot, int flags, int fd, off64_t offset)
 {
   MMAP_CHECK_PAGE_UNIT ();
 
+#if defined __e2k__ && defined __ptr128__
+  /* Now that `--true=getva_signed_curptr' is implied by default in LCC
+     memory requests exceeding `2 Gb - 1 byte' should be rejected (see
+     Bug #106387).  */
+  if (len > 0x7fffffffUL)
+    return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
+#endif /* defined __e2k__ && defined __ptr128__  */
+
   if (offset & MMAP_OFF_MASK)
     return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
 
   MMAP_PREPARE (addr, len, prot, flags, fd, offset);
-#ifdef __NR_mmap2
+
+  /* Now that Bug #92762 has probably been fixed in 32-bit mode in all used
+     e2k kernels and Bug #95236 in all LSIMs, we can afford using __NR_mmap2
+     on e2k except for PM in which its availability and operability have not
+     been tested for sure yet.  */
+#if defined __NR_mmap2 && ! (defined __e2k__ && defined __ptr128__)
   return (void *) MMAP_CALL (mmap2, addr, len, prot, flags, fd,
 			     (off_t) (offset / MMAP2_PAGE_UNIT));
 #else

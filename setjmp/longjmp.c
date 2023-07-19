@@ -29,11 +29,13 @@ __libc_siglongjmp (sigjmp_buf env, int val)
   /* Perform any cleanups needed by the frames being unwound.  */
   _longjmp_unwind (env, val);
 
+#ifndef __e2k__
   if (env[0].__mask_was_saved)
     /* Restore the saved signal mask.  */
     (void) __sigprocmask (SIG_SETMASK,
 			  (sigset_t *) &env[0].__saved_mask,
 			  (sigset_t *) NULL);
+#endif /* __e2k__  */
 
   /* Call the machine-dependent function to restore machine state.  */
   __longjmp (env[0].__jmpbuf, val ?: 1);

@@ -67,11 +67,22 @@ __libc_pthread_init (unsigned long int *ptr, void (*reclaim) (void),
   for (size_t cnt = 0; cnt < NPTRS; ++cnt)
     {
       void *p = src->parr[cnt];
+#if defined PTR_MANGLE
       PTR_MANGLE (p);
+#endif
       dest->parr[cnt] = p;
     }
+  /* `__libc_pthread_functions_init' is required ONLY by e2k static
+     programs to determine whether to employ atomic operations in
+     lowlevellock.h (see r473) and Bug #47813. */
+# ifndef __e2k__
   __libc_pthread_functions_init = 1;
+# endif /* __e2k__  */
 #endif
+
+#ifdef __e2k__
+  __libc_pthread_functions_init = 1;
+#endif /* __e2k__  */
 
 #ifndef TLS_MULTIPLE_THREADS_IN_TCB
   return &__libc_multiple_threads;

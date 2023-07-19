@@ -581,7 +581,7 @@ extern int posix_memalign (void **__memptr, size_t __alignment, size_t __size)
 #ifdef __USE_ISOC11
 /* ISO C variant of aligned allocation.  */
 extern void *aligned_alloc (size_t __alignment, size_t __size)
-     __THROW __attribute_malloc__ __attribute_alloc_size__ ((2)) __wur;
+     __THROW __attribute_malloc__ /* __attribute_alloc_size__ ((2))  */ __wur;
 #endif
 
 /* Abort execution and generate a core-dump.  */
@@ -818,7 +818,10 @@ extern void *bsearch (const void *__key, const void *__base,
 		      size_t __nmemb, size_t __size, __compar_fn_t __compar)
      __nonnull ((1, 2, 5)) __wur;
 
-#ifdef __USE_EXTERN_INLINES
+/* Because of Bug #61578 I don't want to have `extern __inline bsearch ()'
+   when compiling `bsearch.c'. Moreover, I guess it's useless while this
+   module.  */
+#if defined __USE_EXTERN_INLINES && ! defined __INSIDE_BSEARCH_C
 # include <bits/stdlib-bsearch.h>
 #endif
 

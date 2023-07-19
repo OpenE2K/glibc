@@ -22,7 +22,18 @@
 int
 __libc_accept (int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
-#ifdef __ASSUME_ACCEPT_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    void *c;
+  }
+  args = {(long int) fd, (void *) addr.__sockaddr__, (void *) len};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_accept, &args);
+
+#elif defined __ASSUME_ACCEPT_SYSCALL
   return SYSCALL_CANCEL (accept, fd, addr.__sockaddr__, len);
 #elif defined __ASSUME_ACCEPT4_SYSCALL
   return SYSCALL_CANCEL (accept4, fd, addr.__sockaddr__, len, 0);

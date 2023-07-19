@@ -23,11 +23,7 @@
 #include <libc-diag.h>
 
 #ifndef RESOLVE_MAP
-static
-#else
-auto
-#endif
-inline void __attribute__ ((unused, always_inline))
+static inline void __attribute__ ((unused, always_inline))
 elf_get_dynamic_info (struct link_map *l, ElfW(Dyn) *temp)
 {
   ElfW(Dyn) *dyn = l->l_ld;
@@ -183,3 +179,4 @@ elf_get_dynamic_info (struct link_map *l, ElfW(Dyn) *temp)
     info[DT_RPATH] = NULL;
 #endif
 }
+#endif /* RESOLVE_MAP  */

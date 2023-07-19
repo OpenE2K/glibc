@@ -190,7 +190,8 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
   ((((type) == R_SPARC_JMP_SLOT						      \
      || ((type) >= R_SPARC_TLS_GD_HI22 && (type) <= R_SPARC_TLS_TPOFF64))     \
     * ELF_RTYPE_CLASS_PLT)						      \
-   | (((type) == R_SPARC_COPY) * ELF_RTYPE_CLASS_COPY))
+   | (((type) == R_SPARC_COPY) * ELF_RTYPE_CLASS_COPY)			      \
+   | (((type) == R_SPARC_GLOB_DAT) * ELF_RTYPE_CLASS_EXTERN_PROTECTED_DATA))
 
 /* A reloc type used for ld.so cmdline arg lookups to reject PLT entries.  */
 #define ELF_MACHINE_JMP_SLOT	R_SPARC_JMP_SLOT
@@ -327,11 +328,11 @@ elf_machine_plt_value (struct link_map *map, const Elf32_Rela *reloc,
 /* Perform the relocation specified by RELOC and SYM (which is fully resolved).
    MAP is the object containing the reloc.  */
 
-auto inline void
-__attribute__ ((always_inline))
+static void
 elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 		  const Elf32_Sym *sym, const struct r_found_version *version,
-		  void *const reloc_addr_arg, int skip_ifunc)
+		  void *const reloc_addr_arg, int skip_ifunc,
+                  struct r_scope_elem *scope[], const char *strtab)
 {
   Elf32_Addr *const reloc_addr = reloc_addr_arg;
 #if !defined RTLD_BOOTSTRAP && !defined RESOLVE_CONFLICT_FIND_MAP
@@ -534,8 +535,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
     }
 }
 
-auto inline void
-__attribute__ ((always_inline))
+static void __attribute__ ((unused))
 elf_machine_rela_relative (Elf32_Addr l_addr, const Elf32_Rela *reloc,
 			   void *const reloc_addr_arg)
 {
@@ -543,11 +543,11 @@ elf_machine_rela_relative (Elf32_Addr l_addr, const Elf32_Rela *reloc,
   *reloc_addr += l_addr + reloc->r_addend;
 }
 
-auto inline void
-__attribute__ ((always_inline))
+static void __attribute__ ((unused))
 elf_machine_lazy_rel (struct link_map *map,
 		      Elf32_Addr l_addr, const Elf32_Rela *reloc,
-		      int skip_ifunc)
+		      int skip_ifunc, struct r_scope_elem *scope[],
+                      const char *strtab)
 {
   Elf32_Addr *const reloc_addr = (void *) (l_addr + reloc->r_offset);
   const unsigned int r_type = ELF32_R_TYPE (reloc->r_info);

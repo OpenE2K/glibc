@@ -33,6 +33,14 @@ headers	:= sys/utsname.h sys/times.h sys/wait.h sys/types.h unistd.h	      \
 	   bits/sched.h bits/cpu-set.h re_comp.h wait.h bits/environments.h   \
 	   cpio.h spawn.h bits/unistd.h bits/types/struct_sched_param.h
 
+ifeq ($(config-machine),e2k128)
+# This is required so as to avoid calling vfork () via PM PLT which results in
+# an inevitable extra return (or even two extra returns if a secondary PLT entry
+# is involved while performing the lazy binding), whereas vfork () seems to
+# allow for exactly one return to the function from which it was called.
+static-only-routines := vfork
+endif
+
 routines :=								      \
 	uname								      \
 	times								      \

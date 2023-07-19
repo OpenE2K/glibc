@@ -102,13 +102,34 @@ extern printf_va_arg_function **__printf_va_arg_table attribute_hidden;
 
 /* Find the next spec in FORMAT, or the end of the string.  Returns
    a pointer into FORMAT, to a '%' or a '\0'.  */
-__extern_always_inline const unsigned char *
+
+/* See `__libc_use_alloca ()' in `sysdeps/pthread/allocalim.h' for explanation
+   of the following hack.  */
+#if ! defined __LCC__
+__extern_always_inline
+#else
+/* Take care of eliminating a warning if this function turns out to be
+   unused.  */
+static const unsigned char * __find_specmb (const unsigned char *format)
+  __attribute__ ((unused));
+static
+#endif
+const unsigned char *
 __find_specmb (const unsigned char *format)
 {
   return (const unsigned char *) __strchrnul ((const char *) format, '%');
 }
 
-__extern_always_inline const unsigned int *
+#if ! defined __LCC__
+__extern_always_inline
+#else
+/* Take care of eliminating a warning if this function turns out to be
+   unused.  */
+static const unsigned int * __find_specwc (const unsigned int *format)
+  __attribute__ ((unused));
+static
+#endif
+const unsigned int *
 __find_specwc (const unsigned int *format)
 {
   return (const unsigned int *) __wcschrnul ((const wchar_t *) format, L'%');

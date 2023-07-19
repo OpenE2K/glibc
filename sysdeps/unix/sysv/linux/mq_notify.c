@@ -39,6 +39,10 @@
 #define NOTIFY_REMOVED		2	/* Code for closed message queue
 					   of de-notifcation.  */
 
+#if defined __ptr128__
+# define NOTIFY_COOKIE_LEN_PM	64
+#endif
+
 
 /* Data structure for the queued notification requests.  */
 union notify_data
@@ -51,7 +55,11 @@ union notify_data
     /* NB: on 64-bit machines the struct as a size of 24 bytes.  Which means
        byte 31 can still be used for returning the status.  */
   };
+#if ! defined __ptr128__
   char raw[NOTIFY_COOKIE_LEN];
+#else /* defined __ptr128__  */
+  char raw[NOTIFY_COOKIE_LEN_PM];
+#endif /* defined __ptr128__  */
 };
 
 
@@ -108,6 +116,66 @@ notification_function (void *arg)
   return NULL;
 }
 
+#if defined __ptr128__
+
+typedef struct
+{
+  struct list_head link;
+  void *descr;
+  unsigned long addr;
+} descr_list_t;
+
+static LIST_HEAD (descr_list);
+static int descr_list_lock = LLL_LOCK_INITIALIZER;
+
+
+unsigned long
+addr_from_descr (void *descr)
+{
+  unsigned long addr = (unsigned long) descr;
+  if (addr)
+    {
+      descr_list_t *dl = malloc (sizeof (*dl));
+      dl->descr = descr;
+      dl->addr = addr;
+
+      lll_lock (descr_list_lock, LLL_PRIVATE);
+      list_add (&dl->link, &descr_list);
+      lll_unlock (descr_list_lock, LLL_PRIVATE);
+    }
+
+  return addr;
+}
+
+
+void *
+descr_from_addr (unsigned long addr)
+{
+  list_t *l;
+  void *descr = NULL;
+
+  if (! addr)
+    return NULL;
+
+  lll_lock (descr_list_lock, LLL_PRIVATE);
+
+  list_for_each (l, &descr_list)
+    {
+      descr_list_t *dl = list_entry (l, descr_list_t, link);
+      if (dl->addr == addr)
+	{
+	  descr = dl->descr;
+	  list_del (l);
+	  break;
+	}
+    }
+
+  lll_unlock (descr_list_lock, LLL_PRIVATE);
+  return descr;
+}
+
+#endif /* defined __ptr128__  */
+
 
 /* Helper thread.  */
 static void *
@@ -122,7 +190,25 @@ helper_thread (void *arg)
       if (n < NOTIFY_COOKIE_LEN)
 	continue;
 
-      if (data.raw[NOTIFY_COOKIE_LEN - 1] == NOTIFY_WOKENUP)
+#if defined __ptr128__
+      /* Offset in 64-bit dwords.  */
+# define NOTIFY_DATA_FCT_OFFSET		0
+# define NOTIFY_DATA_PARAM_OFFSET	1
+# define NOTIFY_DATA_ATTR_OFFSET		2
+      unsigned long *kdata = (unsigned long *) &data;
+      data.raw[NOTIFY_COOKIE_LEN_PM - 1] = data.raw[NOTIFY_COOKIE_LEN - 1];
+      data.attr = descr_from_addr (kdata[NOTIFY_DATA_ATTR_OFFSET]);
+      data.param.sival_ptr = descr_from_addr (kdata[NOTIFY_DATA_PARAM_OFFSET]);
+      data.fct = descr_from_addr (kdata[NOTIFY_DATA_FCT_OFFSET]);
+#endif /* defined __ptr128__  */
+
+      if (data.raw[
+#if ! defined __ptr128__
+		   NOTIFY_COOKIE_LEN
+#else /* defined __ptr128__  */
+		   NOTIFY_COOKIE_LEN_PM
+#endif /* defined __ptr128__  */
+		   - 1] == NOTIFY_WOKENUP)
 	{
 	  /* Just create the thread as instructed.  There is no way to
 	     report a problem with creating a thread.  */
@@ -221,7 +307,13 @@ int
 mq_notify (mqd_t mqdes, const struct sigevent *notification)
 {
   /* Make sure the type is correctly defined.  */
-  assert (sizeof (union notify_data) == NOTIFY_COOKIE_LEN);
+  assert (sizeof (union notify_data) ==
+#if ! defined __ptr128__
+	  NOTIFY_COOKIE_LEN
+#else /* defined __ptr128__  */
+	  NOTIFY_COOKIE_LEN_PM
+#endif /* defined __ptr128__  */
+	  );
 
   /* Special treatment needed for SIGEV_THREAD.  */
   if (notification == NULL || notification->sigev_notify != SIGEV_THREAD)
@@ -260,6 +352,14 @@ mq_notify (mqd_t mqdes, const struct sigevent *notification)
       memcpy (data.attr, notification->sigev_notify_attributes,
 	      sizeof (pthread_attr_t));
     }
+
+#if defined __ptr128__
+  unsigned long *kdata = (unsigned long *) &data;
+  kdata[NOTIFY_DATA_FCT_OFFSET] = addr_from_descr (data.fct);
+  kdata[NOTIFY_DATA_PARAM_OFFSET] = addr_from_descr (data.param.sival_ptr);
+  kdata[NOTIFY_DATA_ATTR_OFFSET]  = addr_from_descr (data.attr);
+#endif /* defined __ptr128__  */
+
 
   /* Construct the new request.  */
   struct sigevent se;

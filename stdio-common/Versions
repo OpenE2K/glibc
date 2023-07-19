@@ -66,6 +66,11 @@ libc {
   GLIBC_PRIVATE {
     # global variables
     _itoa_lower_digits;
+    # This function was added by <glushkov@mcst.ru> due to some unclear
+    # reasons. In that commit he states that GCC normally inlines it which is
+    # why it's missing from here. To be verified.
+    _itoa_upper_digits;
+
     # Used in libcrypt.
     __snprintf;
   }

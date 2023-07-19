@@ -27,6 +27,8 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
+
 
 static int
 do_test (void)
@@ -71,8 +73,8 @@ do_test (void)
       return 1;
     }
 
-  b = (pthread_barrier_t *) (((uintptr_t) mem + __alignof (pthread_barrier_t))
-			     & ~(__alignof (pthread_barrier_t) - 1));
+  b = (pthread_barrier_t *) ADJUST_PTR ((mem + __alignof (pthread_barrier_t) - 1),
+					&, ~(__alignof (pthread_barrier_t) - 1));
 
   if (pthread_barrierattr_init (&a) != 0)
     {

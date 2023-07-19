@@ -570,7 +570,17 @@ mmap_remap_check (FILE *fp)
 			   - ROUNDED (st.st_size));
 	  fp->_IO_buf_end = fp->_IO_buf_base + st.st_size;
 	}
-      else if (ROUNDED (st.st_size) > ROUNDED (fp->_IO_buf_end
+      else
+	/* FIXME: this condition allows one to avoid the need for remapping
+	   file in ordinary modes if its enlarged size fits into the previously
+	   allocated number of pages. However, in PM `mmap ()' returns AP
+	   describing exactly the requested size, which makes it impossible to
+	   rely on the unused part of the last page (this is the reason for
+	   failure of one of `stdio-common' tests). Therefore, either PM `mmap
+	   ()' should be reworked by analogy with its ordinary counterparts or
+	   `mremap ()' should be used unconditionally(?) here. The latter is
+	   impossible until `mremap ()' becomes workable in PM though . . .  */
+	if (ROUNDED (st.st_size) > ROUNDED (fp->_IO_buf_end
 					       - fp->_IO_buf_base))
 	{
 	  /* The file added some pages.  We need to remap it.  */
@@ -598,6 +608,9 @@ mmap_remap_check (FILE *fp)
 	}
       else
 	{
+	  /* FIXME: this code results in an invalid AP with `curptr > size' in
+	     one of `stdio-common' glibc tests somehow. Presumably, `mremap ()'
+	     should be used to prevent this from happening (see above).  */
 	  /* The number of pages didn't change.  */
 	  fp->_IO_buf_end = fp->_IO_buf_base + st.st_size;
 	}
@@ -681,8 +694,20 @@ decide_maybe_mmap (FILE *fp)
     {
       /* Try to map the file.  */
       void *p;
+#if defined __ptr128__
+      const size_t pagesize = __getpagesize ();
+      /* Let `mmap ()'ed APs be extended up to the size of the containing pages
+	 instead of being limited exactly by the requested size so as to let
+	 FILEs `fopen ()'ed with "*m" be operated on by analogy with "ordinary"
+	 modes. FIXME: consider doing so only if "m" is actually present in
+	 MODE.  */
+# define ROUNDED(x)	(((x) + pagesize - 1) & ~(pagesize - 1))
+#else /* ! defined __ptr128__  */
+# define ROUNDED(x) (x)
+#endif /* ! defined __ptr128__  */
 
-      p = __mmap64 (NULL, st.st_size, PROT_READ, MAP_SHARED, fp->_fileno, 0);
+      p = __mmap64 (NULL, ROUNDED (st.st_size), PROT_READ, MAP_SHARED, fp->_fileno, 0);
+#undef ROUNDED
       if (p != MAP_FAILED)
 	{
 	  /* OK, we managed to map the file.  Set the buffer up and use a

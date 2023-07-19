@@ -138,6 +138,7 @@ internal_getent (FILE *stream, struct STRUCTURE *result,
   struct parser_data *data = (void *) buffer;
   size_t linebuflen = buffer + buflen - data->linebuffer;
   int parse_result;
+  int saved_errno = errno;	/* Do not clobber errno on success.  */
 
   if (buflen < sizeof *data + 2)
     {
@@ -165,6 +166,7 @@ internal_getent (FILE *stream, struct STRUCTURE *result,
 	{
 	  /* End of file.  */
 	  H_ERRNO_SET (HOST_NOT_FOUND);
+	  __set_errno (saved_errno);
 	  return NSS_STATUS_NOTFOUND;
 	}
 
@@ -204,7 +206,10 @@ internal_getent (FILE *stream, struct STRUCTURE *result,
 
       /* Return the data if parsed successfully.  */
       if (parse_result != 0)
-	return NSS_STATUS_SUCCESS;
+	{
+	  __set_errno (saved_errno);
+	  return NSS_STATUS_SUCCESS;
+	}
 
       /* If it is invalid, loop to get the next line of the file to
 	 parse.  */

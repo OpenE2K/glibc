@@ -165,7 +165,13 @@ nscd_gethst_r (const char *key, size_t keylen, request_type type,
   const char *addr_list = NULL;
   size_t addr_list_len = 0;
   int retval = -1;
-  const char *recend = (const char *) ~UINTMAX_C (0);
+  const char *recend = (const char *) ~
+#if ! defined __LCC__
+    UINTMAX_C (0)
+#else
+    (unsigned long) (0)
+#endif
+    ;
   int sock = -1;
   hst_response_header hst_resp;
   if (mapped != NO_MAPPING)

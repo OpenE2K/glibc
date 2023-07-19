@@ -58,12 +58,23 @@ routines	:=							      \
 	rpmatch strfmon strfmon_l getsubopt xpg_basename fmtmsg		      \
 	strtoimax strtoumax wcstoimax wcstoumax				      \
 	getcontext setcontext makecontext swapcontext
+
+ifeq ($(base-machine),e2k)
+sysdep_routines += makecontext_helper
+endif
+
 aux =	grouping groupingwc tens_in_limb
 
 # These routines will be omitted from the libc shared object.
 # Instead the static object files will be included in a special archive
 # linked against when the shared library will be used.
 static-only-routines = atexit at_quick_exit
+
+ifeq ($(config-machine),e2k128)
+# In PM these should go to libc_nonshared.a instead of libc.so due to the same
+# reason as setjmp ()-like functions.
+static-only-routines += getcontext swapcontext
+endif
 
 test-srcs	:= tst-fmtmsg
 tests		:= tst-strtol tst-strtod testmb testrand testsort testdiv   \
@@ -111,6 +122,12 @@ CFLAGS-tst-quick_exit.o = -std=c++11
 LDLIBS-tst-quick_exit = -lstdc++
 CFLAGS-tst-thread-quick_exit.o = -std=c++11
 LDLIBS-tst-thread-quick_exit = -lstdc++
+
+ifeq ($(compile-with-lcc),yes)
+LDLIBS-tst-quick_exit += -lcxa
+LDLIBS-tst-thread-quick_exit += -lcxa
+endif
+
 $(objpfx)tst-thread-quick_exit: $(shared-thread-library)
 else
 tests-unsupported += tst-quick_exit tst-thread-quick_exit
@@ -242,3 +259,43 @@ $(objpfx)tst-setcontext3.out: tst-setcontext3.sh $(objpfx)tst-setcontext3
 	$(evaluate-test)
 
 $(objpfx)tst-makecontext: $(libdl)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+CFLAGS-addmul_1.o = $(extra-optimizations)
+CFLAGS-addmul_1.os = $(extra-optimizations)
+CFLAGS-add_n.o = $(extra-optimizations)
+CFLAGS-add_n.os = $(extra-optimizations)
+CFLAGS-divmod_1.o = $(extra-optimizations)
+CFLAGS-divmod_1.os = $(extra-optimizations)
+CFLAGS-divrem.o = $(extra-optimizations)
+CFLAGS-divrem.os = $(extra-optimizations)
+CFLAGS-lshift.o = $(extra-optimizations)
+CFLAGS-lshift.os = $(extra-optimizations)
+CFLAGS-mod_1.o = $(extra-optimizations)
+CFLAGS-mod_1.os = $(extra-optimizations)
+CFLAGS-mul_1.o = $(extra-optimizations)
+CFLAGS-mul_1.os = $(extra-optimizations)
+CFLAGS-mul.o = $(extra-optimizations)
+CFLAGS-mul.os = $(extra-optimizations)
+CFLAGS-mul_n.o = $(extra-optimizations)
+CFLAGS-mul_n.os = $(extra-optimizations)
+CFLAGS-rshift.o = $(extra-optimizations)
+CFLAGS-rshift.os = $(extra-optimizations)
+CFLAGS-submul_1.o = $(extra-optimizations)
+CFLAGS-submul_1.os = $(extra-optimizations)
+CFLAGS-sub_n.o = $(extra-optimizations)
+CFLAGS-sub_n.os = $(extra-optimizations)
+
+CFLAGS-strtod_l.o = $(extra-optimizations)
+CFLAGS-strtod_l.os = $(extra-optimizations)
+CFLAGS-strtof_l.o = $(extra-optimizations)
+CFLAGS-strtof_l.os = $(extra-optimizations)
+CFLAGS-strtol_l.o = $(extra-optimizations)
+CFLAGS-strtol_l.os = $(extra-optimizations)
+
+CFLAGS-erand48_r.c += -frestrict-params
+
+endif # Check for extra optimizations

@@ -97,7 +97,11 @@ int __branred (double x, double *a, double *aa);
    of the number by combining the sin and cos of X (as computed by a variation
    of the Taylor series) with the values looked up from the sin/cos table to
    get the result.  */
-static inline double
+static
+#ifndef __LCC__
+inline
+#endif
+double
 __always_inline
 do_cos (double x, double dx)
 {
@@ -122,7 +126,11 @@ do_cos (double x, double dx)
    the number by combining the sin and cos of X (as computed by a variation of
    the Taylor series) with the values looked up from the sin/cos table to get
    the result.  */
-static inline double
+static
+#ifndef __LCC__
+inline
+#endif
+double
 __always_inline
 do_sin (double x, double dx)
 {
@@ -151,7 +159,11 @@ do_sin (double x, double dx)
    is written to *a, the low part to *da.  Range reduction is accurate to 136
    bits so that when x is large and *a very close to zero, all 53 bits of *a
    are correct.  */
-static inline int4
+static
+#ifndef __LCC__
+inline
+#endif
+int4
 __always_inline
 reduce_sincos (double x, double *a, double *da)
 {

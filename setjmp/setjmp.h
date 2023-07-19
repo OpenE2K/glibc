@@ -37,8 +37,15 @@ struct __jmp_buf_tag
        `__mask_was_saved' follows it.  Do not move these members
        or add others before it.  */
     __jmp_buf __jmpbuf;		/* Calling environment.  */
+#ifndef __e2k__
+    /* The size of jmp_buf is crucial for SJ/LJ exception handling in LCC and
+       is hardcoded in the frontend. If it doesn't coincide with the actual
+       size of this struct, this will result in various bugs (see Bug #26432,
+       #43069). As for the following fields they are not used by E2K specific
+       implementation of longjmp ().  */
     int __mask_was_saved;	/* Saved the signal mask?  */
     __sigset_t __saved_mask;	/* Saved signal mask.  */
+#endif /* __e2k__ */
   };
 
 

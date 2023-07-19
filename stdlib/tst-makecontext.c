@@ -31,6 +31,16 @@ __thread int thr;
 int somevar = -76;
 long othervar = -78L;
 
+
+#ifdef __e2k__
+static void
+free_ucp (void)
+{
+  freecontext_e2k (&ucp);
+}
+#endif /* __e2k__  */
+
+
 struct trace_arg
 {
   int cnt, size;
@@ -97,7 +107,20 @@ do_test (void)
   ucp.uc_link = NULL;
   ucp.uc_stack.ss_sp = st1;
   ucp.uc_stack.ss_size = sizeof st1;
+#ifndef __e2k__
   makecontext (&ucp, (void (*) (void)) cf, 1, somevar - 2);
+#else /* __e2k__  */
+  /* Take care of freeing this context. Neither can we do this within
+     `cf ()', nor in `main ()' (we don't return to the latter). Therefore, try
+     using atexit () handler.  */
+  if (makecontext_e2k (&ucp, (void (*) (void)) cf, 1, somevar - 2) != 0)
+    {
+      printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+      exit (1);
+    }
+
+  atexit (free_ucp);
+#endif /* __e2k__  */
   if (setcontext (&ucp) != 0)
     {
       puts ("setcontext failed");

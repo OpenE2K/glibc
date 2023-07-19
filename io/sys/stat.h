@@ -520,7 +520,7 @@ __NTH (fstat64 (int __fd, struct stat64 *__statbuf))
 
 #  ifdef __USE_ATFILE
 __extern_inline int
-__NTH (fstatat64 (int __fd, const char *__filename, struct stat64 *__statbuf,
+__attribute__ ((__always_inline__)) __NTH (fstatat64 (int __fd, const char *__filename, struct stat64 *__statbuf,
 		  int __flag))
 {
   return __fxstatat64 (_STAT_VER, __fd, __filename, __statbuf, __flag);

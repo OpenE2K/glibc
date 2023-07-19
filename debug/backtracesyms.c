@@ -41,6 +41,9 @@ __backtrace_symbols (void *const *array, int size)
   int cnt;
   size_t total = 0;
   char **result;
+#if defined __e2k__
+  const char signal_handler_called[] = "<signal handler called>";
+#endif /* __e2k__  */
 
   /* Fill in the information we can get from `dladdr'.  */
   for (cnt = 0; cnt < size; ++cnt)
@@ -59,8 +62,20 @@ __backtrace_symbols (void *const *array, int size)
 	     address.  The use of these addresses is to calculate an
 	     address in the ELF file, so its prelinked bias is not
 	     something we want to subtract out.  */
+#if !defined __ptr128__
 	  info[cnt].dli_fbase = (void *) map->l_addr;
+#else /* defined __ptr128__  */
+	  /* TODO: find out why they prefer to set `dli_fbase' to L_ADDR for
+	     ordinary modes above unlike dl-addr.c where it's set to
+	     L_MAP_START. I try to stupidly imitate their behaviour for now. */
+	  info[cnt].dli_tbase = map->l_code_addr;
+	  info[cnt].dli_dbase = map->l_addr;
+#endif /* defined __ptr128__  */
 	}
+#if defined __e2k__
+      else if (array[cnt] == (void *) -1UL)
+        total += sizeof (signal_handler_called);
+#endif /* __e2k__  */
       else
 	total += 5 + WORD_WIDTH;
     }
@@ -79,9 +94,19 @@ __backtrace_symbols (void *const *array, int size)
 	      && info[cnt].dli_fname != NULL && info[cnt].dli_fname[0] != '\0')
 	    {
 	      if (info[cnt].dli_sname == NULL)
-		/* We found no symbol name to use, so describe it as
-		   relative to the file.  */
-		info[cnt].dli_saddr = info[cnt].dli_fbase;
+		{
+		  /* We found no symbol name to use, so describe it as
+		     relative to the file.  */
+#if !defined __ptr128__
+		  info[cnt].dli_saddr = info[cnt].dli_fbase;
+#else /* defined __ptr128__  */
+		  /* FIXME: stupidly make use of dli_tbase here for now since
+		     backtrace addresses are likely to belong to CUD. However,
+		     some sort of test should be probably implemented to ensure
+		     that this is the case.  */
+		  info[cnt].dli_saddr = info[cnt].dli_tbase;
+#endif /* defined __ptr128__  */
+		}
 
 	      if (info[cnt].dli_sname == NULL && info[cnt].dli_saddr == 0)
 		last += 1 + sprintf (last, "%s(%s) [%p]",
@@ -95,12 +120,21 @@ __backtrace_symbols (void *const *array, int size)
 		  if (array[cnt] >= (void *) info[cnt].dli_saddr)
 		    {
 		      sign = '+';
-		      offset = array[cnt] - info[cnt].dli_saddr;
+		      offset = (
+#if defined __ptr128__
+				(ptrdiff_t)
+#endif
+				array[cnt] - info[cnt].dli_saddr);
 		    }
 		  else
 		    {
 		      sign = '-';
-		      offset = info[cnt].dli_saddr - array[cnt];
+		      offset = (info[cnt].dli_saddr
+				-
+#if defined __ptr128__
+				(ptrdiff_t)
+#endif /* defined __ptr128__  */
+				array[cnt]);
 		    }
 
 		  last += 1 + sprintf (last, "%s(%s%c%#tx) [%p]",
@@ -109,6 +143,11 @@ __backtrace_symbols (void *const *array, int size)
 				       sign, offset, array[cnt]);
 		}
 	    }
+#if defined __e2k__
+          else if (array[cnt] == (void *) -1UL)
+            /* `1 + ' accounts for the trailing '\0'. */
+            last += 1 + sprintf (last, "%s", signal_handler_called);
+#endif /* __e2k__  */
 	  else
 	    last += 1 + sprintf (last, "[%p]", array[cnt]);
 	}

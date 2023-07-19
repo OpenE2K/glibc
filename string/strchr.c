@@ -74,7 +74,14 @@ STRCHR (const char *s, int c_in)
     /* Do the shift in two steps to avoid a warning if long has 32 bits.  */
     charmask |= (charmask << 16) << 16;
   if (sizeof (longword) > 8)
+#if (defined __LCC__)
+    {
+      int *p = 0;
+      *p = 0;
+    }
+#else /* __LCC__ */
     abort ();
+#endif /* __LCC__ */
 
   /* Instead of the traditional loop which tests each character,
      we will test a longword at a time.  The tricky part is testing

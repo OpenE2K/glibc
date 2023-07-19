@@ -889,7 +889,9 @@ enum
 # endif
 
 /* Return nonzero value if sign of X is negative.  */
-# if __GNUC_PREREQ (6,0)
+/* __builtin_signbit () is currently broken in LCC in gcc-7.3.0 compatibility
+   mode (Bug #105547).  */
+# if __GNUC_PREREQ (6,0) && ! defined __LCC__
 #  define signbit(x) __builtin_signbit (x)
 # elif defined __cplusplus
   /* In C++ mode, __MATH_TG cannot be used, because it relies on

@@ -380,6 +380,15 @@ __random_r (struct random_data *buf, int32_t *result)
 	{
 	  fptr = state;
 	  ++rptr;
+#if 1
+	  /* The lack of some sort of processing like this one is likely
+	     to result in BUF->STATE[] array boundary violation.  */
+	  if (rptr >= end_ptr)
+	    {
+	      /* Should actually this be done here?   */
+	      rptr = state;
+	    }
+#endif /* 1  */
 	}
       else
 	{

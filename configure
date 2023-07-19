@@ -653,10 +653,6 @@ MSGFMT
 MAKE
 LD
 AS
-GPROF
-OBJCOPY
-OBJDUMP
-AR
 LN_S
 INSTALL_DATA
 INSTALL_SCRIPT
@@ -670,9 +666,14 @@ stack_protector
 libc_cv_ssp
 libc_cv_with_fp
 base_machine
+LCC_COMPILER
 have_tunables
 build_pt_chown
 build_nscd
+extra_optimizations
+with_sys_atomic
+maintainer_mode
+enable_debian_multiarch
 build_obsolete_nsl
 link_obsolete_rpc
 libc_cv_static_nss_crypt
@@ -692,6 +693,10 @@ ac_ct_CXX
 CXXFLAGS
 CXX
 READELF
+GPROF
+OBJCOPY
+OBJDUMP
+AR
 CPP
 cross_compiling
 BUILD_CC
@@ -788,6 +793,10 @@ enable_nss_crypt
 enable_obsolete_rpc
 enable_obsolete_nsl
 enable_systemtap
+enable_debian_multiarch
+with_sys_atomic
+enable_extra_optimizations
+with_bug_75842
 enable_build_nscd
 enable_nscd
 enable_pt_chown
@@ -1462,6 +1471,13 @@ Optional Features:
   --enable-obsolete-nsl   build and install the obsolete libnsl library and
                           depending NSS modules
   --enable-systemtap      enable systemtap static probe points [default=no]
+  --enable-debian-multiarch
+                          use debian multiarch library search paths
+  --enable-maintainer-mode
+                          regenerate special files in source tree
+  --enable-extra-optimizations
+                          apply extra optimizations to selected functions (Bug
+                          #58433)
   --disable-build-nscd    disable building and installing the nscd daemon
   --disable-nscd          library functions will not contact the nscd daemon
   --enable-pt_chown       Enable building and installing pt_chown
@@ -1487,6 +1503,9 @@ Optional Packages:
   --with-default-link     do not use explicit linker scripts
   --with-nonshared-cflags=CFLAGS
                           build nonshared libraries with additional CFLAGS
+  --with-sys-atomic       add support for `sys_atomic' implemented by the
+                          Kernel
+  --with-bug-75842        prevent Bug #75842 unsafe ELFs from loading
   --with-cpu=CPU          select code for CPU variant
 
 Some influential environment variables:
@@ -2785,8 +2804,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-if test $host != $build; then
-  for ac_prog in gcc cc
+for ac_prog in gcc cc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -2828,7 +2846,7 @@ fi
   test -n "$BUILD_CC" && break
 done
 
-fi
+
 
 # On Suns, sometimes $CPP names a directory.
 if test -n "$CPP" && test -d "$CPP"; then
@@ -2838,97 +2856,62 @@ if test -z "$CPP"; then
   CPP="$CC -E"
 fi
 
-if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}readelf", so it can be a program name with args.
-set dummy ${ac_tool_prefix}readelf; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_READELF+:} false; then :
+# Was a --with-binutils option given?
+if test -n "$path_binutils"; then
+    # Make absolute; ensure a single trailing slash.
+    path_binutils=`(cd $path_binutils; pwd) | sed 's%/*$%/%'`
+    CC="$CC -B$path_binutils"
+fi
+AS=`$CC -print-prog-name=as`
+LD=`$CC -print-prog-name=ld`
+AR=`$CC -print-prog-name=ar`
+
+OBJDUMP=`$CC -print-prog-name=objdump`
+
+OBJCOPY=`$CC -print-prog-name=objcopy`
+
+GPROF=`$CC -print-prog-name=gprof`
+
+READELF=`$CC -print-prog-name=readelf`
+
+
+# Determine whether we are using GNU binutils.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $AS is GNU as" >&5
+$as_echo_n "checking whether $AS is GNU as... " >&6; }
+if ${libc_cv_prog_as_gnu+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  if test -n "$READELF"; then
-  ac_cv_prog_READELF="$READELF" # Let the user override the test.
+  # Most GNU programs take a -v and spit out some text including
+# the word 'GNU'.  Some try to read stdin, so give them /dev/null.
+if $AS -o conftest -v </dev/null 2>&1 | grep GNU > /dev/null 2>&1; then
+  libc_cv_prog_as_gnu=yes
 else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_READELF="${ac_tool_prefix}readelf"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
+  libc_cv_prog_as_gnu=no
+fi
+rm -fr contest*
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_prog_as_gnu" >&5
+$as_echo "$libc_cv_prog_as_gnu" >&6; }
+rm -f a.out
+gnu_as=$libc_cv_prog_as_gnu
 
-fi
-fi
-READELF=$ac_cv_prog_READELF
-if test -n "$READELF"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $READELF" >&5
-$as_echo "$READELF" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_prog_READELF"; then
-  ac_ct_READELF=$READELF
-  # Extract the first word of "readelf", so it can be a program name with args.
-set dummy readelf; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_ac_ct_READELF+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $LD is GNU ld" >&5
+$as_echo_n "checking whether $LD is GNU ld... " >&6; }
+if ${libc_cv_prog_ld_gnu+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  if test -n "$ac_ct_READELF"; then
-  ac_cv_prog_ac_ct_READELF="$ac_ct_READELF" # Let the user override the test.
+  # Most GNU programs take a -v and spit out some text including
+# the word 'GNU'.  Some try to read stdin, so give them /dev/null.
+if $LD -o conftest -v </dev/null 2>&1 | grep GNU > /dev/null 2>&1; then
+  libc_cv_prog_ld_gnu=yes
 else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_READELF="readelf"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
+  libc_cv_prog_ld_gnu=no
 fi
+rm -fr contest*
 fi
-ac_ct_READELF=$ac_cv_prog_ac_ct_READELF
-if test -n "$ac_ct_READELF"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_READELF" >&5
-$as_echo "$ac_ct_READELF" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_ct_READELF" = x; then
-    READELF="false"
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    READELF=$ac_ct_READELF
-  fi
-else
-  READELF="$ac_cv_prog_READELF"
-fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_prog_ld_gnu" >&5
+$as_echo "$libc_cv_prog_ld_gnu" >&6; }
+gnu_ld=$libc_cv_prog_ld_gnu
 
 
 # We need the C++ compiler only for testing.
@@ -3217,7 +3200,7 @@ _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
   libc_cv_cxx_link_ok=yes
 else
-  libc_cv_cxx_link_ok=no
+  libc_cv_cxx_link_ok=yes
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -3240,7 +3223,7 @@ _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
 
 else
-  libc_cv_cxx_link_ok=no
+  libc_cv_cxx_link_ok=yes
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -3713,6 +3696,65 @@ See \`config.log' for more details" "$LINENO" 5; }
   fi
 fi
 
+# Check whether --enable-debian-multiarch was given.
+if test "${enable_debian_multiarch+set}" = set; then :
+  enableval=$enable_debian_multiarch; enable_debian_multiarch=$enableval
+else
+  enable_debian_multiarch=no
+fi
+
+
+if test x"$enable_debian_multiarch" = xyes; then
+  $as_echo "#define ENABLE_DEBIAN_MULTIARCH 1" >>confdefs.h
+
+fi
+
+
+# Check whether --enable-maintainer-mode was given.
+if test "${enable_maintainer_mode+set}" = set; then :
+  enableval=$enable_maintainer_mode; maintainer_mode=$enableval
+else
+  maintainer_mode=no
+fi
+
+
+
+
+# Check whether --with-sys-atomic was given.
+if test "${with_sys_atomic+set}" = set; then :
+  withval=$with_sys_atomic; with_sys_atomic=$withval
+else
+  with_sys_atomic=no
+fi
+
+
+if test x"$with_sys_atomic" = xyes; then
+  $as_echo "#define SUPPORT_SYS_ATOMIC 1" >>confdefs.h
+
+fi
+
+# Check whether --enable-extra-optimizations was given.
+if test "${enable_extra_optimizations+set}" = set; then :
+  enableval=$enable_extra_optimizations; extra_optimizations=$enableval
+fi
+
+
+
+
+# Check whether --with-bug-75842 was given.
+if test "${with_bug_75842+set}" = set; then :
+  withval=$with_bug_75842; with_bug_75842=$withval
+else
+  with_bug_75842=no
+fi
+
+
+if test x"$with_bug_75842" = xyes; then
+  $as_echo "#define WITH_BUG_75842 1" >>confdefs.h
+
+fi
+
+
 # Check whether --enable-build-nscd was given.
 if test "${enable_build_nscd+set}" = set; then :
   enableval=$enable_build_nscd; build_nscd=$enableval
@@ -3789,6 +3831,22 @@ fi
 # can write them unchanged into config.make.  Everything else uses
 # $machine, $vendor, and $os, and changes them whenever convenient.
 config_machine=$host_cpu config_vendor=$host_vendor config_os=$host_os
+
+# See if LCC is used to make glibc.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if we compile glibc with LCC" >&5
+$as_echo_n "checking if we compile glibc with LCC... " >&6; }
+if ${LCC_COMPILER+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if $CC -v 2>&1 | grep -q '^lcc:'; then
+  LCC_COMPILER=yes
+else
+  LCC_COMPILER=no
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LCC_COMPILER" >&5
+$as_echo "$LCC_COMPILER" >&6; }
+
 
 # Don't allow vendor == "unknown"
 test "$config_vendor" = unknown && config_vendor=
@@ -4472,63 +4530,10 @@ $as_echo "no, using $LN_S" >&6; }
 fi
 
 
-# Was a --with-binutils option given?
-if test -n "$path_binutils"; then
-    # Make absolute; ensure a single trailing slash.
-    path_binutils=`(cd $path_binutils; pwd) | sed 's%/*$%/%'`
-    CC="$CC -B$path_binutils"
-fi
-AS=`$CC -print-prog-name=as`
-LD=`$CC -print-prog-name=ld`
-AR=`$CC -print-prog-name=ar`
-
-OBJDUMP=`$CC -print-prog-name=objdump`
-
-OBJCOPY=`$CC -print-prog-name=objcopy`
-
-GPROF=`$CC -print-prog-name=gprof`
-
-
-# Determine whether we are using GNU binutils.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $AS is GNU as" >&5
-$as_echo_n "checking whether $AS is GNU as... " >&6; }
-if ${libc_cv_prog_as_gnu+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  # Most GNU programs take a -v and spit out some text including
-# the word 'GNU'.  Some try to read stdin, so give them /dev/null.
-if $AS -o conftest -v </dev/null 2>&1 | grep GNU > /dev/null 2>&1; then
-  libc_cv_prog_as_gnu=yes
-else
-  libc_cv_prog_as_gnu=no
-fi
-rm -fr contest*
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_prog_as_gnu" >&5
-$as_echo "$libc_cv_prog_as_gnu" >&6; }
-rm -f a.out
-gnu_as=$libc_cv_prog_as_gnu
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $LD is GNU ld" >&5
-$as_echo_n "checking whether $LD is GNU ld... " >&6; }
-if ${libc_cv_prog_ld_gnu+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  # Most GNU programs take a -v and spit out some text including
-# the word 'GNU'.  Some try to read stdin, so give them /dev/null.
-if $LD -o conftest -v </dev/null 2>&1 | grep GNU > /dev/null 2>&1; then
-  libc_cv_prog_ld_gnu=yes
-else
-  libc_cv_prog_ld_gnu=no
-fi
-rm -fr contest*
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_prog_ld_gnu" >&5
-$as_echo "$libc_cv_prog_ld_gnu" >&6; }
-gnu_ld=$libc_cv_prog_ld_gnu
-
-
 # Accept binutils 2.25 or newer.
+# __e2k__ FIXME: get rid of this conditional when either we migrate to GAS or
+# LAS starts identifying itself as a GNU assembler. The latter is very unlikely.
+if test "$base_machine" != "e2k" ; then
 for ac_prog in $AS
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -4592,6 +4597,7 @@ if test $ac_verc_fail = yes; then
   AS=: critic_missing="$critic_missing as"
 fi
 
+fi # base_machine = e2k
 
 if test -n "`$LD --version | sed -n 's/^GNU \(gold\).*$/\1/p'`"; then
   # Accept gold 1.14 or higher
@@ -6286,9 +6292,9 @@ rm -f conftest*
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_gcc_builtin_redirection" >&5
 $as_echo "$libc_cv_gcc_builtin_redirection" >&6; }
-if test "$libc_cv_gcc_builtin_redirection" = no; then
-  as_fn_error $? "support for the symbol redirection needed" "$LINENO" 5
-fi
+# if test "$libc_cv_gcc_builtin_redirection" = no; then
+#   AC_MSG_ERROR([support for the symbol redirection needed])
+# fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for compiler option to disable generation of FMA instructions" >&5
 $as_echo_n "checking for compiler option to disable generation of FMA instructions... " >&6; }
@@ -6625,6 +6631,7 @@ typedef struct {
   char foo;
   long val;
 } Ehdr;
+const int dummy = 777;
 extern const Ehdr __ehdr_start __attribute__ ((visibility ("hidden")));
 long ehdr (void) { return __ehdr_start.val; }
 
@@ -6731,7 +6738,7 @@ _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
   libc_cv_cxx_thread_local=yes
 else
-  libc_cv_cxx_thread_local=no
+  libc_cv_cxx_thread_local=yes
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 CXXFLAGS="$old_CXXFLAGS"
@@ -6873,6 +6880,14 @@ libc_cv_pie_default=$libc_cv_cc_pie_default
 # Set the `multidir' variable by grabbing the variable from the compiler.
 # We do it once and save the result in a generated makefile.
 libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
+
+# Take into account that -print-multi-directory is not supported by LCC, which
+# results in an empty value of libc_cv_multidir, by setting this variable as it
+# would be set by GCC lacking support for "multilib" (or how is it called?).
+if test -z "$libc_cv_multidir"; then
+  libc_cv_multidir=.
+fi
+
 
 
 if test "$static_pie" = yes; then

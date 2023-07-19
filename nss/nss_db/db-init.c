@@ -19,7 +19,9 @@
 #ifdef USE_NSCD
 
 #include <paths.h>
+#define __NSCD_DROP_MAP_REF_UNUSED
 #include <nscd/nscd.h>
+#undef __NSCD_DROP_MAP_REF_UNUSED
 #include <string.h>
 
 #define PWD_FILENAME (_PATH_VARDB "passwd.db")

@@ -20,6 +20,23 @@ sysdep_routines += clone umount umount2 readahead \
 		   personality epoll_wait tee vmsplice splice \
 		   open_by_handle_at mlock2 pkey_mprotect pkey_set pkey_get
 
+ifeq ($(config-machine),e2k128)
+# FIXME: originally mount () can be implemented only via an automatically
+# generated assembler file only, there's even no stub mount.c in glibc
+# source tree. But in PM we do need to use a C implementation. Without adding
+# it to sysdeps_routines one would be left both without C and the (invalid)
+# generated assembler version in the compiled glibc.
+# The same probably applies to mremap (). Note how they add it to
+# sysdep_routines in sysdeps/mach/hurd/Makefile to make it be compiled from
+# sysdeps/mach/hurd/mremap.c when making glibc for Hurd.
+sysdep_routines += mount mremap
+
+# Let speculative loads be emitted in PM for potentially out-of-bounds
+# `va_arg's in sysdeps/unix/sysv/linux/prctl.c so as to avoid
+# exc_array_bounds (Bug #147448).
+CFLAGS-prctl.c += -mprot-all
+endif
+
 CFLAGS-gethostid.c = -fexceptions
 CFLAGS-tee.c = -fexceptions -fasynchronous-unwind-tables
 CFLAGS-vmsplice.c = -fexceptions -fasynchronous-unwind-tables

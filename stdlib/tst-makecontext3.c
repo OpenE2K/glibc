@@ -24,6 +24,11 @@
 
 static ucontext_t ctx[3];
 
+
+#ifdef __e2k__
+# define makecontext makecontext_e2k
+#endif /* __e2k__  */
+
 static int was_in_f1;
 static int was_in_f2;
 
@@ -103,10 +108,21 @@ volatile int global;
 
 static int back_in_main;
 
+#ifdef __e2k__
+static int ctx1_allocated, ctx2_allocated;
+#endif /* __e2k__  */
 
 static void
 check_called (void)
 {
+#ifdef __e2k__
+  if (ctx1_allocated)
+    freecontext_e2k (&ctx[1]);
+
+  if (ctx2_allocated)
+    freecontext_e2k (&ctx[2]);
+#endif /* __e2k__  */
+
   if (back_in_main == 0)
     {
       puts ("program did not reach main again");
@@ -145,6 +161,9 @@ main (void)
   ctx[1].uc_stack.ss_size = sizeof st1;
   ctx[1].uc_link = &ctx[0];
   errno = 0;
+#ifdef __e2k__
+  int res =
+#endif /* __e2k__  */
   makecontext (&ctx[1], (void (*) (void)) f1, 33,
 	       0x00000001 << flag, 0x00000004 << flag,
 	       0x00000012 << flag, 0x00000048 << flag,
@@ -163,6 +182,16 @@ main (void)
 	       0x89abcdef << flag, 0x26af37bc << flag,
 	       0x9abcdef0 << flag, 0x6af37bc3 << flag,
 	       0xabcdef0f << flag);
+
+#ifdef __e2k__
+  if (res != 0)
+    {
+      printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+      exit (1);
+    }
+
+  ctx1_allocated = 1;
+#endif /* __e2k__  */
 
   /* Without this check, a stub makecontext can make us spin forever.  */
   if (errno == ENOSYS)
@@ -193,7 +222,20 @@ main (void)
   ctx[2].uc_stack.ss_sp = st2;
   ctx[2].uc_stack.ss_size = sizeof st2;
   ctx[2].uc_link = &ctx[1];
+#ifdef __e2k__
+  res =
+#endif /* __e2k__  */
   makecontext (&ctx[2], f2, 0);
+
+#ifdef __e2k__
+  if (res != 0)
+    {
+      printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+      exit (1);
+    }
+
+  ctx2_allocated = 1;
+#endif /* __e2k__  */
 
   puts ("swapping contexts");
   if (swapcontext (&ctx[0], &ctx[2]) != 0)

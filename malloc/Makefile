@@ -206,6 +206,9 @@ endif
 
 sLIBdir := $(shell echo $(slibdir) | sed 's,lib\(\|64\)$$,\\\\$$LIB,')
 
+# FIXME: standard PERL location at gerhildes.
+REMOTE_PERL = /usr/bin/perl
+
 $(objpfx)mtrace: mtrace.pl
 	rm -f $@.new
 	sed -e 's|@PERL@|$(PERL)|' -e 's|@XXX@|$(address-width)|' \
@@ -252,3 +255,14 @@ $(objpfx)tst-dynarray-fail-mem.out: $(objpfx)tst-dynarray-fail.out
 
 $(objpfx)tst-malloc-tcache-leak: $(shared-thread-library)
 $(objpfx)tst-malloc_info: $(shared-thread-library)
+
+# Bug #44465: use special CFLAGS in optimized builds for
+# a few files.
+ifneq ($(extra-optimizations),)
+
+# This magic combination of options overriding $(extra-optimizations) was
+# proposed in Bug #93150, Comment #12
+CFLAGS-malloc.o = -O4 -faligned -finline-static-functions -fno-dam -fibranch-bound=0.02
+CFLAGS-malloc.os = -O4 -faligned -finline-static-functions -fno-dam -fibranch-bound=0.02
+
+endif # Check for extra optimizations

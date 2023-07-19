@@ -31,6 +31,11 @@ WCSCPY (wchar_t *dest, const wchar_t *src)
   wint_t c;
   wchar_t *wcp;
 
+#if ! defined __ptr128__
+  /* This code is incorrect from the point of view of PM as it may result in
+     exc_array_bounds if DEST and SRC are described by two non-overlapping
+     APs. I don't quite understand why it is expected to be more efficient than
+     the alternative one.  */
   if (__alignof__ (wchar_t) >= sizeof (wchar_t))
     {
       const ptrdiff_t off = dest - src - 1;
@@ -45,6 +50,7 @@ WCSCPY (wchar_t *dest, const wchar_t *src)
       while (c != L'\0');
     }
   else
+#endif /* ! defined __ptr128__  */
     {
       wcp = dest;
 

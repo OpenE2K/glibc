@@ -33,7 +33,16 @@ struct __old_ipc_perm
 
 #define SEMCTL_ARG_ADDRESS(__arg) &__arg.array
 
-#define MSGRCV_ARGS(__msgp, __msgtyp) \
+#if ! (defined __e2k__ && defined __ptr128__)
+
+# define MSGRCV_ARGS(__msgp, __msgtyp)			\
   ((long int []){ (long int) __msgp, __msgtyp })
+
+#else /* defined __e2k__ && defined __ptr128__  */
+
+# define MSGRCV_ARGS(__msgp, __msgtyp)			\
+  ((struct {void *msgp; long msgtyp;} []){ __msgp, __msgtyp })
+
+#endif /* defined __e2k__ && defined __ptr128__  */
 
 #include <ipc_ops.h>

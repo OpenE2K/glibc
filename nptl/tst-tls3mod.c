@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include <pthreaddef.h>
 
+#if defined __ptr128__
+# include "../pm-helper.h"
+#endif
+
 
 extern pthread_barrier_t b;
 
@@ -46,6 +50,10 @@ handler (int sig)
       write (STDOUT_FILENO, "wrong signal\n", 13);
       _exit (1);
     }
+
+#if defined __ptr128__
+  print_pm_ptr ("fp", fp);
+#endif
 
   fp ();
 
@@ -73,6 +81,10 @@ tf (void *arg)
     }
 
   fp = arg;
+
+#if defined __ptr128__
+  print_pm_ptr ("arg", arg);
+#endif
 
   pthread_barrier_wait (&b);
 

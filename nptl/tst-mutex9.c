@@ -27,6 +27,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
+
 
 static int
 do_test (void)
@@ -67,8 +69,8 @@ do_test (void)
       return 1;
     }
 
-  m = (pthread_mutex_t *) (((uintptr_t) mem + __alignof (pthread_mutex_t))
-			   & ~(__alignof (pthread_mutex_t) - 1));
+  m = (pthread_mutex_t *) ADJUST_PTR ((mem + __alignof (pthread_mutex_t)), &,
+				      ~(__alignof (pthread_mutex_t) - 1));
 
   if (pthread_mutexattr_init (&a) != 0)
     {

@@ -55,7 +55,7 @@
 /* Defined to concatenate the literal suffix to be used with _Float128
    types, if __HAVE_FLOAT128 is 1. */
 # if __HAVE_FLOAT128
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 /* The literal suffix f128 exists only since GCC 7.0.  */
 #   define __f128(x) x##l
 #  else
@@ -65,7 +65,7 @@
 
 /* Defined to a complex binary128 type if __HAVE_FLOAT128 is 1.  */
 # if __HAVE_FLOAT128
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 #   define __CFLOAT128 _Complex long double
 #  else
 #   define __CFLOAT128 _Complex _Float128
@@ -76,12 +76,12 @@
 # if __HAVE_FLOAT128
 
 /* The type _Float128 exists only since GCC 7.0.  */
-#  if !__GNUC_PREREQ (7, 0) || defined __cplusplus
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__) || defined __cplusplus
 typedef long double _Float128;
 #  endif
 
 /* Various built-in functions do not exist before GCC 7.0.  */
-#  if !__GNUC_PREREQ (7, 0)
+#  if !(__GNUC_PREREQ (7, 0) && ! defined __LCC__)
 #   define __builtin_huge_valf128() (__builtin_huge_vall ())
 #   define __builtin_inff128() (__builtin_infl ())
 #   define __builtin_nanf128(x) (__builtin_nanl (x))

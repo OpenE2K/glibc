@@ -111,7 +111,16 @@ tf (void *arg)
   ctx[n][1].uctx.uc_stack.ss_sp = stacks[n];
   ctx[n][1].uctx.uc_stack.ss_size = sizeof (stacks[n]);
   ctx[n][1].uctx.uc_link = &ctx[n][0].uctx;
+#ifndef __e2k__
   makecontext (&ctx[n][1].uctx, (void (*) (void)) fct, 1, (long int) n);
+#else
+  if (makecontext_e2k (&ctx[n][1].uctx, (void (*) (void)) fct, 1,
+                       (long int) n) != 0)
+    {
+      printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+      exit (1);
+    }
+#endif /* __e2k__  */
 
   printf ("%d: %s: before swapcontext\n", n, __FUNCTION__);
 
@@ -122,6 +131,13 @@ tf (void *arg)
     }
   else
     printf ("%d: back in %s\n", n, __FUNCTION__);
+
+#ifdef __e2k__
+  /* If I'm not mistaken, we should find ourselves here in this test because
+     `ctx[n][1].uctx.uc_link' points to the initial context.  */
+
+  freecontext_e2k (&ctx[n][1].uctx);
+#endif /* __e2k__  */
 
   return NULL;
 }

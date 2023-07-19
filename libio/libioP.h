@@ -896,7 +896,14 @@ IO_validate_vtable (const struct _IO_jump_t *vtable)
      section.  */
   uintptr_t section_length = __stop___libc_IO_vtables - __start___libc_IO_vtables;
   uintptr_t ptr = (uintptr_t) vtable;
-  uintptr_t offset = ptr - (uintptr_t) __start___libc_IO_vtables;
+  uintptr_t offset
+#if defined __LCC__ && defined __e2k__ && defined __ptr128__
+    /* Shut up "integer conversion resulted in truncation" inexplicable
+       warning in such a stupid way.  */
+    ;
+  offset
+#endif
+    = ptr - (uintptr_t) __start___libc_IO_vtables;
   if (__glibc_unlikely (offset >= section_length))
     /* The vtable pointer is not in the expected section.  Use the
        slow path, which will terminate the process if necessary.  */

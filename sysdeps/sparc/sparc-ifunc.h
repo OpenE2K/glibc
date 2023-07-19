@@ -22,6 +22,14 @@
 #define sparc_libc_ifunc_redirected(redirected_name, name, expr)	\
   __ifunc (redirected_name, name, expr(hwcap), int hwcap, INIT_ARCH)
 
+#if defined __LCC__
+/* Suppress `ec_incompatible_ifunc_resolver_type' when compiling files making
+   use of the underlying ifunc macros with LCC. LCC seems to be unaware of a
+   parameter (`int hwcap' stands for it below), which may be passed to an ifunc
+   resolver and barfs on it.  */
+#pragma diag_suppress 2536
+#endif /* defined __LCC__  */
+
 #define sparc_libm_ifunc(name, expr)				\
   __ifunc (name, name, expr, int hwcap, libm_ifunc_init)
 

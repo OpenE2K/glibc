@@ -49,6 +49,12 @@ do_test (void)
      argument is marked __attribute__ ((nonnull)). */
   DIAG_PUSH_NEEDS_COMMENT;
   DIAG_IGNORE_NEEDS_COMMENT (5, "-Wnonnull");
+
+#if defined __LCC__
+  /* Stupidly suppress `ec_null_argument_for_nonnull_parameter' when compiling
+     with LCC. TODO: find out why the above stuff doesn't take effect.  */
+# pragma diag_suppress 1622
+#endif /* defined __LCC__  */
   if (!ATTR_NULL && pthread_mutexattr_destroy (ATTR) != 0)
     {
       puts ("mutexattr_destroy failed");

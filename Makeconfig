@@ -69,9 +69,17 @@ endif
 # changes and so config.status would be run every time; the dependence of
 # config.make should suffice to force regeneration and re-exec, and the new
 # image will notice if config.h changed.
+#
+# In case `config-make-fixed' variable is set to `yes' don't perform the actions
+# described above. This is required in order to support glibc builds without
+# preceding configure runs but with specially customized `config.{make,h}'
+# files copied into the build directory (see Bug #62957).
+# `config-make-fixed' should be currently set to `yes' from make command line.
+ifneq ($(config-make-fixed),yes)
 $(common-objpfx)config.make: $(common-objpfx)config.status \
 			     $(..)config.make.in $(..)config.h.in
 	cd $(<D); $(SHELL) $(<F)
+endif
 
 # Find all the sysdeps configure fragments, to make sure we re-run
 # configure when any of them changes.
@@ -136,6 +144,13 @@ libdir = $(exec_prefix)/lib
 endif
 inst_libdir = $(install_root)$(libdir)
 
+ifeq (yes,$(enable-debian-multiarch))
+# Compat places to look for libraries
+ifndef extra_libdir
+extra_libdir = /lib:$(exec_prefix)/lib
+endif
+endif
+
 # Where to install the shared library.
 ifndef slibdir
 slibdir = $(exec_prefix)/lib
@@ -146,7 +161,12 @@ inst_slibdir = $(install_root)$(slibdir)
 ifndef rtlddir
 rtlddir = $(slibdir)
 endif
+
+ifneq (yes,$(enable-debian-multiarch))
 inst_rtlddir = $(install_root)$(rtlddir)
+else
+inst_rtlddir = $(install_root)$(slibdir)
+endif
 
 # Prefix to put on files installed in $(libdir).  For libraries `libNAME.a',
 # the prefix is spliced between `lib' and the name, so the linker switch
@@ -589,6 +609,12 @@ else
 default-rpath = $(libdir)
 endif
 
+ifeq (yes,$(enable-debian-multiarch))
+ifdef extra_libdir
+default-rpath += :$(extra_libdir)
+endif
+endif
+
 ifndef link-extra-libs
 link-extra-libs = $(LDLIBS-$(@F))
 link-extra-libs-static = $(link-extra-libs)
@@ -652,7 +678,29 @@ else
 static-gnulib = -lgcc -lgcc_eh $(static-gnulib-arch)
 endif
 static-gnulib-tests := -lgcc -lgcc_eh $(libunwind)
+
+# Stupidly ensure that `-llcc' is appended when making statically-linked
+# tests.
+ifeq (yes,$(compile-with-lcc))
+static-gnulib-tests += -llcc
+# Not placed between -Wl,--{,no-}as-needed as we have got only liblcc.a and
+# no liblcc.so.
+gnulib-tests += -llcc
+ifeq ($(config-machine),e2k128)
+static-gnulib-tests += -latomic
+gnulib-tests += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif # e2k128
+endif
+
+ifeq (yes,$(compile-with-lcc))
+libc.so-gnulib := -lgcc -llcc
+ifeq ($(config-machine),e2k128)
+libc.so-gnulib += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif # e2k128
+libc.so-gnulib += -lgcc
+else
 libc.so-gnulib := -lgcc
+endif # compile-with-lcc
 endif
 +preinit = $(addprefix $(csu-objpfx),crti.o)
 +postinit = $(addprefix $(csu-objpfx),crtn.o)
@@ -816,9 +864,16 @@ ifeq ($(all-warnings),yes)
 else
 +gccwarn := -Wall -Wwrite-strings
 endif
-+gccwarn += -Wundef
 ifeq ($(enable-werror),yes)
+ifeq (yes,$(compile-with-lcc))
+# In LCC -Werror does NOT break the compilation when a warning having no
+# matching `-W{,no-}*' options' is emitted (Bugs #123898, #123914) which
+# results in unnoticed warnings which are worth being fixed. Use a more
+# aggressive `-Werrror' instead.
++gccwarn += -Werrror
+else
 +gccwarn += -Werror
+endif
 endif
 +gccwarn-c = -Wstrict-prototypes -Wold-style-definition
 

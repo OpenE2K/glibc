@@ -343,6 +343,71 @@ extern UDItype __umulsidi3 (USItype, USItype);
 
 #endif /* defined (__CRIS__) */
 
+#if defined (__e2k__)
+
+# if __iset__ >= 5
+#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
+  do {										\
+    (sh) = __builtin_e2k_addcd (ah, bh, __builtin_e2k_addcd_c (al, bl, 0));	\
+    (sl) = (al) + (bl);								\
+  } while (0)
+#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
+  do {										\
+    (sh) = __builtin_e2k_subcd (ah, bh, __builtin_e2k_subcd_c (al, bl, 0));	\
+    (sl) = (al) - (bl);								\
+  } while (0)
+# else /* __iset__ >= 5 */
+#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
+  do {									\
+    UWtype __x;								\
+    __x = (al) + (bl);							\
+    (sh) = (ah) + (bh);							\
+    if (__x < (al)) (sh)++;						\
+    (sl) = __x;								\
+  } while (0)
+#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
+  do {									\
+    (sh) = (ah) - (bh);							\
+    if ((al) < (bl)) (sh)--;						\
+    (sl) = (al) - (bl);							\
+  } while (0)
+# endif /* __iset__ >= 5 */
+
+# if __iset__ >= 3
+#define umul_ppmm(wh, wl, u, v)	{ \
+  register UDItype __u = (u), __v = (v);				\
+  wh = __builtin_e2k_umulhd (__u, __v);					\
+  wl = __u * __v;							\
+}
+#define smul_ppmm(wh, wl, u, v)	{ \
+  register UDItype __u = (u), __v = (v);				\
+  wh = __builtin_e2k_smulhd (__u, __v);					\
+  wl = __u * __v;							\
+}
+#define UMUL_TIME 6
+# else /* __iset__ >= 3 */
+#define UMUL_TIME 14
+# endif /* __iset__ >= 3 */
+#define UDIV_TIME 55
+# if __iset__ >= 2
+#define count_leading_zeros(count, x)	((count) = __builtin_e2k_lzcntd (x))
+#define count_trailing_zeros(count, x)	((count) = __builtin_e2k_lzcntd (__builtin_e2k_bitrevd (x)))
+# else /* __iset__ >= 2 */
+#define count_leading_zeros(count, x) { \
+  UWtype __xr = (x);							\
+  UWtype __a;								\
+									\
+  __a = __xr < (1LL<<32)						\
+    ? (__xr < (1LL<<16)							\
+      ? (__xr < (1LL<<8) ? 0 : 8) : (__xr < (1LL<<24) ? 16 : 24))	\
+    : (__xr < (1LL<<48)							\
+      ? (__xr < (1LL<<40) ? 32 : 40) : (__xr < (1LL<<56) ? 48 : 56));	\
+  (count) = 64 - (__clz_tab[__xr >> __a] + __a);			\
+}
+# endif /* __iset__ >= 2 */
+#define COUNT_LEADING_ZEROS_0 64
+#endif /* __e2k__ */
+
 #if defined (__hppa) && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
   __asm__ ("add %4,%5,%1\n\taddc %2,%3,%0"				\
@@ -1173,6 +1238,14 @@ extern UDItype __umulsidi3 (USItype, USItype);
 
 #endif /* __sh__ */
 
+#if defined (__sparc__) && defined __LCC__
+/* Suppress `ec_gcc_use_of_cast_as_lvalue' so as to inhibit warnings about
+   lvalue casts in `__asm__ ()'s below when compiling with LCC. Recall that
+   these casts are just a primitive form of typechecking: they ensure that
+   lvalue's type has the same size as `U{S,D}Itype'.  */
+# pragma diag_suppress 1360
+#endif
+
 #if defined (__sparc__) && !defined (__arch64__) && !defined (__sparcv9) \
     && W_TYPE_SIZE == 32
 #define add_ssaaaa(sh, sl, ah, al, bh, bl) \
@@ -1454,6 +1527,12 @@ extern UDItype __umulsidi3 (USItype, USItype);
   } while (0)
 #define UMUL_TIME 96
 #define UDIV_TIME 230
+
+#if defined (__r2000__)
+#define count_leading_zeros(COUNT, X)	((COUNT) = __builtin_clzll (X))
+#define COUNT_LEADING_ZEROS_0 64
+#endif /* __r2000__ */
+
 #endif /* sparc64 */
 
 #if defined (__vax__) && W_TYPE_SIZE == 32

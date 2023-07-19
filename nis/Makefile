@@ -96,7 +96,15 @@ include ../Rules
 ifeq ($(build-obsolete-nsl),yes)
 $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
 			$(common-objpfx)nss/libnss_files.so
-$(objpfx)libnss_nisplus.so: $(objpfx)libnsl.so$(libnsl.so-version)
+
+# When configured with `--with-sys-atomic=yes' for sparc we need an
+# explicit dependency on ld.so when linking `libnss_nisplus.so' because
+# of the reference to `_rtld_global_ro' in sysdeps/sparc/sparc32/bits/atomic.h
+
+$(objpfx)libnss_nisplus.so: $(objpfx)libnsl.so$(libnsl.so-version) \
+			    $(if $(filter yes,$(with-sys-atomic)), \
+				$(if $(filter sparc,$(config-machine)), \
+				    $(elf-objpfx)$(rtld-installed-name)))
 endif
 
 libnsl-libc = $(common-objpfx)linkobj/libc.so

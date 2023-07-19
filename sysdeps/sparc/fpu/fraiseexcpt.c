@@ -20,8 +20,9 @@
 #include <float.h>
 #include <math.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __feraiseexcept (int excepts)
 {
   static const struct {

@@ -268,12 +268,19 @@ __printf_fphex (FILE *fp,
 			       info->spec == 'A');
 	}
       else
+#if (!defined __LCC__) || (__WORDSIZE == 32)
 	{
 	  wnumstr = _itowa (num, wnumbuf + sizeof wnumbuf / sizeof (wchar_t), 16,
 			    info->spec == 'A');
 	  numstr = _itoa (num, numbuf + sizeof numbuf, 16,
 			  info->spec == 'A');
 	}
+#else /* (! defined __LCC__) || (__WORDSIZE == 32) */
+        {
+          int *p = 0;
+          *p = 0;
+        }
+#endif /* (! defined __LCC__) || (__WORDSIZE == 32) */
 
       /* Fill with zeroes.  */
       while (wnumstr > wnumbuf + (sizeof wnumbuf - 52) / sizeof (wchar_t))

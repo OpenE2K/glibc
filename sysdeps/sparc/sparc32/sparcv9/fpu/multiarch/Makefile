@@ -18,6 +18,6 @@ libm-sysdep_routines += s_fabs-vis3 s_fabsf-vis3 s_fabs-generic \
 			s_fdimf-generic \
 			$(sysdep_calls:s_%=m_%)
 
-CFLAGS-s_fdimf-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_fdim-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_fdimf-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_fdim-vis3.c += -Wa,-Av9d -mvis3
 endif

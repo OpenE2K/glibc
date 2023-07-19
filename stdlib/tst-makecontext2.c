@@ -25,6 +25,15 @@
 ucontext_t ucp, ucp2;
 char st1[262144] __attribute__((aligned (16)));
 
+#ifdef __e2k__
+static void
+free_ucp (void)
+{
+  freecontext_e2k (&ucp);
+}
+#endif /* __e2k__  */
+
+
 void
 cf (int i, int j)
 {
@@ -60,7 +69,20 @@ do_test (void)
       ucp.uc_stack.ss_sp = st1;
       ucp.uc_stack.ss_size = sizeof (st1) - j;
       memset (&st1[sizeof (st1) - j], 0x55, j);
+#ifndef __e2k__
       makecontext (&ucp, (void (*) (void)) cf, 2, 78, 274);
+#else /* __e2k__  */
+  /* Take care of freeing this context. Neither can we do this within
+     `cf ()', nor in `main ()' (we don't return to the latter). Therefore, try
+     using atexit () handler.  */
+      if (makecontext_e2k (&ucp, (void (*) (void)) cf, 2, 78, 274) != 0)
+        {
+          printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+          exit (1);
+        }
+
+      atexit (free_ucp);
+#endif /* __e2k__  */
       if (swapcontext (&ucp2, &ucp) != 0)
 	{
 	  puts ("setcontext failed");

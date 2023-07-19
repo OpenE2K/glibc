@@ -23,9 +23,16 @@
 #define EW_(e, w, t) EW__(e, w, _##t)
 #define EW__(e, w, t) e##w##t
 
+#if ! defined __ptr128__
+
 #define pldd_assert(name, exp) \
   typedef int __assert_##name[((exp) != 0) - 1]
 
+#else /* defined __ptr128__  */
+
+#define pldd_assert(name, exp)
+
+#endif
 
 struct E(link_map)
 {

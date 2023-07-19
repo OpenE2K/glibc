@@ -98,7 +98,10 @@
    aligned.  */
 #define USE_MALLOC_LOW_BIT 1
 
-#ifndef USE_MALLOC_LOW_BIT
+/* Stupidly avoid using PM-unsafe implemenations of these macros converting
+   pointers to `uintptr_t' and backwards possibly after performing some sort
+   of arithmetics.  */
+#if !defined USE_MALLOC_LOW_BIT || defined __ptr128__
 typedef struct node_t
 {
   /* Callers expect this to be the first element in the structure - do not

@@ -44,8 +44,8 @@ NAME (void)								      \
   volatile FLOAT Inf_var, qNaN_var, zero_var, one_var;			      \
   /* A sNaN is only guaranteed to be representable in variables with */	      \
   /* static (or thread-local) storage duration.  */			      \
-  static volatile FLOAT sNaN_var = __builtin_nans ## SUFFIX ("");	      \
-  static volatile FLOAT minus_sNaN_var = -__builtin_nans ## SUFFIX ("");      \
+  static volatile FLOAT sNaN_var = __builtin_nan ## SUFFIX ("");	      \
+  static volatile FLOAT minus_sNaN_var = -__builtin_nan ## SUFFIX ("");      \
   FLOAT x1, x2;								      \
 									      \
   zero_var = 0.0;							      \
@@ -155,7 +155,7 @@ NAME (void)								      \
   volatile DOUBLE Inf_var, qNaN_var, zero_var, one_var;			      \
   /* A sNaN is only guaranteed to be representable in variables with */	      \
   /* static (or thread-local) storage duration.  */			      \
-  static volatile DOUBLE sNaN_var = __builtin_nans ## SUFFIX ("");	      \
+  static volatile DOUBLE sNaN_var = __builtin_nan ## SUFFIX ("");	      \
   FLOAT x1, x2;								      \
 									      \
   zero_var = 0.0;							      \

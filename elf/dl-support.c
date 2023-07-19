@@ -230,9 +230,24 @@ _dl_aux_init (ElfW(auxv_t) *av)
   int seen = 0;
   uid_t uid = 0;
   gid_t gid = 0;
+#if defined __ptr128__
+  /* FIXME: can't switch to __builtin_e2k_get_ap_base () here because of the
+     need to keep support for SAPs meanwhile.  */
+  size_t auxv_end = (__builtin_e2k_get_ap_base (av)
+		     + __builtin_e2k_get_ap_size (av));
+#endif
 
   _dl_auxv = av;
-  for (; av->a_type != AT_NULL; ++av)
+  for (;
+#if defined __ptr128__
+	 /* Avoid `exc_array_bounds' on faulty Kernels providing AP not
+	    including the AT_NULL element of AUXV (see Bug #93881,
+	    Comments #2 and #3).  */
+	 (size_t) av < auxv_end
+	 &&
+#endif
+	 av->a_type != AT_NULL
+	 ; ++av)
     switch (av->a_type)
       {
       case AT_PAGESZ:
@@ -243,7 +258,19 @@ _dl_aux_init (ElfW(auxv_t) *av)
 	GLRO(dl_clktck) = av->a_un.a_val;
 	break;
       case AT_PHDR:
+#if defined __e2k__ && defined __ptr128__
+	GL(dl_phdr) = ({
+	    const void *res;
+	    const void *gd;
+	    __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+	    __asm__ ("gdtoap %1, %0\n\t"
+		     : "=r" (res)
+		     : "r" (av->a_un.a_val - (uintptr_t) gd));
+	    res;
+	  });
+#else
 	GL(dl_phdr) = (const void *) av->a_un.a_val;
+#endif
 	break;
       case AT_PHNUM:
 	GL(dl_phnum) = av->a_un.a_val;

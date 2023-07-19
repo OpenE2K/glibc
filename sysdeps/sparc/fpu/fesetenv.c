@@ -18,8 +18,9 @@
 
 #include <fenv.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __fesetenv (const fenv_t *envp)
 {
   fenv_t dummy;

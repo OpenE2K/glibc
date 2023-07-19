@@ -26,7 +26,7 @@
 	.align	 32;							\
 	.weak	 __sparc_get_pc_thunk.reg;				\
 	.hidden	 __sparc_get_pc_thunk.reg;				\
-	.type	 __sparc_get_pc_thunk.reg, #function;			\
+	.type	 __sparc_get_pc_thunk.reg, @function;			\
 __sparc_get_pc_thunk.reg:		   				\
 	jmp	%o7 + 8;						\
 	 add	%o7, %reg, %##reg;					\

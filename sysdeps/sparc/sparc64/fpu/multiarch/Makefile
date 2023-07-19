@@ -21,10 +21,10 @@ libm-sysdep_routines += s_lrintf-vis3 s_lrint-vis3 s_lrintf-generic \
 			s_trunc-vis3 s_truncf-generic s_trunc-generic \
 			$(sysdep_calls:s_%=m_%)
 
-CFLAGS-s_ceilf-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_ceil-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_floorf-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_floor-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_truncf-vis3.c += -Wa,-Av9d -mvis3
-CFLAGS-s_trunc-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_ceilf-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_ceil-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_floorf-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_floor-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_truncf-vis3.c += -Wa,-Av9d -mvis3
+# CFLAGS-s_trunc-vis3.c += -Wa,-Av9d -mvis3
 endif

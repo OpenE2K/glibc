@@ -280,7 +280,8 @@
    attribute for functions was introduced.  We don't want to use it
    unconditionally (although this would be possible) since it
    generates warnings.  */
-#if __GNUC_PREREQ (2,97)
+/* LCC doesn't recognize this attribute yet.  */
+#if __GNUC_PREREQ (2,97) && ! defined __LCC__
 # define __attribute_format_strfmon__(a,b) \
   __attribute__ ((__format__ (__strfmon__, a, b)))
 #else
@@ -399,8 +400,17 @@
 #endif
 
 #if __GNUC__ >= 3
-# define __glibc_unlikely(cond)	__builtin_expect ((cond), 0)
-# define __glibc_likely(cond)	__builtin_expect ((cond), 1)
+# if defined __LCC__
+#  define __glibc_never(cond)		__builtin_expect_with_probability ((cond), 0, 1.00)
+#  define __glibc_unlikely(cond)	__builtin_expect_with_probability ((cond), 0, 0.95)
+#  define __glibc_likely(cond)		__builtin_expect_with_probability ((cond), 0, 0.05)
+#  define __glibc_always(cond)		__builtin_expect_with_probability ((cond), 0, 0.00)
+# else /* ! defined __LCC__  */
+#  define __glibc_never(cond)		__builtin_expect ((cond), 0)
+#  define __glibc_unlikely(cond)	__builtin_expect ((cond), 0)
+#  define __glibc_likely(cond)		__builtin_expect ((cond), 1)
+#  define __glibc_always(cond)		__builtin_expect ((cond), 1)
+# endif /* ! defined __LCC__  */
 #else
 # define __glibc_unlikely(cond)	(cond)
 # define __glibc_likely(cond)	(cond)
@@ -422,7 +432,7 @@
 # endif
 #endif
 
-#if __GNUC_PREREQ (8, 0)
+#if __GNUC_PREREQ (8, 0) && ! defined __LCC__
 /* Describes a char array whose address can safely be passed as the first
    argument to strncpy and strncat, as the char array is not necessarily
    a NUL-terminated string.  */
@@ -433,7 +443,7 @@
 
 /* Undefine (also defined in libc-symbols.h).  */
 #undef __attribute_copy__
-#if __GNUC_PREREQ (9, 0)
+#if __GNUC_PREREQ (9, 0) && ! defined __LCC__
 /* Copies attributes from the declaration or type referenced by
    the argument.  */
 # define __attribute_copy__(arg) __attribute__ ((__copy__ (arg)))

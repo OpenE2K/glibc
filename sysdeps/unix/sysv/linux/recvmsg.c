@@ -24,11 +24,11 @@
 ssize_t
 __libc_recvmsg (int fd, struct msghdr *msg, int flags)
 {
-# ifdef __ASSUME_RECVMSG_SYSCALL
+#ifdef __ASSUME_RECVMSG_SYSCALL
   return SYSCALL_CANCEL (recvmsg, fd, msg, flags);
-# else
+#else
   return SOCKETCALL_CANCEL (recvmsg, fd, msg, flags);
-# endif
+#endif
 }
 weak_alias (__libc_recvmsg, recvmsg)
 weak_alias (__libc_recvmsg, __recvmsg)

@@ -67,6 +67,9 @@ elide-routines.o := stack_chk_fail_local
 CFLAGS-stack_chk_fail.c += $(no-stack-protector)
 
 CFLAGS-backtrace.c += -fno-omit-frame-pointer -funwind-tables
+ifeq ($(base-machine),e2k)
+CFLAGS-backtrace.c += -O0 -D__OPTIMIZE__
+endif
 CFLAGS-sprintf_chk.c += $(libio-mtsafe)
 CFLAGS-snprintf_chk.c += $(libio-mtsafe)
 CFLAGS-vsprintf_chk.c += $(libio-mtsafe)
@@ -133,13 +136,32 @@ LDLIBS-tst-lfschk4 = -lstdc++
 LDLIBS-tst-lfschk5 = -lstdc++
 LDLIBS-tst-lfschk6 = -lstdc++
 
+# When using LCC libcxa is required to link C++ tests.
+ifeq ($(compile-with-lcc),yes)
+LDLIBS-tst-chk4 += -lcxa
+LDLIBS-tst-chk5 += -lcxa
+LDLIBS-tst-chk6 += -lcxa
+LDLIBS-tst-lfschk4 += -lcxa
+LDLIBS-tst-lfschk5 += -lcxa
+LDLIBS-tst-lfschk6 += -lcxa
+endif
+
 # backtrace_symbols only works if we link with -rdynamic.  backtrace
 # requires unwind tables on most architectures.
+
+# LCC doesn't support the '-funwind-tables' option meanwhile. Note that
+# '-fasynchronous-unwind-tables', which is also used to compile a number of
+# tests in this Makefile, has been supported as a stub for more than four
+# years now. Luckily, backtrace shouldn't require this option at E2K. But can
+# we do without it at Sparc?
+ifneq ($(compile-with-lcc),yes)
 CFLAGS-tst-backtrace2.c += -funwind-tables
 CFLAGS-tst-backtrace3.c += -funwind-tables
 CFLAGS-tst-backtrace4.c += -funwind-tables
 CFLAGS-tst-backtrace5.c += -funwind-tables
 CFLAGS-tst-backtrace6.c += -funwind-tables
+endif
+
 LDFLAGS-tst-backtrace2 = -rdynamic
 LDFLAGS-tst-backtrace3 = -rdynamic
 LDFLAGS-tst-backtrace4 = -rdynamic

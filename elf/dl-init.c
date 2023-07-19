@@ -63,11 +63,26 @@ call_init (struct link_map *l, int argc, char **argv, char **env)
     {
       unsigned int j;
       unsigned int jm;
+#if ! defined __ptr128__
       ElfW(Addr) *addrs;
+#else
+      init_t *addrs;
+#endif
 
-      jm = l->l_info[DT_INIT_ARRAYSZ]->d_un.d_val / sizeof (ElfW(Addr));
+      jm = (l->l_info[DT_INIT_ARRAYSZ]->d_un.d_val /
+#if ! defined __ptr128__
+	    sizeof (ElfW(Addr))
+#else
+	    sizeof (init_t)
+#endif
+);
 
+#if ! defined __ptr128__
       addrs = (ElfW(Addr) *) (init_array->d_un.d_ptr + l->l_addr);
+#else
+      addrs = (init_t *) (l->l_gd + get_offset (l, init_array->d_un.d_ptr));
+#endif
+
       for (j = 0; j < jm; ++j)
 	((init_t) addrs[j]) (argc, argv, env);
     }
@@ -90,16 +105,31 @@ _dl_init (struct link_map *main_map, int argc, char **argv, char **env)
   /* Don't do anything if there is no preinit array.  */
   if (__builtin_expect (preinit_array != NULL, 0)
       && preinit_array_size != NULL
-      && (i = preinit_array_size->d_un.d_val / sizeof (ElfW(Addr))) > 0)
+      && (i = preinit_array_size->d_un.d_val /
+#if ! defined __ptr128__
+	  sizeof (ElfW(Addr))
+#else /* defined __ptr128__  */
+	  sizeof (init_t)
+#endif /* defined __ptr128__  */
+		  ) > 0)
     {
+#if ! defined __ptr128__
       ElfW(Addr) *addrs;
+#else /* defined __ptr128__  */
+      init_t *addrs;
+#endif /* defined __ptr128__  */
+
       unsigned int cnt;
 
       if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_IMPCALLS))
 	_dl_debug_printf ("\ncalling preinit: %s\n\n",
 			  DSO_FILENAME (main_map->l_name));
 
+#if ! defined __ptr128__
       addrs = (ElfW(Addr) *) (preinit_array->d_un.d_ptr + main_map->l_addr);
+#else /* defined __ptr128__  */
+      addrs = main_map->l_gd + get_offset (main_map, preinit_array->d_un.d_ptr);
+#endif /* defined __ptr128__  */
       for (cnt = 0; cnt < i; ++cnt)
 	((init_t) addrs[cnt]) (argc, argv, env);
     }

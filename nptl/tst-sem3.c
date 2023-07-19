@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
+#include "adjust-ptr.h"
 
 int
 do_test (void)
@@ -66,8 +67,8 @@ do_test (void)
       return 1;
     }
 
-  s = (sem_t *) (((uintptr_t) mem + __alignof (sem_t))
-		 & ~(__alignof (sem_t) - 1));
+  s = (sem_t *) ADJUST_PTR ((mem + __alignof (sem_t)),
+			    &, ~(__alignof (sem_t) - 1));
   p = (char *) (s + 1);
 
   if (sem_init (s, 1, 1) == -1)

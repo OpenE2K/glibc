@@ -18,8 +18,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <fenv.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 fegetexcept (void)
 {
   fenv_t exc;

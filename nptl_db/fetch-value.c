@@ -115,6 +115,22 @@ _td_fetch_value (td_thragent_t *ta,
       err = ps_pdread (ta->ph, address, &value, sizeof value);
       *result = (psaddr_t) 0 + value;
     }
+#if defined __e2k__
+  else if (DB_DESC_SIZE (desc) == 128)
+    {
+      uint64_t base, idx;
+      if (sizeof (psaddr_t) < 8)
+	return TD_NOCAPAB;
+      err = ps_pdread (ta->ph, address, &base, sizeof base);
+      if (err == PS_OK)
+	err = ps_pdread (ta->ph, address + 8, &idx, sizeof idx);
+
+      if (err == PS_OK)
+	*result = ((psaddr_t) 0
+		   + (base & 0xffffffffffffULL)
+		   + (idx & 0xffffffffULL));
+    }
+#endif /* defined __e2k__  */
   else if (DB_DESC_SIZE (desc) == bswap_32 (32))
     {
       uint32_t value;
@@ -215,6 +231,19 @@ _td_fetch_value_local (td_thragent_t *ta,
       memcpy (&value, address, sizeof value);
       *result = (psaddr_t) 0 + value;
     }
+#if defined __e2k__
+  else if (DB_DESC_SIZE (desc) == 128)
+    {
+      uint64_t base, idx;
+      if (sizeof (psaddr_t) < 8)
+	return TD_NOCAPAB;
+      memcpy (&base, address, sizeof base);
+      memcpy (&idx, address + 8, sizeof idx);
+      *result = ((psaddr_t) 0
+		 + (base & 0xffffffffffffULL)
+		 + (idx & 0xffffffffULL));
+    }
+#endif /* defined __e2k__  */
   else if (DB_DESC_SIZE (desc) == bswap_32 (32))
     {
       uint32_t value;
