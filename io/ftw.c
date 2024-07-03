@@ -328,7 +328,14 @@ open_dir_stream (int *dfdp, struct ftw_data *data, struct dir_data *dirp)
 	  if (content == NULL)
 	    {
 	      int save_err = errno;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+	      /* realloc () should NOT touch the original block in any way in
+		 case of a failure. Therefore, the next free () is completely
+		 legal and the triggering of the above warning looks like a
+		 drawback in GCC.  */
 	      free (buf);
+#pragma GCC diagnostic pop
 	      __set_errno (save_err);
 	      result = -1;
 	    }

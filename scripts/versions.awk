@@ -168,6 +168,13 @@ END {
       if (oldlib != "") {
 	closeversion(oldver, veryoldver);
 	oldver = "";
+
+	if (hack_libc_map == "yes" && oldlib == "libc" ) {
+	  printf("GLIBC_2.0\n{\n};\n") > outfile
+	  printf("GLIBC_2.1\n{\n};\n") > outfile
+	  printf("GLIBC_2.1.1\n{\n};\n") > outfile
+	}
+
 	close_and_move(outfile, real_outfile);
       }
       oldlib = $1;

@@ -27,6 +27,8 @@
 #include <ldsodefs.h>
 #include <malloc/malloc-internal.h>
 
+#if ! (defined __e2k__ && defined __ptr128__)
+
 static void *alloc_ptr, *alloc_end, *alloc_last_block;
 
 /* Allocate an aligned memory block.  */
@@ -115,3 +117,103 @@ __minimal_realloc (void *ptr, size_t n)
   void *new = malloc (n);
   return new != ptr ? memcpy (new, ptr, old_size) : new;
 }
+
+#else /* defined __e2k__ && defined __ptr128__  */
+
+static unsigned int
+get_code_base (void)
+{
+  register unsigned long cud;
+  asm volatile ("rrd %%cud.lo, %0" : "=r" (cud));
+  return (unsigned int) (cud & 0xffffffff);
+}
+
+void *
+__minimal_malloc (size_t size)
+{
+  void *res;
+
+  if (size == 0)
+    size = 1;
+
+  if (get_code_base () == 0)
+    /* Use this bogus unreliable syscall only on LSIM for the sake of
+       Bug #105333 as it may very well halt a real host. To distinguish
+       between LSIM and the real host make use of the fact that `%cud.base
+       == 0' only on the former.  */
+    res = INLINE_BOGUS_SYSCALL (get_mem, 1, size);
+  else
+    {
+      size = (size + 0xfffUL) & ~0xfffUL;
+      res = mmap (NULL, size, PROT_READ | PROT_WRITE,
+		  MAP_ANON|MAP_PRIVATE, -1, 0);
+    }
+
+  /* malloc () is expected to return NULL on failure rather than -1.  */
+  if (((((long) res) << 16) >> 16) == -1L)
+    res = NULL;
+
+  return res;
+}
+
+void *
+__minimal_calloc (size_t count, size_t size)
+{
+  size_t req = 0;
+
+  if (count != 0)
+    {
+      req = count * size;
+      if (((count | size) & ~(size_t)0xffff) &&
+	  (req / count != size))
+	req = (size_t) -1; /* force downstream failure on overflow */
+    }
+
+  return memset (malloc (req), 0, req);
+}
+
+
+void
+__minimal_free (void *ptr)
+{
+  /* malloc () currently returns APs with `curptr == 0'. Therefore, it should
+     be the user error if she attempts to free something not matching this
+     condition. TODO: doesn't it make sense to generate a signal in this
+     case?
+     FIXME: what about pointers with alignments greater than that of a page
+     returned by memalign ()? It should be possible to free () them. On
+     the other hand such alignments should make no sense especially in PM.  */
+  if (__builtin_e2k_get_ap_curptr (ptr) != 0)
+    return;
+
+  if (get_code_base () == 0)
+    {
+      if (ptr != NULL)
+	INLINE_SYSCALL (free_mem, 1, ptr);
+    }
+  else
+    munmap (ptr, __builtin_e2k_get_ap_size (ptr));
+}
+
+void *
+__minimal_realloc (void *ptr, size_t size)
+{
+  if (ptr == NULL)
+    return malloc (size);
+  else
+    {
+      size_t oldsize = __builtin_e2k_get_ap_size(ptr);
+
+      if (oldsize >= size && oldsize < size * 2)
+	return ptr;
+      else
+        {
+	  void* newmem = malloc (size);
+	  memcpy (newmem, ptr, oldsize < size ? oldsize : size);
+	  free (ptr);
+	  return newmem;
+        }
+    }
+}
+
+#endif /* defined __e2k__ && defined __ptr128__  */

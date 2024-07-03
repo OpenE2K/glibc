@@ -453,16 +453,20 @@ static int mtag_mmap_flags = 0;
 static __always_inline void *
 tag_region (void *ptr, size_t size)
 {
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled))
     return __libc_mtag_tag_region (ptr, size);
+#endif /* ! defined __LCC__  */
   return ptr;
 }
 
 static __always_inline void *
 tag_new_zero_region (void *ptr, size_t size)
 {
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled))
     return __libc_mtag_tag_zero_region (__libc_mtag_new_tag (ptr), size);
+#endif
   return memset (ptr, 0, size);
 }
 
@@ -473,8 +477,10 @@ tag_new_usable (void *ptr);
 static __always_inline void *
 tag_at (void *ptr)
 {
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled))
     return __libc_mtag_address_get_tag (ptr);
+#endif
   return ptr;
 }
 
@@ -1305,7 +1311,14 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #define mem2chunk(mem) ((mchunkptr)tag_at (((char*)(mem) - CHUNK_HDR_SZ)))
 
 /* The smallest possible chunk */
+#if (defined __e2k__) && (__WORDSIZE == 32)
+/* A rude hack allowing to prevent the use in 32-bit mode with `MALLOC_
+   ALIGNMENT == 16' of BIN having index 1 both for storing unsorted and
+   16 bytes long chunks.  */
+#define MIN_CHUNK_SIZE  17
+#else 
 #define MIN_CHUNK_SIZE        (offsetof(struct malloc_chunk, fd_nextsize))
+#endif
 
 /* The smallest size we can malloc is an aligned minimal chunk */
 
@@ -1335,6 +1348,8 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 static inline bool
 checked_request2size (size_t req, size_t *sz) __nonnull (1)
 {
+ /* Shouldn't we use __glibc_never () here by analogy with our
+    original hack in the old macro implementation of this function?  */
   if (__glibc_unlikely (req > PTRDIFF_MAX))
     return false;
 
@@ -1345,6 +1360,7 @@ checked_request2size (size_t req, size_t *sz) __nonnull (1)
      number.  Ideally, this would be part of request2size(), but that
      must be a macro that produces a compile time constant if passed
      a constant literal.  */
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled))
     {
       /* Ensure this is not evaluated if !mtag_enabled, see gcc PR 99551.  */
@@ -1353,6 +1369,7 @@ checked_request2size (size_t req, size_t *sz) __nonnull (1)
       req = (req + (__MTAG_GRANULE_SIZE - 1)) &
 	    ~(size_t)(__MTAG_GRANULE_SIZE - 1);
     }
+#endif
 
   *sz = request2size (req);
   return true;
@@ -1471,11 +1488,13 @@ _Static_assert (__MTAG_GRANULE_SIZE <= CHUNK_HDR_SZ,
 static __always_inline void *
 tag_new_usable (void *ptr)
 {
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled) && ptr)
     {
       mchunkptr cp = mem2chunk(ptr);
       ptr = __libc_mtag_tag_region (__libc_mtag_new_tag (ptr), memsize (cp));
     }
+#endif
   return ptr;
 }
 
@@ -1834,8 +1853,10 @@ struct malloc_state
   /* Note this is a bool but not all targets support atomics on booleans.  */
   int have_fastchunks;
 
+#if !defined __LCC__ || !defined __e2k__
   /* Fastbins */
   mfastbinptr fastbinsY[NFASTBINS];
+#endif
 
   /* Base of the topmost chunk -- not otherwise kept in a bin */
   mchunkptr top;
@@ -1848,6 +1869,14 @@ struct malloc_state
 
   /* Bitmap of bins */
   unsigned int binmap[BINMAPSIZE];
+
+#if defined __LCC__ && defined __e2k__
+  /* flags and fastbinsY fields should be separated so as to ensure that they
+     get into different cachelines. Otherwise the second of the two subsequent
+     atomic operations in free () modifying these fields is sure to be blocked
+     for a large number of ticks on elbrus-v3.  */
+  mfastbinptr fastbinsY[NFASTBINS];
+#endif
 
   /* Linked list */
   struct malloc_state *next;
@@ -2508,7 +2537,7 @@ sysmalloc_mmap_fallback (long int *s, INTERNAL_SIZE_T nb,
 
   /* Cannot merge with old top, so add its size back in */
   if (contiguous (av))
-    size = ALIGN_UP (size + old_size, pagesize);
+    size = ALIGN_UP (size + old_size + (MALLOC_ALIGNMENT - 2 * SIZE_SZ), pagesize);
 
   /* If we are relying on mmap as backup, then use larger units */
   if ((unsigned long) (size) < minsize)
@@ -2749,8 +2778,8 @@ sysmalloc (INTERNAL_SIZE_T nb, mstate av)
 	  if (mbrk != MAP_FAILED)
 	    {
 	      /* We do not need, and cannot use, another sbrk call to find end */
-	      brk = mbrk;
-	      snd_brk = brk + size;
+	      brk = mbrk + (MALLOC_ALIGNMENT - 2 * SIZE_SZ);
+	      snd_brk = mbrk + size;
 	    }
         }
 
@@ -3324,14 +3353,14 @@ __libc_malloc (size_t bytes)
   victim = _int_malloc (ar_ptr, bytes);
   /* Retry with another arena only if we were able to find a usable arena
      before.  */
-  if (!victim && ar_ptr != NULL)
+  if (__glibc_never (!victim && ar_ptr != NULL))
     {
       LIBC_PROBE (memory_malloc_retry, 1, bytes);
       ar_ptr = arena_get_retry (ar_ptr, bytes);
       victim = _int_malloc (ar_ptr, bytes);
     }
 
-  if (ar_ptr != NULL)
+  if (__glibc_always (ar_ptr != NULL))
     __libc_lock_unlock (ar_ptr->mutex);
 
   victim = tag_new_usable (victim);
@@ -3348,7 +3377,7 @@ __libc_free (void *mem)
   mstate ar_ptr;
   mchunkptr p;                          /* chunk corresponding to mem */
 
-  if (mem == 0)                              /* free(0) has no effect */
+  if (__glibc_never (mem == 0))                              /* free(0) has no effect */
     return;
 
   /* Quickly check that the freed pointer matches the tag for the memory.
@@ -3360,7 +3389,7 @@ __libc_free (void *mem)
 
   p = mem2chunk (mem);
 
-  if (chunk_is_mmapped (p))                       /* release mmapped memory. */
+  if (__glibc_never (chunk_is_mmapped (p)))                       /* release mmapped memory. */
     {
       /* See if the dynamic brk/mmap threshold needs adjusting.
 	 Dumped fake mmapped chunks do not affect the threshold.  */
@@ -3402,14 +3431,14 @@ __libc_realloc (void *oldmem, size_t bytes)
     ptmalloc_init ();
 
 #if REALLOC_ZERO_BYTES_FREES
-  if (bytes == 0 && oldmem != NULL)
+  if (__glibc_never (bytes == 0 && oldmem != NULL))
     {
       __libc_free (oldmem); return 0;
     }
 #endif
 
   /* realloc of null is supposed to be same as malloc */
-  if (oldmem == 0)
+  if (__glibc_never (oldmem == 0))
     return __libc_malloc (bytes);
 
   /* Perform a quick check to ensure that the pointer's tag matches the
@@ -3444,7 +3473,7 @@ __libc_realloc (void *oldmem, size_t bytes)
       return NULL;
     }
 
-  if (chunk_is_mmapped (oldp))
+  if (__glibc_unlikely (chunk_is_mmapped (oldp)))
     {
       void *newmem;
 
@@ -3492,7 +3521,7 @@ __libc_realloc (void *oldmem, size_t bytes)
   assert (!newp || chunk_is_mmapped (mem2chunk (newp)) ||
           ar_ptr == arena_for_chunk (mem2chunk (newp)));
 
-  if (newp == NULL)
+  if (__glibc_never (newp == NULL))
     {
       /* Try harder to allocate memory in other arenas.  */
       LIBC_PROBE (memory_realloc_retry, 2, bytes, oldmem);
@@ -3584,7 +3613,7 @@ libc_hidden_def (__libc_memalign)
 void *
 __libc_valloc (size_t bytes)
 {
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
 
   void *address = RETURN_ADDRESS (0);
@@ -3595,7 +3624,7 @@ __libc_valloc (size_t bytes)
 void *
 __libc_pvalloc (size_t bytes)
 {
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
 
   void *address = RETURN_ADDRESS (0);
@@ -3644,7 +3673,7 @@ __libc_calloc (size_t n, size_t elem_size)
   else
     arena_get (av, sz);
 
-  if (av)
+  if (__glibc_likely (av != NULL))
     {
       /* Check if we hand out the top chunk, in which case there may be no
 	 need to clear. */
@@ -3678,19 +3707,19 @@ __libc_calloc (size_t n, size_t elem_size)
 
   if (!SINGLE_THREAD_P)
     {
-      if (mem == 0 && av != NULL)
+      if (__glibc_never (mem == 0 && av != NULL))
 	{
 	  LIBC_PROBE (memory_calloc_retry, 1, sz);
 	  av = arena_get_retry (av, sz);
 	  mem = _int_malloc (av, sz);
 	}
 
-      if (av != NULL)
+      if (__glibc_likely (av != NULL))
 	__libc_lock_unlock (av->mutex);
     }
 
   /* Allocation failed even after a retry.  */
-  if (mem == 0)
+  if (__glibc_never (mem == 0))
     return 0;
 
   mchunkptr p = mem2chunk (mem);
@@ -3698,13 +3727,15 @@ __libc_calloc (size_t n, size_t elem_size)
   /* If we are using memory tagging, then we need to set the tags
      regardless of MORECORE_CLEARS, so we zero the whole block while
      doing so.  */
+#if ! defined __LCC__
   if (__glibc_unlikely (mtag_enabled))
     return tag_new_zero_region (mem, memsize (p));
+#endif
 
   INTERNAL_SIZE_T csz = chunksize (p);
 
   /* Two optional cases in which clearing not necessary */
-  if (chunk_is_mmapped (p))
+  if (__glibc_unlikely (chunk_is_mmapped (p)))
     {
       if (__builtin_expect (perturb_byte, 0))
         return memset (mem, 0, sz);
@@ -3728,7 +3759,7 @@ __libc_calloc (size_t n, size_t elem_size)
   nclears = clearsize / sizeof (INTERNAL_SIZE_T);
   assert (nclears >= 3);
 
-  if (nclears > 9)
+  if (__glibc_unlikely (nclears > 9))
     return memset (d, 0, clearsize);
 
   else
@@ -3893,12 +3924,12 @@ _int_malloc (mstate av, size_t bytes)
      anyway, so we can check now, which is faster.)
    */
 
-  if (in_smallbin_range (nb))
+  if (__glibc_likely (in_smallbin_range (nb)))
     {
       idx = smallbin_index (nb);
       bin = bin_at (av, idx);
 
-      if ((victim = last (bin)) != bin)
+      if (__glibc_unlikely ((victim = last (bin)) != bin))
         {
           bck = victim->bk;
 	  if (__glibc_unlikely (bck->fd != victim))
@@ -3986,7 +4017,7 @@ _int_malloc (mstate av, size_t bytes)
   for (;; )
     {
       int iters = 0;
-      while ((victim = unsorted_chunks (av)->bk) != unsorted_chunks (av))
+      while (__glibc_unlikely ((victim = unsorted_chunks (av)->bk) != unsorted_chunks (av)))
         {
           bck = victim->bk;
           size = chunksize (victim);
@@ -4050,7 +4081,7 @@ _int_malloc (mstate av, size_t bytes)
 
           /* Take now instead of binning if exact fit */
 
-          if (size == nb)
+          if (__glibc_unlikely (size == nb))
             {
               set_inuse_bit_at_offset (victim, size);
               if (av != &main_arena)
@@ -4158,7 +4189,7 @@ _int_malloc (mstate av, size_t bytes)
 #endif
 
 #define MAX_ITERS       10000
-          if (++iters >= MAX_ITERS)
+          if (__glibc_never (++iters >= MAX_ITERS))
             break;
         }
 
@@ -4180,9 +4211,9 @@ _int_malloc (mstate av, size_t bytes)
           bin = bin_at (av, idx);
 
           /* skip scan if empty or largest chunk is too small */
-          if ((victim = first (bin)) != bin
-	      && (unsigned long) chunksize_nomask (victim)
-	        >= (unsigned long) (nb))
+          if (__glibc_unlikely ((victim = first (bin)) != bin
+				&& (unsigned long) chunksize_nomask (victim)
+				>= (unsigned long) (nb)))
             {
               victim = victim->bk_nextsize;
               while (((unsigned long) (size = chunksize (victim)) <
@@ -4257,14 +4288,14 @@ _int_malloc (mstate av, size_t bytes)
       for (;; )
         {
           /* Skip rest of block if there are no more set bits in this block.  */
-          if (bit > map || bit == 0)
+          if (__glibc_likely (bit > map || bit == 0))
             {
               do
                 {
                   if (++block >= BINMAPSIZE) /* out of bins */
                     goto use_top;
                 }
-              while ((map = av->binmap[block]) == 0);
+              while (__glibc_always ((map = av->binmap[block]) == 0));
 
               bin = bin_at (av, (block << BINMAPSHIFT));
               bit = 1;
@@ -4302,7 +4333,7 @@ _int_malloc (mstate av, size_t bytes)
               unlink_chunk (av, victim);
 
               /* Exhaust */
-              if (remainder_size < MINSIZE)
+              if (__glibc_unlikely (remainder_size < MINSIZE))
                 {
                   set_inuse_bit_at_offset (victim, size);
                   if (av != &main_arena)
@@ -4367,7 +4398,7 @@ _int_malloc (mstate av, size_t bytes)
       if (__glibc_unlikely (size > av->system_mem))
         malloc_printerr ("malloc(): corrupted top size");
 
-      if ((unsigned long) (size) >= (unsigned long) (nb + MINSIZE))
+      if (__glibc_always ((unsigned long) (size) >= (unsigned long) (nb + MINSIZE)))
         {
           remainder_size = size - nb;
           remainder = chunk_at_offset (victim, nb);
@@ -4384,7 +4415,7 @@ _int_malloc (mstate av, size_t bytes)
 
       /* When we are using atomic ops to free fast chunks we can get
          here for all block sizes.  */
-      else if (atomic_load_relaxed (&av->have_fastchunks))
+      else if (__glibc_unlikely (atomic_load_relaxed (&av->have_fastchunks)))
         {
           malloc_consolidate (av);
           /* restore original bin index */
@@ -4561,7 +4592,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
     Consolidate other non-mmapped chunks as they arrive.
   */
 
-  else if (!chunk_is_mmapped(p)) {
+  else if (__glibc_always (!chunk_is_mmapped(p))) {
 
     /* If we're single-threaded, don't lock the arena.  */
     if (SINGLE_THREAD_P)
@@ -4602,7 +4633,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
       unlink_chunk (av, p);
     }
 
-    if (nextchunk != av->top) {
+    if (__glibc_likely (nextchunk != av->top)) {
       /* get and clear inuse bit */
       nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
 
@@ -4668,7 +4699,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
       if (atomic_load_relaxed (&av->have_fastchunks))
 	malloc_consolidate(av);
 
-      if (av == &main_arena) {
+      if (__glibc_likely (av == &main_arena)) {
 #ifndef MORECORE_CANNOT_TRIM
 	if ((unsigned long)(chunksize(av->top)) >=
 	    (unsigned long)(mp_.trim_threshold))
@@ -5092,7 +5123,7 @@ __malloc_trim (size_t s)
 {
   int result = 0;
 
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
 
   mstate ar_ptr = &main_arena;
@@ -5211,7 +5242,7 @@ __libc_mallinfo2 (void)
   struct mallinfo2 m;
   mstate ar_ptr;
 
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
 
   memset (&m, 0, sizeof (m));
@@ -5262,7 +5293,7 @@ __malloc_stats (void)
   mstate ar_ptr;
   unsigned int in_use_b = mp_.mmapped_mem, system_b = in_use_b;
 
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
   _IO_flockfile (stderr);
   int old_flags2 = stderr->_flags2;
@@ -5407,8 +5438,7 @@ do_set_tcache_unsorted_limit (size_t value)
 }
 #endif
 
-static inline int
-__always_inline
+static __always_inline int
 do_set_mxfast (size_t value)
 {
   if (value <= MAX_FAST_SIZE)
@@ -5447,7 +5477,7 @@ __libc_mallopt (int param_number, int value)
   mstate av = &main_arena;
   int res = 1;
 
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
   __libc_lock_lock (av->mutex);
 
@@ -5715,7 +5745,7 @@ __malloc_info (int options, FILE *fp)
 
 
 
-  if (!__malloc_initialized)
+  if (__glibc_never (!__malloc_initialized))
     ptmalloc_init ();
 
   fputs ("<malloc version=\"1\">\n", fp);

@@ -115,8 +115,14 @@ elf_get_dynamic_info (struct link_map *l, bool bootstrap,
 #endif
   if (bootstrap || static_pie_bootstrap)
     {
+      /* -set-{,r}fs-dir based LCC links DT_RPATH into ld.so. Presumably the
+	 same will be true about -static-pie executables when they are
+	 supported by binutils for e2k at last. Amazingly, GOLD is likely to
+	 insert DT_RUNPATH instead.  */
+#if ! defined __LCC__
       assert (info[DT_RUNPATH] == NULL);
       assert (info[DT_RPATH] == NULL);
+#endif /* ! defined __LCC__  */
     }
   if (bootstrap)
     {

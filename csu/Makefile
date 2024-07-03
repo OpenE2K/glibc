@@ -127,12 +127,19 @@ $(CC) -nostdlib -nostartfiles -r -o $@ $^
 endef
 
 ifndef start-installed-name-rule
+
+ifeq ($(base-machine),e2k)
+rstart-o = rstart.o
+else
+rstart-o = start.o
+endif
+
 # We link the ELF startfile along with a SHT_NOTE section indicating
 # the kernel ABI the binaries linked with this library will require.
 $(objpfx)$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
 				  $(objpfx)init.o $(objpfx)static-reloc.o
 	$(link-relocatable)
-$(objpfx)r$(start-installed-name): $(objpfx)start.o $(objpfx)abi-note.o \
+$(objpfx)r$(start-installed-name): $(objpfx)$(rstart-o) $(objpfx)abi-note.o \
 				  $(objpfx)init.o
 	$(link-relocatable)
 $(objpfx)S$(start-installed-name): $(objpfx)start.os $(objpfx)abi-note.o \

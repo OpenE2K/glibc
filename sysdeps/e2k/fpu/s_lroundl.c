@@ -1,0 +1,34 @@
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
+
+#include "f2c.h"
+
+/*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                        %
+%     ПРОГРАММА  ВОЗВРАЩАЕТ АРГУМЕНТ, ОКРУГЛЕННЫЙ В      %
+%  СТОРОНУ БЛИЖАЙШЕГО ЦЕЛОГО ЗНАЧЕНИЯ. ЗНАЧЕНИЯ ТОЧНО    %
+%  ПОСРЕДИНЕ МЕЖДУ ДВУМЯ ЦЕЛЫМИ ЧИСЛАМИ ОКРУГЛЯЮТСЯ В    %
+%  СТОРОНУ ОТ 0 (УВЕЛИЧЕНИЯ ПО МОДУЛЮ).                  %
+%                                                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
+
+long int
+__lroundl (LD X)
+{
+  LD absx = ldfabs (X);
+
+  if (absx < 0.5L) /* для X, равным почти 0.5 нельзя добавлять 0.5 */
+    return 0;
+
+  /* большие по модулю числа и так целые */
+  if (!(absx < DVAIN63))
+    return (long int) X;
+
+  if (X < 0)
+    return (long int) (X - 0.5L);
+  else
+    return (long int) (X + 0.5L);
+}
+
+weak_alias (__lroundl, lroundl)

@@ -18,8 +18,10 @@
 ifeq ($(subdir),rt)
 sysdep_routines += timer_routines
 
+ifneq ($(compile-with-lcc),yes)
 tests += tst-mqueue8x
 CFLAGS-tst-mqueue8x.c += -fexceptions
+endif
 endif
 
 ifeq ($(subdir),posix)

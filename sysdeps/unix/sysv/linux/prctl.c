@@ -30,8 +30,31 @@ __prctl (int option, ...)
 {
   va_list arg;
   va_start (arg, option);
-  unsigned long int arg2 = va_arg (arg, unsigned long int);
-  unsigned long int arg3 = va_arg (arg, unsigned long int);
+
+#if ! (defined __e2k__ && defined __ptr128__)
+  unsigned long int
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+    arg2 = va_arg (arg,
+#if ! (defined __e2k__ && defined __ptr128__)
+				   unsigned long int
+#else /* defined __e2k__ && defined __ptr128__  */
+				   void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+				   );
+#if ! (defined __e2k__ && defined __ptr128__)
+  unsigned long int
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+    arg3 = va_arg (arg,
+#if ! (defined __e2k__ && defined __ptr128__)
+				   unsigned long int
+#else /* defined __e2k__ && defined __ptr128__  */
+				   void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+				   );
   unsigned long int arg4 = va_arg (arg, unsigned long int);
   unsigned long int arg5 = va_arg (arg, unsigned long int);
   va_end (arg);

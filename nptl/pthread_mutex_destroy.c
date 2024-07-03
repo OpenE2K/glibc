@@ -50,4 +50,10 @@ strong_alias (___pthread_mutex_destroy, __pthread_mutex_destroy)
 #if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_34)
 compat_symbol (libpthread, ___pthread_mutex_destroy, __pthread_mutex_destroy,
                GLIBC_2_0);
+
+# if defined __e2k__
+compat_symbol (libpthread, ___pthread_mutex_destroy, pthread_mutex_destroy,
+               GLIBC_2_0);
+# endif /* defined __e2k__  */
+
 #endif

@@ -15,7 +15,13 @@ extern void *__alloca (size_t __size);
 # define __alloca(size)	__builtin_alloca (size)
 #endif /* GCC.  */
 
+/* TODO: recall if the underlying conditional has been added just for
+   consistency with 'sysdeps/pthread/allocalim.h' or there are some more
+   important arguments for that.  */
+#if ! defined __LCC__
 extern int __libc_use_alloca (size_t size) __attribute__ ((const));
+#endif
+
 extern int __libc_alloca_cutoff (size_t size) __attribute__ ((const));
 libc_hidden_proto (__libc_alloca_cutoff)
 

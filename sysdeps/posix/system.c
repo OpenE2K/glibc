@@ -206,4 +206,19 @@ __libc_system (const char *line)
 
   return do_system (line);
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_system, system)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+#include <shlib-compat.h>
+
+weak_alias (__libc_system, __libc_system_weak)
+versioned_symbol (libc, __libc_system_weak, system, GLIBC_2_0);
+/* Amazingly, system@@GLIBC_2.0 used to be GLOBAL in libpthread-2.29.so unlike
+   system@@GLIBC_2.2 in libc.so which is WEAK (see 2 lines above).  */
+compat_symbol (libpthread, __libc_system, system, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

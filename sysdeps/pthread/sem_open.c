@@ -74,6 +74,8 @@ __sem_open (const char *name, int oflag, ...)
 	    goto try_create;
 
 	  /* Return.  errno is already set.  */
+	  result = SEM_FAILED;
+	  goto out;
 	}
       else
 	/* Check whether we already have this semaphore mapped and
@@ -157,11 +159,12 @@ __sem_open (const char *name, int oflag, ...)
 	}
 
       if (TEMP_FAILURE_RETRY (write (fd, &sem.initsem, sizeof (sem_t)))
-	  == sizeof (sem_t)
-	  /* Map the sem_t structure from the file.  */
-	  && (result = (sem_t *) __mmap (NULL, sizeof (sem_t),
-					 PROT_READ | PROT_WRITE, MAP_SHARED,
-					 fd, 0)) != MAP_FAILED)
+	  != sizeof (sem_t))
+	result = SEM_FAILED;
+      /* Map the sem_t structure from the file.  */
+      else if ((result = (sem_t *) __mmap (NULL, sizeof (sem_t),
+					   PROT_READ | PROT_WRITE, MAP_SHARED,
+					   fd, 0)) != MAP_FAILED)
 	{
 	  /* Create the file.  Don't overwrite an existing file.  */
 	  if (__link (tmpfname, dirname.name) != 0)

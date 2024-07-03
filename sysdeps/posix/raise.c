@@ -21,7 +21,13 @@
 
 /* Raise the signal SIG.  */
 int
-raise (int sig)
+#if ! (defined __e2k__ && defined SHARED)
+raise
+#else /* defined __e2k__ && defined SHARED  */
+static
+__raise_local
+#endif /* defined __e2k__ && defined SHARED  */
+(int sig)
 {
   int ret = __pthread_kill (__pthread_self (), sig);
   if (ret != 0)
@@ -31,5 +37,25 @@ raise (int sig)
     }
   return ret;
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 libc_hidden_def (raise)
 weak_alias (raise, gsignal)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+#include <shlib-compat.h>
+
+/* This alias ensures the creation of __GI_* () HIDDEN symbol (to which
+   "aliasname" is transformed via libc_hidden_proto magic) intended for
+   internal use within libc.so.  */
+strong_alias (__raise_local, raise)
+
+strong_alias (__raise_local, __raise_strong)
+versioned_symbol (libc, __raise_strong, raise, GLIBC_2_0);
+compat_symbol (libpthread, __raise_strong, raise, GLIBC_2_0);
+
+weak_alias (__raise_local, gsignal)
+
+#endif /* defined __e2k__ && defined SHARED  */

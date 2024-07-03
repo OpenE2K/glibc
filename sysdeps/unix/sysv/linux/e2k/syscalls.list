@@ -1,0 +1,9 @@
+# File name		Caller	Syscall name		# args	Strong name	Weak names
+
+uname			-	uname			1	__libc_uname		__uname uname
+getresuid		-	getresuid		3	getresuid
+getresgid		-	getresgid		3	getresgid
+#setresuid		EXTRA	setresuid32		3	__setresuid		setresuid
+#setresgid		EXTRA	setresgid32		3	__setresgid		setresgid
+#sched_setaffinity	EXTRA	sched_setaffinity 	3	__sched_setaffinity	sched_setaffinity
+#sched_getaffinity	EXTRA	sched_getaffinity 	3	__sched_getaffinity	sched_getaffinity

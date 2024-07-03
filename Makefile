@@ -47,9 +47,11 @@ chmod a-w$(patsubst %,$(comma)a+x,$(filter .,$(@D))) $@.new
 mv -f $@.new $@
 endef
 
+ifeq ($(maintainer-mode),yes)
 configure: configure.ac aclocal.m4; $(autoconf-it)
 %/configure: %/configure.ac aclocal.m4; $(autoconf-it)
 %/preconfigure: %/preconfigure.ac aclocal.m4; $(autoconf-it)
+endif
 
 endif # $(AUTOCONF) = no
 
@@ -96,7 +98,12 @@ endif
 install: subdir_install
 
 # Explicit dependency so that `make install-headers' works
+
+# Create a temporary version of gnu/stubs.h needed when
+# building libgcc_eh.a during bootstrap. It is to be
+# replaced during `make install'.
 install-headers: install-headers-nosubdir
+	touch $(inst_includedir)/gnu/stubs.h
 
 # Make sure that the dynamic linker is installed before libc.
 $(inst_slibdir)/libc-$(version).so: elf/ldso_install
@@ -587,11 +594,11 @@ endef
 # (which we do not build) that GCC-compiled programs depend on.
 
 
-ifeq (,$(CXX))
+# ifeq (,$(CXX))
 LINKS_DSO_PROGRAM = links-dso-program-c
-else
-LINKS_DSO_PROGRAM = links-dso-program
-endif
+# else
+# LINKS_DSO_PROGRAM = links-dso-program
+# endif
 
 $(tests-container) $(addsuffix /tests,$(subdirs)) : \
 		$(objpfx)testroot.pristine/install.stamp

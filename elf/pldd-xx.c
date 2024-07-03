@@ -35,7 +35,7 @@ struct E(link_map)
   Lmid_t l_ns;
   EW(Addr) l_libname;
 };
-#if CLASS == __ELF_NATIVE_CLASS
+#if CLASS == __ELF_NATIVE_CLASS && ! defined __ptr128__
 _Static_assert (offsetof (struct link_map, l_addr)
 		== offsetof (struct E(link_map), l_addr), "l_addr");
 _Static_assert (offsetof (struct link_map, l_name)
@@ -50,7 +50,7 @@ struct E(libname_list)
   EW(Addr) name;
   EW(Addr) next;
 };
-#if CLASS == __ELF_NATIVE_CLASS
+#if CLASS == __ELF_NATIVE_CLASS && ! defined __ptr128__
 _Static_assert (offsetof (struct libname_list, name)
 		== offsetof (struct E(libname_list), name), "name");
 _Static_assert (offsetof (struct libname_list, next)
@@ -65,7 +65,7 @@ struct E(r_debug)
 #endif
   EW(Addr) r_map;
 };
-#if CLASS == __ELF_NATIVE_CLASS
+#if CLASS == __ELF_NATIVE_CLASS && ! defined __ptr128__
 _Static_assert (offsetof (struct r_debug, r_version)
 		== offsetof (struct E(r_debug), r_version), "r_version");
 _Static_assert (offsetof (struct r_debug, r_map)

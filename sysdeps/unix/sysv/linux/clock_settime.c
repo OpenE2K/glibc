@@ -32,14 +32,20 @@ __clock_settime64 (clockid_t clock_id, const struct __timespec64 *tp)
       return -1;
     }
 
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_clock_settime64
 # define __NR_clock_settime64 __NR_clock_settime
 #endif
   int ret = INLINE_SYSCALL_CALL (clock_settime64, clock_id, tp);
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifndef __ASSUME_TIME64_SYSCALLS
+#if ! defined __e2k__ || __WORDSIZE == 64
   if (ret == 0 || errno != ENOSYS)
     return ret;
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+  int ret;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
 
   if (! in_time_t_range (tp->tv_sec))
     {

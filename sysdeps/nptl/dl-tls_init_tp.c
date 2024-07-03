@@ -45,7 +45,12 @@ rtld_mutex_dummy (pthread_mutex_t *lock)
 #endif
 
 const unsigned int __rseq_flags;
-const unsigned int __rseq_size attribute_relro;
+
+#if ! defined __LCC__
+const
+#endif /* ! defined __LCC__  */
+unsigned int __rseq_size attribute_relro;
+
 const ptrdiff_t __rseq_offset attribute_relro;
 
 void
@@ -109,8 +114,13 @@ __tls_init_tp (void)
       {
         /* We need a writable view of the variables.  They are in
            .data.relro and are not yet write-protected.  */
+#if ! defined __LCC__
         extern unsigned int size __asm__ ("__rseq_size");
-        size = sizeof (pd->rseq_area);
+        size
+#else /* defined __LCC__  */
+	__rseq_size
+#endif /* defined __LCC__  */
+	  = sizeof (pd->rseq_area);
       }
 
 #ifdef RSEQ_SIG

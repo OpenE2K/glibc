@@ -60,10 +60,11 @@ __select64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
        ts64.tv_nsec = ns;
        pts64 = &ts64;
      }
-
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_pselect6_time64
 # define __NR_pselect6_time64 __NR_pselect6
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifdef __ASSUME_TIME64_SYSCALLS
   int r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
@@ -75,6 +76,7 @@ __select64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
   bool need_time64 = timeout != NULL && !in_time_t_range (timeout->tv_sec);
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       int r = SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds,
 			      exceptfds, pts64, NULL);
       if ((r >= 0 || errno != ENOSYS) && timeout != NULL)
@@ -82,6 +84,9 @@ __select64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	  TIMESPEC_TO_TIMEVAL (timeout, &ts64);
 	}
       else
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+	int r = -1;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
 	__set_errno (EOVERFLOW);
       return r;
     }

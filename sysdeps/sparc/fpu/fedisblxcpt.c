@@ -18,8 +18,9 @@
 
 #include <fenv.h>
 #include <fenv_private.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 fedisableexcept (int excepts)
 {
   fenv_t new_exc, old_exc;

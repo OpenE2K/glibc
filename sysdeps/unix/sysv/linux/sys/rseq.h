@@ -177,7 +177,11 @@ extern const ptrdiff_t __rseq_offset;
 
 /* Size of the registered rseq area.  0 if the registration was
    unsuccessful.  */
-extern const unsigned int __rseq_size;
+extern
+#if ! defined __LCC__
+const
+#endif /* ! defined __LCC__  */
+unsigned int __rseq_size;
 
 /* Flags used during rseq registration.  */
 extern const unsigned int __rseq_flags;

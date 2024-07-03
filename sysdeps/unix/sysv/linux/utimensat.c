@@ -28,9 +28,11 @@ int
 __utimensat64_helper (int fd, const char *file,
                       const struct __timespec64 tsp64[2], int flags)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_utimensat_time64
 # define __NR_utimensat_time64 __NR_utimensat
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifdef __ASSUME_TIME64_SYSCALLS
   return INLINE_SYSCALL_CALL (utimensat_time64, fd, file, &tsp64[0], flags);
@@ -46,10 +48,12 @@ __utimensat64_helper (int fd, const char *file,
 			     && !in_time_t_range (tsp64[1].tv_sec)));
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       int r = INLINE_SYSCALL_CALL (utimensat_time64, fd, file, &tsp64[0],
 				   flags);
       if (r == 0 || errno != ENOSYS)
 	return r;
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
       __set_errno (EOVERFLOW);
       return -1;
     }

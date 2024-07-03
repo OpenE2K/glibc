@@ -82,14 +82,45 @@ do_test (void)
   uctx_func1.uc_stack.ss_sp = func1_stack;
   uctx_func1.uc_stack.ss_size = sizeof (func1_stack);
   uctx_func1.uc_link = &uctx_main;
-  makecontext(&uctx_func1, func1, 0);
+
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&uctx_func1, func1, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
 
   if (getcontext(&uctx_func2) == -1)
     handle_error("getcontext");
   uctx_func2.uc_stack.ss_sp = func2_stack;
   uctx_func2.uc_stack.ss_size = sizeof (func2_stack);
   uctx_func2.uc_link = &uctx_func1;
-  makecontext(&uctx_func2, func2, 0);
+
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&uctx_func2, func2, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
 
   for ( i = 0; i < 4; i++ )
     {
@@ -100,6 +131,14 @@ do_test (void)
 	handle_error("swapcontext");
       printf("        \e[35mmain: swapcontext(&uctx_main, &uctx_func1)\n\e[0m");
     }
+
+#if defined __e2k__
+  /* uctx_func{1,2} seem to be allocated above only once as no "non-local"
+     transfer to that code via `{set,swap}context ()' should be possible.
+     Therefore, it seems to be correct to free them here.  */
+  freecontext_e2k (&uctx_func2);
+  freecontext_e2k (&uctx_func1);
+#endif /* defined __e2k__  */
 
   printf("main: exiting\n");
   exit(EXIT_SUCCESS);

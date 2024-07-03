@@ -95,7 +95,21 @@ fstatat64_time64_stat (int fd, const char *file, struct __stat64_t64 *buf,
 # ifdef __NR_newfstatat
   /* 64-bit kABI, e.g. aarch64, ia64, powerpc64*, s390x, riscv64, and
      x86_64.  */
-  r = INTERNAL_SYSCALL_CALL (newfstatat, fd, file, buf, flag);
+#  if defined __e2k__ && (defined __ptr128__ || defined __ptr64__)
+  struct kernel_stat kst;
+#  endif
+
+  r = INTERNAL_SYSCALL_CALL (newfstatat, fd, file,
+#  if defined __e2k__ && (defined __ptr128__ || defined __ptr64__)
+			     &kst,
+#  else
+			     buf,
+#  endif
+			     flag);
+
+#  if defined __e2k__ && (defined __ptr128__ || defined __ptr64__)
+  __cp_kstat_stat64_t64 (&kst, buf);
+#  endif
 # elif defined __NR_fstatat64
 #  if STAT64_IS_KERNEL_STAT64
   /* 64-bit kABI outlier, e.g. alpha  */

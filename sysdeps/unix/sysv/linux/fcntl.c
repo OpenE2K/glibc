@@ -95,10 +95,22 @@ __libc_fcntl (int fd, int cmd, ...)
 libc_hidden_def (__libc_fcntl)
 
 weak_alias (__libc_fcntl, __fcntl)
-libc_hidden_weak (__fcntl)
 
 # include <shlib-compat.h>
-# if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_28)
+
+# if  ! (defined __e2k__ && defined SHARED)
+libc_hidden_weak (__fcntl)
+# else /* defined __e2k__ && defined SHARED  */
+/* Interestingly enough both __fcntl@@GLIBC_2.2 and __fcntl@GLIBC_2.0 are
+   WEAK.  */
+weak_alias (__libc_fcntl, __fcntl_weak)
+versioned_symbol (libc, __fcntl_weak, __fcntl, GLIBC_2_2);
+/* Why didn't they add a new GLIBC_2_28 version for __fcntl () as it was done
+   for fcntl () when changing __libc_fcntl ()?  */
+compat_symbol (libpthread, __fcntl_weak, __fcntl, GLIBC_2_0);
+# endif /* defined __e2k__ && defined SHARED  */
+
+# if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_28) || (defined __e2k__ && defined SHARED)
 int
 __old_libc_fcntl64 (int fd, int cmd, ...)
 {
@@ -115,6 +127,13 @@ __old_libc_fcntl64 (int fd, int cmd, ...)
 }
 compat_symbol (libc, __old_libc_fcntl64, fcntl, GLIBC_2_0);
 versioned_symbol (libc, __libc_fcntl, fcntl, GLIBC_2_28);
+
+#  if defined __e2k__ && defined SHARED
+/* fcntl@GLIBC_2_0 used to be WEAK in libpthread-2.29.so unlike
+   fcntl@@GLIBC_2.28 and fcntl@GLIBC_2.2.  */
+weak_alias (__old_libc_fcntl64, __old_libc_fcntl64_weak)
+compat_symbol (libpthread, __old_libc_fcntl64_weak, fcntl, GLIBC_2_0);
+#  endif /* defined __e2k__ && defined SHARED  */
 # else
 weak_alias (__libc_fcntl, fcntl)
 # endif

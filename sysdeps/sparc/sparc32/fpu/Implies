@@ -1,0 +1,6 @@
+# Make `sysdeps/sparc/fpu' immediately follow us in SYSDIRS. Otherwise
+# it'll be superseded by `sysdeps/ieee754' subdirs specified in
+# `sysdeps/unix/sysv/linux/sparc/sparc32/Implies'. We in our turn have
+# been pulled out by `sysdeps/unix/sysv/linux/sparc/sparc32/fpu/Implies'.
+# All this is required because of Bug #61614.
+sparc/fpu

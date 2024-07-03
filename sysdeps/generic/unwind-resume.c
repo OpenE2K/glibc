@@ -57,3 +57,12 @@ _Unwind_GetCFA (struct _Unwind_Context *context)
 {
   return UNWIND_LINK_PTR (link (), _Unwind_GetCFA) (context);
 }
+
+#ifdef __e2k__
+_Unwind_Word
+_Unwind_GetPCSP (struct _Unwind_Context *context)
+{
+  return UNWIND_LINK_PTR (link (), _Unwind_GetPCSP)
+    (context);
+}
+#endif /* __e2k__  */

@@ -42,7 +42,7 @@ _dl_fixup (
 # ifdef ELF_MACHINE_RUNTIME_FIXUP_ARGS
 	   ELF_MACHINE_RUNTIME_FIXUP_ARGS,
 # endif
-	   struct link_map *l, ElfW(Word) reloc_arg)
+	   register struct link_map *l, register ElfW(Word) reloc_arg)
 {
   const ElfW(Sym) *const symtab
     = (const void *) D_PTR (l, l_info[DT_SYMTAB]);
@@ -55,7 +55,13 @@ _dl_fixup (
 		      + reloc_offset (pltgot, reloc_arg));
   const ElfW(Sym) *sym = &symtab[ELFW(R_SYM) (reloc->r_info)];
   const ElfW(Sym) *refsym = sym;
-  void *const rel_addr = (void *)(l->l_addr + reloc->r_offset);
+  void *const rel_addr = (void *)(
+#if ! defined __ptr128__
+				  l->l_addr + (
+#else /* defined __ptr128__  */
+				  l->l_gd + get_offset (l,
+#endif /* defined __ptr128__  */
+				  reloc->r_offset));
   lookup_t result;
   DL_FIXUP_VALUE_TYPE value;
 
@@ -120,9 +126,19 @@ _dl_fixup (
   /* And now perhaps the relocation addend.  */
   value = elf_machine_plt_value (l, reloc, value);
 
+  /* FIXME: the usage of `DL_FIXUP_VALUE_ADDR()' in this context is different
+     from other use cases of this macro in which its result is written into
+     `sym.st_value' and absolutely irrelevant to PM-safe implementation of
+     `elf_ifunc_invoke ()'.  */
   if (sym != NULL
       && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0))
-    value = elf_ifunc_invoke (DL_FIXUP_VALUE_ADDR (value));
+    value = elf_ifunc_invoke (
+#if ! defined __ptr128__
+			      DL_FIXUP_VALUE_ADDR (value)
+#else /* defined __ptr128__  */
+			      value
+#endif /* defined __ptr128__  */
+			      );
 
 #ifdef SHARED
   /* Auditing checkpoint: we have a new binding.  Provide the auditing
@@ -292,7 +308,15 @@ _dl_profile_fixup (
 	  if (defsym != NULL
 	      && __builtin_expect (ELFW(ST_TYPE) (defsym->st_info)
 				   == STT_GNU_IFUNC, 0))
-	    value = elf_ifunc_invoke (DL_FIXUP_VALUE_ADDR (value));
+	    /* The use of `DL_FIXUP_VALUE_ADDR ()' is irrelevant to PM-safe
+	       implementation of `elf_ifunc_invoke ()'.  */
+	    value = elf_ifunc_invoke (
+#if ! defined __ptr128__
+				      DL_FIXUP_VALUE_ADDR (value)
+#else /* defined __ptr128__  */
+				      value
+#endif /* defined __ptr128__  */
+				      );
 	}
       else
 	{
@@ -302,7 +326,15 @@ _dl_profile_fixup (
 
 	  if (__builtin_expect (ELFW(ST_TYPE) (refsym->st_info)
 				== STT_GNU_IFUNC, 0))
-	    value = elf_ifunc_invoke (DL_FIXUP_VALUE_ADDR (value));
+	    /* The use of `DL_FIXUP_VALUE_ADDR ()' is irrelevant to PM-safe
+	       implementation of `elf_ifunc_invoke ()'.  */
+	    value = elf_ifunc_invoke (
+#if ! defined __ptr128__
+				      DL_FIXUP_VALUE_ADDR (value)
+#else /* defined __ptr128__  */
+				      value
+#endif /* defined __ptr128__  */
+				      );
 
 	  result = l;
 	}

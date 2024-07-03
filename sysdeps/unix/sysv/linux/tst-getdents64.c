@@ -108,11 +108,30 @@ do_test_by_size (size_t buffer_size)
              non-existing data.  */
           struct
           {
-            char buffer[buffer_size];
+            char buffer[
+#if ! defined __LCC__
+			buffer_size
+#else /* defined __LCC__  */
+			/* LCC fails with a compilation error on an attempt to
+			   use VLA in this context. Therefore, reserve the
+			   maximal BUFFER_SIZE passed to this func throughout
+			   the test.  */
+			4096
+#endif /* defined __LCC__  */
+			];
             struct dirent64 pad;
           } data;
 
-          ssize_t ret = getdents64 (fd, &data.buffer, sizeof (data.buffer));
+          ssize_t ret = getdents64 (fd, &data.buffer,
+#if ! defined __LCC__
+				    sizeof (data.buffer)
+#else /* defined __LCC__  */
+				    /* Unlike GCC `sizeof (data.buffer)
+				       != buffer_size', which is why the latter
+				       needs to be specified explicitly.  */
+				    buffer_size
+#endif /* defined __LCC__  */
+				    );
           if (ret < 0)
             FAIL_EXIT1 ("getdents64: %m");
           if (ret == 0)

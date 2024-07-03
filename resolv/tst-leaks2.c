@@ -30,7 +30,9 @@ do_test (void)
   for (int i = 0; i < 20; ++i)
     {
       TEST_VERIFY_EXIT (res_init () == 0);
-      if (gethostbyname ("www.gnu.org") == NULL)
+      /* Hostname for www.gnu.org cannot probably be obtained from our internal
+	 network. Therefore, try something more reachable.  */
+      if (gethostbyname (/*"www.gnu.org"*/ "bugzilla") == NULL)
 	FAIL_EXIT1 ("%s\n", hstrerror (h_errno));
     }
   return 0;

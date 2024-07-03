@@ -1,0 +1,10 @@
+# This file is generated from configure.ac by Autoconf.  DO NOT EDIT!
+ # Local configure fragment for sysdeps/e2k.
+
+$as_echo "#define PI_STATIC_AND_HIDDEN 1" >>confdefs.h
+
+
+$as_echo "#define SUPPORT_STATIC_PIE 1" >>confdefs.h
+
+$as_echo "#define HAVE_E2K_GOLD 1" >>confdefs.h
+

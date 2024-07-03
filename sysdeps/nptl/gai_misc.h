@@ -76,7 +76,21 @@
 #define gai_start_notify_thread __gai_start_notify_thread
 #define gai_create_helper_thread __gai_create_helper_thread
 
-extern inline void
+#if defined __LCC__
+static void __gai_start_notify_thread (void) __attribute__ ((unused));
+#endif /* defined __LCC__  */
+
+#if ! defined __LCC__
+/* This "keyword" unlike the original `extern inline' one ensures that the
+   function is inlined by the non-optimizing GCC. However, this is not going
+   to help non-optimizing LCC inline it which is why one has to stupidly make
+   it static to let the dependent libraries be linked without an unresolved
+   reference or multiple definitions.  */
+__extern_always_inline
+#else /* defined __LCC__  */
+static
+#endif /* defined __LCC__  */
+void
 __gai_start_notify_thread (void)
 {
   sigset_t ss;
@@ -86,7 +100,23 @@ __gai_start_notify_thread (void)
   assert_perror (sigerr);
 }
 
-extern inline int
+#if defined __LCC__
+static int __gai_create_helper_thread (pthread_t *threadp, void *(*tf) (void *),
+				       void *arg) __attribute__ ((unused));
+#endif /* defined __LCC__  */
+
+
+#if ! defined __LCC__
+/* This "keyword" unlike the original `extern inline' one ensures that the
+   function is inlined by the non-optimizing GCC. However, this is not going
+   to help non-optimizing LCC inline it which is why one has to stupidly make
+   it static to let the dependent libraries be linked without an unresolved
+   reference or multiple definitions.  */
+__extern_always_inline
+#else /* defined __LCC__  */
+static
+#endif /* defined __LCC__  */
+int
 __gai_create_helper_thread (pthread_t *threadp, void *(*tf) (void *),
 			    void *arg)
 {

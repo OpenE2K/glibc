@@ -22,6 +22,15 @@
 #include <unistd.h>
 #include <stdatomic.h>
 
+/* do_test () --> via swapcontext (ctx[1]) --> f1a () --> via call --> f2 ()
+   --> via swapcontext (ctx[2]) --> f1b () --> via setcontext (ctx[3])
+   --> do_test () --> via set_context (ctx[4]) --> f2 ()
+
+   ctx[1] and ctx[2] are obtained from5 makecontext ()
+
+   This way it should be possible to free ctx[2], but NOT ctx[1] in the end
+   (i.e. just before exit (EXIT_SUCCESS) from f2 ()).  */
+
 static ucontext_t ctx[5];
 static atomic_int done;
 
@@ -36,6 +45,12 @@ f2 (void)
       printf ("%s: setcontext: %m\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
+#if defined __e2k__
+  /* ctx[2] can probably be freed as execution should no longer return to it.
+     There is no obvious way to free ctx[1], though, as we are still executing
+     on it.  */
+  freecontext_e2k (&ctx[2]);
+#endif /* defined __e2k__  */
   puts ("end f2");
   exit (done == 2 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -68,7 +83,25 @@ f1a (void)
   ctx[2].uc_stack.ss_sp = st2;
   ctx[2].uc_stack.ss_size = sizeof st2;
   ctx[2].uc_link = &ctx[0];
-  makecontext (&ctx[2], (void (*) (void)) f1b, 0);
+
+#if defined __e2k__
+  /* No idea where it could be possible to free ctx[1] as the test should
+     normally `exit (EXIT_SUCCESS)' from the associated f1 ().  */
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ctx[2], (void (*) (void)) f1b, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+  
   f2 ();
 }
 
@@ -108,7 +141,26 @@ do_test (void)
   ctx[1].uc_stack.ss_sp = st1;
   ctx[1].uc_stack.ss_size = sizeof st1;
   ctx[1].uc_link = &ctx[0];
-  makecontext (&ctx[1], (void (*) (void)) f1a, 0);
+
+#if defined __e2k__
+  /* No idea where it could be possible to free ctx[1] as the test should
+     normally `exit (EXIT_SUCCESS)' from the associated f1 ().  */
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ctx[1], (void (*) (void)) f1a, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
+  
   puts ("swap contexts");
   if (swapcontext (&ctx[3], &ctx[1]) != 0)
     {

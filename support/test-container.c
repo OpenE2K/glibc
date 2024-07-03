@@ -520,9 +520,16 @@ rsync_1 (path_buf * src, path_buf * dest, int and_delete, int force_copies)
 
       /* It's OK if this one fails, since we know the file might be
 	 missing.  */
-      lstat (dest->buf, &d);
 
-      if (! force_copies && ! need_sync (src->buf, dest->buf, &s, &d))
+      /* TO BE REPORTED: the failure to analyze lstat () return value on
+	 'master' resulted in false "no need to sync" conclusion somehow
+	 when the destination file was missing (TODO: find out how junk(?) D
+	 managed to look sufficiently like S and `S.st_{size,mtime} == D.st_
+	 {size,mtime}' in particular to make this possible), which resulted
+	 in NO REGULAR FILES copied from `testroot.pristine/' to
+	 `testroot.root/'.  */
+      if (lstat (dest->buf, &d) == 0
+	  && ! force_copies && ! need_sync (src->buf, dest->buf, &s, &d))
 	{
 	  if (S_ISDIR (s.st_mode))
 	    rsync_1 (src, dest, and_delete, force_copies);
@@ -1091,7 +1098,18 @@ main (int argc, char **argv)
   if (mount ("none", "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0)
     FAIL_EXIT1 ("could not create a private mount namespace\n");
 
+#if 0
+  /* This equivalent(?) of `mount --bind glibc_source_directory into
+     testroot_root/' is likely to fail when performed by root on our
+     E2K hosts if glibc source and build directories belong to different
+     partitions (or filesystems?). Until you find out whether this is a
+     global or "OS Elbrus & MCST"-specific limitation and if it can be
+     overcome by means of additional settings, disable this. Indeed, there
+     seems to be no actual need for glibc sources to be available from the
+     container to let the greater part of tests successfully PASS within
+     it.  */
   trymount (support_srcdir_root, new_srcdir_path);
+#endif /* 0  */
   trymount (support_objdir_root, new_objdir_path);
 
   xmkdirp (concat (new_root_path, "/dev", NULL), 0755);

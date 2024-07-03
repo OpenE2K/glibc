@@ -139,8 +139,20 @@ call_init (int argc, char **argv, char **env)
   if (init_array != NULL)
     {
       unsigned int jm
-	= l->l_info[DT_INIT_ARRAYSZ]->d_un.d_val / sizeof (ElfW(Addr));
+	= (l->l_info[DT_INIT_ARRAYSZ]->d_un.d_val /
+#if ! defined __ptr128__
+	   sizeof (ElfW(Addr))
+#else /* defined __ptr128__  */
+	   sizeof (dl_init_t)
+#endif /* defined __ptr128__  */
+	   );
+
+#if ! defined __ptr128__
       ElfW(Addr) *addrs = (void *) (init_array->d_un.d_ptr + l->l_addr);
+#else /* defined __ptr128__  */
+      dl_init_t *addrs = (dl_init_t *) (l->l_gd + get_offset (l, init_array->d_un.d_ptr));
+#endif /* defined __ptr128__  */
+
       for (unsigned int j = 0; j < jm; ++j)
 	((dl_init_t) addrs[j]) (argc, argv, env);
     }
@@ -305,6 +317,11 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
      hwcap and platform fields available in the TCB.  */
   ARCH_APPLY_IREL ();
 
+  /* Until I have an idea on how a pointer to a random sequence of numbers
+     which is normally allocated on stack could be passed by the Kernel via
+     `AT_RANDOM' in Protected Mode, `void *_dl_random' remains equal to NULL.
+     So don't care about setting up all these canaries for now in PM.  */
+#if ! defined __ptr128__
   /* Set up the stack checker's canary.  */
   uintptr_t stack_chk_guard = _dl_setup_stack_chk_guard (_dl_random);
 # ifdef THREAD_SET_STACK_GUARD
@@ -321,10 +338,14 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   }
 # endif
 
+#endif /* __ptr128__  */
+
   /* Initialize libpthread if linked in.  */
   if (__pthread_initialize_minimal != NULL)
     __pthread_initialize_minimal ();
 
+  /* See my comment above.  */
+#if ! defined __ptr128__
   /* Set up the pointer guard value.  */
   uintptr_t pointer_chk_guard = _dl_setup_pointer_guard (_dl_random,
 							 stack_chk_guard);
@@ -333,6 +354,8 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 # else
   __pointer_chk_guard_local = pointer_chk_guard;
 # endif
+
+#endif /* __ptr128__  */
 
 #endif /* !SHARED  */
 

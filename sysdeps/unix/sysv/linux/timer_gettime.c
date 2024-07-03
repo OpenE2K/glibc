@@ -29,13 +29,19 @@ ___timer_gettime64 (timer_t timerid, struct __itimerspec64 *value)
 {
   kernel_timer_t ktimerid = timerid_to_kernel_timer (timerid);
 
-# ifndef __NR_timer_gettime64
-#  define __NR_timer_gettime64 __NR_timer_gettime
-# endif
+# if ! defined __e2k__ || __WORDSIZE == 64
+#  ifndef __NR_timer_gettime64
+#   define __NR_timer_gettime64 __NR_timer_gettime
+#  endif
   int ret = INLINE_SYSCALL_CALL (timer_gettime64, ktimerid, value);
+# endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 # ifndef __ASSUME_TIME64_SYSCALLS
+#  if ! defined __e2k__ || __WORDSIZE == 64
   if (ret == 0 || errno != ENOSYS)
     return ret;
+#  else /* defined __e2k__ && __WORDSIZE != 64  */
+  int ret;
+#  endif /* defined __e2k__ && __WORDSIZE != 64  */
 
   struct itimerspec its32;
   ret = INLINE_SYSCALL_CALL (timer_gettime, ktimerid, &its32);

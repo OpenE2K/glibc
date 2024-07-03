@@ -31,4 +31,19 @@ __libc_pause (void)
   return SYSCALL_CANCEL (ppoll, NULL, 0, NULL, NULL);
 #endif
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_pause, pause)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+#include <shlib-compat.h>
+
+/* Both pause@GLIBC_2.{0,2} in libpthread-2.29.so and libc.so respectively
+   are WEAK.  */
+weak_alias (__libc_pause, __pause_weak)
+versioned_symbol (libc, __pause_weak, pause, GLIBC_2_0);
+compat_symbol (libpthread, __pause_weak, pause, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

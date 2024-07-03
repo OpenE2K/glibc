@@ -47,6 +47,7 @@ __futex_abstimed_wait_common32 (unsigned int* futex_word,
 }
 #endif /* ! __ASSUME_TIME64_SYSCALLS */
 
+#if ! defined __e2k__ || __WORDSIZE == 64
 static int
 __futex_abstimed_wait_common64 (unsigned int* futex_word,
                                 unsigned int expected, int op,
@@ -62,6 +63,7 @@ __futex_abstimed_wait_common64 (unsigned int* futex_word,
 				  abstime, NULL /* Ununsed.  */,
 				  FUTEX_BITSET_MATCH_ANY);
 }
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 static int
 __futex_abstimed_wait_common (unsigned int* futex_word,
@@ -90,9 +92,11 @@ __futex_abstimed_wait_common (unsigned int* futex_word,
   bool need_time64 = abstime != NULL && !in_time_t_range (abstime->tv_sec);
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       err = __futex_abstimed_wait_common64 (futex_word, expected, op, abstime,
 					    private, cancel);
       if (err == -ENOSYS)
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 	err = -EOVERFLOW;
     }
   else
@@ -164,7 +168,13 @@ __futex_lock_pi64 (int *futex_word, clockid_t clockid,
 # else
   bool need_time64 = abstime != NULL && !in_time_t_range (abstime->tv_sec);
   if (need_time64)
-    err = INTERNAL_SYSCALL_CALL (futex_time64, futex_word, op_pi, 0, abstime);
+    {
+#  if ! defined __e2k__ || __WORDSIZE == 64
+      err = INTERNAL_SYSCALL_CALL (futex_time64, futex_word, op_pi, 0, abstime);
+      if (err == -ENOSYS)
+#  endif /* ! defined __e2k__ || __WORDSIZE == 64  */
+	err = -EOVERFLOW;
+    }
   else
     {
       struct timespec ts32, *pts32 = NULL;

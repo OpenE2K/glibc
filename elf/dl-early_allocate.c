@@ -23,7 +23,14 @@
 void *
 _dl_early_allocate (size_t size)
 {
+#if ! defined __ptr128__
   void *result = __sbrk (size);
+#else /* defined __ptr128__  */
+  void *result = INLINE_BOGUS_SYSCALL (mmap, 6, NULL, size,
+				       PROT_READ | PROT_WRITE,
+				       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif /* defined __ptr128__  */
+
   if (result == (void *) -1)
     result = NULL;
   return result;

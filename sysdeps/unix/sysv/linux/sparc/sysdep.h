@@ -52,6 +52,144 @@
 #define INTERNAL_SYSCALL_NCS(name, nr, args...) \
   internal_syscall##nr(__SYSCALL_STRING, name, args)
 
+/* Fix #Bug #50540, Comment #5 for sparc32 only meanwhile. Leave
+   `inline_syscall' macros intact for sparc64 since the corresponding
+   modifications are not ready yet. Moreover, I'm not quite sure if
+   they are needed for sparc64 at all.  */
+
+# if defined __LCC__ /* && defined _LINUX_SPARC32_SYSDEP_H  */
+
+#define internal_syscall0(string,name,dummy...)				\
+({									\
+  register long __o0;                                                   \
+  __asm __volatile (__LOAD_ARGS_0                                       \
+                    string : "=r" (__o0) :				\
+                    "r" (name) :					\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define internal_syscall1(string,name,arg1)				\
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[1];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __asm __volatile (__LOAD_ARGS_1                                       \
+                    string : "=r" (__o0) :				\
+		    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);                                \
+__o0;                                                                   \
+})
+
+#define internal_syscall2(string,name,arg1,arg2)			\
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[2];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __asm __volatile (__LOAD_ARGS_2                                       \
+                    string : "=r" (__o0) :				\
+		    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define internal_syscall3(string,name,arg1,arg2,arg3)			\
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[3];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __syscall_args[2] = (long) (arg3);					\
+  __asm __volatile (__LOAD_ARGS_3                                       \
+                    string : "=r" (__o0) :				\
+                    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define internal_syscall4(string,name,arg1,arg2,arg3,arg4)		\
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[4];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __syscall_args[2] = (long) (arg3);					\
+  __syscall_args[3] = (long) (arg4);					\
+  __asm __volatile (__LOAD_ARGS_4                                       \
+                    string : "=r" (__o0) :				\
+                    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define internal_syscall5(string,name,arg1,arg2,arg3,arg4,arg5)		\
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[5];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __syscall_args[2] = (long) (arg3);					\
+  __syscall_args[3] = (long) (arg4);					\
+  __syscall_args[4] = (long) (arg5);					\
+  __asm __volatile (__LOAD_ARGS_5                                       \
+                    string : "=r" (__o0) :				\
+		    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define internal_syscall6(string,name,arg1,arg2,arg3,arg4,arg5,arg6) \
+({									\
+  register long __o0;                                                   \
+  long __syscall_args[6];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __syscall_args[2] = (long) (arg3);					\
+  __syscall_args[3] = (long) (arg4);					\
+  __syscall_args[4] = (long) (arg5);					\
+  __syscall_args[5] = (long) (arg6);					\
+  __asm __volatile (__LOAD_ARGS_6                                       \
+                    string : "=r" (__o0) :				\
+                    "r" (name), "r" (__syscall_args) :			\
+                    __SYSCALL_CLOBBERS);				\
+  __o0;                                                                 \
+})
+
+#define INLINE_CLONE_SYSCALL(arg1,arg2,arg3,arg4,arg5)			\
+({									\
+  register long __g1 = __NR_clone;                                      \
+  register long __o0;                                                   \
+  register long __o1;                                                   \
+  long __syscall_args[5];                                               \
+  __syscall_args[0] = (long) (arg1);					\
+  __syscall_args[1] = (long) (arg2);					\
+  __syscall_args[2] = (long) (arg3);					\
+  __syscall_args[3] = (long) (arg4);					\
+  __syscall_args[4] = (long) (arg5);					\
+  __asm __volatile (__LOAD_ARGS_5_FOR_CLONE                             \
+                    __SYSCALL_STRING_FOR_CLONE :                        \
+		    "=r" (__o0), "=r" (__o1) :				\
+                    "r" (__g1), "r" (__syscall_args) :                  \
+                    __SYSCALL_CLOBBERS);				\
+  if (__glibc_unlikely ((unsigned long int) (__o0) > -4096UL))		\
+    {                                                                   \
+      __set_errno (-__o0);						\
+      __o0 = -1L;                                                       \
+    }                                                                   \
+  else                                                                  \
+    {                                                                   \
+      __o0 &= (__o1 - 1);                                               \
+    }                                                                   \
+  __o0;                                                                 \
+})
+
+# else /* ! (defined __LCC__ && defined _LINUX_SPARC32_SYSDEP_H)  */
+
+/* Original definitions of `internal_syscall's are left
+   intact here meanwhile. It's not clear if we have a
+   problem related to Bug #50540, Comment #5 here at all.  */
+
 #define internal_syscall0(string,name,dummy...)			\
 ({									\
 	register long int __g1 __asm__ ("g1") = (name);			\
@@ -193,6 +331,22 @@
 	__o0;								\
 })
 
+# endif /* ! (defined __LCC__ && defined _LINUX_SPARC32_SYSDEP_H)  */
+
 #endif	/* __ASSEMBLER__ */
+
+
+#if defined __LCC__
+/* This attribute is used to mark functions which shouldn't be
+   inlined when compiling with `-fwhole' option (see Bug #61026).
+   I wonder if this is going to protect us from inlining their
+   numerous aliases (versioned symbols and so on . . .). Should
+   they be explicitly marked with this attribute or not? This
+   depends on our `-fwhole' implementation which nobody is aware
+   of.  */
+# define ATTRIBUTE_NOINLINE_WHOLE __attribute__ ((noinline))
+#else /* __LCC__  */
+# define ATTRIBUTE_NOINLINE_WHOLE
+#endif /* __LCC__  */
 
 #endif /* _LINUX_SPARC_SYSDEP_H */

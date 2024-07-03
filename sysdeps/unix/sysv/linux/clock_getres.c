@@ -29,7 +29,7 @@ int
 __clock_getres64 (clockid_t clock_id, struct __timespec64 *res)
 {
   int r;
-
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_clock_getres_time64
 # define __NR_clock_getres_time64 __NR_clock_getres
 #endif
@@ -41,6 +41,7 @@ __clock_getres64 (clockid_t clock_id, struct __timespec64 *res)
 #endif
   if (r == 0 || errno != ENOSYS)
     return r;
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifndef __ASSUME_TIME64_SYSCALLS
   /* Fallback code that uses 32-bit support.  */

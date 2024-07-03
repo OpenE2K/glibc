@@ -170,6 +170,7 @@ add_derivation (const char *fromset, const char *toset,
 }
 
 static void __libc_freeres_fn_section
+__attribute_used__
 free_derivation (void *p)
 {
   struct known_derivation *deriv = (struct known_derivation *) p;
@@ -809,6 +810,7 @@ __gconv_close_transform (struct __gconv_step *steps, size_t nsteps)
 /* Free the modules mentioned.  */
 static void
 __libc_freeres_fn_section
+__attribute_used__
 free_modules_db (struct gconv_module *node)
 {
   if (node->left != NULL)

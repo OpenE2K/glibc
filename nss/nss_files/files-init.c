@@ -19,7 +19,9 @@
 #ifdef USE_NSCD
 
 #include <string.h>
+#define __NSCD_DROP_MAP_REF_UNUSED
 #include <nscd/nscd.h>
+#undef __NSCD_DROP_MAP_REF_UNUSED
 #include <nss.h>
 #include <nss_files.h>
 

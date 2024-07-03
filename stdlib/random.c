@@ -213,7 +213,10 @@ __srandom (unsigned int x)
 }
 
 weak_alias (__srandom, srandom)
+#if !defined (__e2k__) || defined (DONT_USE_FAST_RAND)
+/* for e2k, srand is in rand.c file with own infrastructure */
 weak_alias (__srandom, srand)
+#endif /* __e2k__ */
 
 /* Initialize the state information in the given array of N bytes for
    future random number generation.  Based on the number of bytes we

@@ -378,7 +378,17 @@ SINGLE(LOOPFCT) (struct __gconv_step *step,
   void *data = step->__data;
 #  endif
   int result = __GCONV_OK;
-  unsigned char bytebuf[MAX_NEEDED_INPUT];
+  unsigned char bytebuf[MAX_NEEDED_INPUT
+#if 0 //! defined __LCC__
+			/* Upstream optimizing GCC currently creates a never
+			   executed basic block with an insn accessing
+			   bytebuf[2] when this file is compiled with
+			   `MAX_NEEDED_INPUT == 2', which results in a false
+			   `-Wstringop-overflow'. Stupidly suppress this warning
+			   by allocating an extra element for now.  */
+			+ 1
+#endif /* ! defined __LCC__  */
+			];
   const unsigned char *inptr = *inptrp;
   unsigned char *outptr = *outptrp;
   size_t inlen;

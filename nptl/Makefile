@@ -318,6 +318,9 @@ tests-nolibpthread = \
   tst-pthread_exit-nothreads \
   tst-pthread_exit-nothreads-static \
 
+# This test has been added by us due to Bug #64685.
+tests += tst-bug-64685
+
 tests-container =  tst-pthread-getattr
 
 tests-internal := tst-robustpi8 tst-rwlock19 tst-rwlock20 \
@@ -467,6 +470,11 @@ ifneq ($(have-cxx-thread_local),yes)
 tests-unsupported += tst-thread_local1
 endif
 
+ifeq ($(config-machine),e2k128)
+tests-unsupported += tst-context1 tst-stackguard1 tst-stackguard1-static \
+		     tst-eintr1 tst-eintr2 tst-eintr3 tst-eintr5 tst-stack4
+endif
+
 include ../Rules
 
 ifeq (yes,$(build-shared))
@@ -556,6 +564,10 @@ tst-exec4-ARGS = $(host-test-program-cmd)
 $(objpfx)tst-execstack.out: $(objpfx)tst-execstack-mod.so
 LDFLAGS-tst-execstack = -Wl,-z,noexecstack
 CFLAGS-tst-execstack-mod.c += -Wno-trampolines
+
+ifeq ($(compile-with-lcc),yes)
+CFLAGS-tst-thread-exit-clobber.cc += -Wno-attributes
+endif
 
 tst-stackguard1-ARGS = --command "$(host-test-program-cmd) --child"
 tst-stackguard1-static-ARGS = --command "$(objpfx)tst-stackguard1-static --child"

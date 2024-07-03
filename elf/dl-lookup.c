@@ -282,11 +282,11 @@ do_lookup_unique (const char *undef_name, uint_fast32_t new_hash,
                                 entries[idx].name, entries[idx].sym,
                                 entries[idx].map);
 
-	  tab->free (entries);
+	  tab->free_m (entries);
 	  tab->size = newsize;
 	  size = newsize;
 	  entries = tab->entries = newentries;
-	  tab->free = __rtld_free;
+	  tab->free_m = __rtld_free;
 	}
     }
   else
@@ -317,7 +317,7 @@ do_lookup_unique (const char *undef_name, uint_fast32_t new_hash,
 
       tab->entries = entries;
       tab->size = size;
-      tab->free = __rtld_free;
+      tab->free_m = __rtld_free;
     }
 
   if ((type_class & ELF_RTYPE_CLASS_COPY) != 0)
@@ -371,7 +371,10 @@ do_lookup_x (const char *undef_name, uint_fast32_t new_hash,
 
   do
     {
-      const struct link_map *map = list[i]->l_real;
+#if ! defined __ptr128__
+      const
+#endif
+	struct link_map *map = list[i]->l_real;
 
       /* Here come the extra test needed for `_dl_lookup_symbol_skip'.  */
       if (map == skip)
@@ -913,7 +916,10 @@ _dl_lookup_symbol_x (const char *undef_name, struct link_map *undef_map,
 			     ? ELF_RTYPE_CLASS_EXTERN_PROTECTED_DATA
 			     : ELF_RTYPE_CLASS_PLT, NULL) != 0)
 	      break;
-
+	  /* What an idiotism this is! It probably means that some other symbol
+	     different from the one in the main executable to which our PROTECTED
+	     symbol's contents is copied by means of COPY relocation is going to
+	     override our PROTECTED symbol.  */
 	  if (protected_value.s != NULL && protected_value.m != undef_map)
 	    {
 	      current_value.s = *ref;
@@ -1062,6 +1068,11 @@ _dl_debug_bindings (const char *undef_name, struct link_map *undef_map,
 	  || GLRO(dl_trace_prelink_map) == NULL
 	  || type_class >= 4)
 	{
+#if defined __ptr128__
+	  /* Stupidly replace a non-existent field in PM with the existing one
+	     this way. FIXME: ideally both of them should be output in PM.  */
+# define l_map_start l_data_start
+#endif
 	  _dl_printf ("%s 0x%0*Zx 0x%0*Zx -> 0x%0*Zx 0x%0*Zx ",
 		      conflict ? "conflict" : "lookup",
 		      (int) sizeof (ElfW(Addr)) * 2,
@@ -1081,6 +1092,10 @@ _dl_debug_bindings (const char *undef_name, struct link_map *undef_map,
 			(size_t) (val.s ? val.s->st_value : 0));
 
 	  _dl_printf ("/%x %s\n", type_class, undef_name);
+
+#if defined __ptr128
+# undef l_data_start
+#endif
 	}
     }
 #endif

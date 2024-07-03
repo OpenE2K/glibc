@@ -157,7 +157,7 @@ __exp10f (float x)
       if (abstop >= top13 (INFINITY))
         return x + x;
       /* 0x26.8826ap0 is the largest value such that 10^x < 2^128.  */
-      if (x > 0x26.8826ap0f)
+      if (x > (float) 3.853183746337891e+01 /*0x26.8826ap0f*/)
         return __math_oflowf (0);
       /* -0x2d.278d4p0 is the smallest value such that 10^x > 2^-150.  */
       if (x < -0x2d.278d4p0f)

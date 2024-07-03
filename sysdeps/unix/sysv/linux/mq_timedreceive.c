@@ -27,9 +27,11 @@ ___mq_timedreceive_time64 (mqd_t mqdes, char *__restrict msg_ptr, size_t msg_len
                           unsigned int *__restrict msg_prio,
                           const struct __timespec64 *__restrict abs_timeout)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_mq_timedreceive_time64
 # define __NR_mq_timedreceive_time64 __NR_mq_timedreceive
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifdef __ASSUME_TIME64_SYSCALLS
   return SYSCALL_CANCEL (mq_timedreceive_time64, mqdes, msg_ptr, msg_len,
@@ -39,10 +41,12 @@ ___mq_timedreceive_time64 (mqd_t mqdes, char *__restrict msg_ptr, size_t msg_len
 		     && !in_time_t_range (abs_timeout->tv_sec);
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       int r = SYSCALL_CANCEL (mq_timedreceive_time64, mqdes, msg_ptr, msg_len,
 			      msg_prio, abs_timeout);
       if (r >= 0 || errno != ENOSYS)
 	return r;
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
       __set_errno (EOVERFLOW);
       return -1;
     }

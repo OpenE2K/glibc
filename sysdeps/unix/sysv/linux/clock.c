@@ -25,8 +25,10 @@ clock (void)
 {
   struct __timespec64 ts;
 
+#ifndef __LCC__
   _Static_assert (CLOCKS_PER_SEC == 1000000,
 		  "CLOCKS_PER_SEC should be 1000000");
+#endif /* __LCC__  */
 
   if (__glibc_unlikely (__clock_gettime64 (CLOCK_PROCESS_CPUTIME_ID, &ts) != 0))
     return (clock_t) -1;

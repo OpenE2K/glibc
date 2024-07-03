@@ -51,7 +51,9 @@ void _dl_parse_auxv (ElfW(auxv_t) *av, dl_parse_auxv_t auxv_values)
   GLRO(dl_fpu_control) = auxv_values[AT_FPUCW];
   _dl_random = (void *) auxv_values[AT_RANDOM];
   GLRO(dl_minsigstacksize) = auxv_values[AT_MINSIGSTKSZ];
+#ifdef NEED_DL_SYSINFO_DSO
   GLRO(dl_sysinfo_dso) = (void *) auxv_values[AT_SYSINFO_EHDR];
+#endif
 #ifdef NEED_DL_SYSINFO
   if (GLRO(dl_sysinfo_dso) != NULL)
     GLRO(dl_sysinfo) = auxv_values[AT_SYSINFO];

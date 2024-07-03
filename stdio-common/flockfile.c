@@ -25,5 +25,35 @@ __flockfile (FILE *stream)
   stream->_flags2 |= _IO_FLAGS2_NEED_LOCK;
   _IO_lock_lock (*stream->_lock);
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__flockfile, flockfile);
 weak_alias (__flockfile, _IO_flockfile)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+weak_alias (__flockfile, __flockfile_weak)
+
+# include <shlib-compat.h>
+
+/* These symbols were also present in libc-2.29.so. Note that they don't
+   take care of preserving the original non-WEAKness of _IO_-symbol it
+   used to have (see `weak_alias ()'es above). See also below.  */
+versioned_symbol (libc, __flockfile_weak, flockfile, GLIBC_2_0);
+versioned_symbol (libc, __flockfile_weak, _IO_flockfile, GLIBC_2_0);
+
+/* For the sake of runtime compatibility with libpthread-2.29.so. Note that
+   _IO_flockfile@@GLIBC_2.0 used to be created as strong_alias () in it
+   which was "accidentally" changed when getting rid of the implementation in
+   sysdeps/pthread.  */
+compat_symbol (libpthread, __flockfile_weak, flockfile, GLIBC_2_0);
+
+/* This extra strong_alias () is required because `__f{,un}lockfile ()'s turn
+   out to be HIDDEN unlike `__ftrylockfile ()' (???!!!) and the created dynamic
+   symbol should not inherit this inappropriate visibility which is sure to
+   eventually make it LOCAL.  */
+strong_alias (__flockfile, __flockfile_strong)
+compat_symbol (libpthread, __flockfile_strong, _IO_flockfile, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

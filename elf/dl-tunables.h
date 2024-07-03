@@ -22,7 +22,11 @@
 #define _TUNABLES_H_
 
 #if !HAVE_TUNABLES
-static inline void
+static
+#ifndef __LCC__
+inline
+#endif
+void
 __always_inline
 __tunables_init (char **unused __attribute__ ((unused)))
 {

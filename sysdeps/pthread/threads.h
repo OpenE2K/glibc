@@ -62,7 +62,11 @@ typedef __once_flag once_flag;
 typedef union
 {
   char __size[__SIZEOF_PTHREAD_MUTEX_T];
+#if ! (defined __e2k__ && defined __ptr128__)
   long int __align __LOCK_ALIGNMENT;
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *__align;
+#endif /* defined __e2k__ && defined __ptr128__  */
 } mtx_t;
 
 typedef union

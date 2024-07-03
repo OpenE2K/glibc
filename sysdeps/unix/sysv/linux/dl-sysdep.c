@@ -90,7 +90,24 @@ _dl_sysdep_parse_arguments (void **start_argptr,
   dl_parse_auxv_t auxv_values = { 0, };
   _dl_parse_auxv (GLRO(dl_auxv), auxv_values);
 
+#if defined __e2k__ && defined __ptr128__
+  /* Does this AUXV entry actually describe program headers of ld.so? With
+        the latest Kernel including my patch this should be the case both if
+	   it's started explicitly as a program and implicitly as an
+	   interpreter.  */
+  args->phdr = ({
+      const ElfW(Phdr) *res;
+      const void *gd;
+      __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+      __asm__ ("gdtoap %1, %0\n\t"
+	       : "=r" (res)
+	       : "r" (auxv_values[AT_PHDR] - (ElfW(Addr)) gd));
+      res;
+    });
+#else /* ! (defined __e2k__ && defined __ptr128__)  */
   args->phdr = (const ElfW(Phdr) *) auxv_values[AT_PHDR];
+#endif/* ! (defined __e2k__ && defined __ptr128__)  */
+
   args->phnum = auxv_values[AT_PHNUM];
   args->user_entry = auxv_values[AT_ENTRY];
 }
@@ -112,7 +129,9 @@ _dl_sysdep_start (void **start_argptr,
   /* Initialize DSO sorting algorithm after tunables.  */
   _dl_sort_maps_init ();
 
+#if ! (defined __e2k__ && defined __ptr128__ )
   __brk (0);			/* Initialize the break.  */
+#endif /* ! (defined __e2k__ && defined __ptr128__ )  */
 
 #ifdef DL_PLATFORM_INIT
   DL_PLATFORM_INIT;
@@ -122,6 +141,7 @@ _dl_sysdep_start (void **start_argptr,
   if (GLRO(dl_platform) != NULL)
     GLRO(dl_platformlen) = strlen (GLRO(dl_platform));
 
+#if ! defined __ptr128__
   if (__sbrk (0) == _end)
     /* The dynamic linker was run as a program, and so the initial break
        starts just after our bss, at &_end.  The malloc in dl-minimal.c
@@ -130,6 +150,7 @@ _dl_sysdep_start (void **start_argptr,
        will see this new value and not clobber our data.  */
     __sbrk (GLRO(dl_pagesize)
 	    - ((_end - (char *) 0) & (GLRO(dl_pagesize) - 1)));
+#endif /* ! defined __ptr128__  */
 
   /* If this is a SUID program we make sure that FDs 0, 1, and 2 are
      allocated.  If necessary we are doing it ourself.  If it is not
@@ -256,7 +277,7 @@ int
 attribute_hidden
 _dl_discover_osversion (void)
 {
-#ifdef SHARED
+#if defined NEED_DL_SYSINFO_DSO && defined SHARED
   if (GLRO(dl_sysinfo_map) != NULL)
     {
       /* If the kernel-supplied DSO contains a note indicating the kernel's
@@ -287,7 +308,7 @@ _dl_discover_osversion (void)
 	      }
 	  }
     }
-#endif /* SHARED */
+#endif /* defined NEED_DL_SYSINFO_DSO && defined SHARED  */
 
   char bufmem[64];
   char *buf = bufmem;

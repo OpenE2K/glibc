@@ -38,10 +38,34 @@ __lseek64 (int fd, off64_t offset, int whence)
 }
 
 #ifdef  __OFF_T_MATCHES_OFF64_T
+# if IS_IN (rtld) || ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__lseek64, lseek)
+
+# else /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+
+weak_alias (__lseek64, __lseek64_weak)
+versioned_symbol (libc, __lseek64_weak, lseek, GLIBC_2_0);
+compat_symbol (libpthread, __lseek64_weak, lseek, GLIBC_2_0);
+
+# endif /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+
 weak_alias (__lseek64, __lseek)
 strong_alias (__lseek64, __libc_lseek)
+
+# if IS_IN (rtld) || ! (defined __e2k__ && defined SHARED)
+
 libc_hidden_def (__lseek)
+
+# else /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+
+strong_alias (__lseek64, __lseek64_strong)
+versioned_symbol (libc, __lseek64_strong, __lseek, GLIBC_2_0);
+
+/* Note that in 64-bit libpthread-2.29.so __lseek@@GLIBC_2.0 is also WEAK
+   unlike libc.so and 32-bit mode.  */
+compat_symbol (libpthread, __lseek64_weak, __lseek, GLIBC_2_0);
+# endif /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
 #endif
 
 strong_alias (__lseek64, __libc_lseek64)
@@ -51,6 +75,6 @@ weak_alias (__lseek64, lseek64)
 compat_symbol (libc, __lseek64, llseek, GLIBC_2_0);
 #endif
 
-#if !IS_IN(rtld) && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+#if ! defined __e2k__ && !IS_IN(rtld) && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __lseek64, lseek64, GLIBC_2_2);
 #endif

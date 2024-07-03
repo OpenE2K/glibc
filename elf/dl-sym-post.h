@@ -42,7 +42,13 @@ _dl_sym_post (lookup_t result, const ElfW(Sym) *ref, void *value,
     {
       DL_FIXUP_VALUE_TYPE fixup
         = DL_FIXUP_MAKE_VALUE (result, (ElfW(Addr)) value);
-      fixup = elf_ifunc_invoke (DL_FIXUP_VALUE_ADDR (fixup));
+      fixup = elf_ifunc_invoke (
+#if ! defined __ptr128__
+						     DL_FIXUP_VALUE_ADDR (fixup)
+#else /* defined __ptr128__  */
+						     fixup
+#endif /* defined __ptr128__  */
+				);
       value = (void *) DL_FIXUP_VALUE_CODE_ADDR (fixup);
     }
 

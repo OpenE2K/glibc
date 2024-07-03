@@ -53,6 +53,9 @@
 
 
 # include <stdint.h>
+# if defined __e2k__ && defined __ptr128__
+#  include <string.h>
+# endif /* defined __e2k__ && defined __ptr128__  */
 
 /* Determine default alignment.  */
 union fooround
@@ -75,13 +78,15 @@ enum
   DEFAULT_ROUNDING = sizeof (union fooround)
 };
 
+# if ! (defined __e2k__ && defined __ptr128__)
 /* When we copy a long block of data, this is the unit to do it with.
    On some machines, copying successive ints does not work;
    in such a case, redefine COPYING_UNIT to 'long' (if that works)
    or 'char' as a last resort.  */
-# ifndef COPYING_UNIT
-#  define COPYING_UNIT int
-# endif
+#  ifndef COPYING_UNIT
+#   define COPYING_UNIT int
+#  endif
+# endif /* ! (defined __e2k__ && defined __ptr128__)  */
 
 
 /* The functions allocating more room by calling 'obstack_chunk_alloc'
@@ -102,6 +107,10 @@ int obstack_exit_failure = EXIT_FAILURE;
 #  define obstack_exit_failure exit_failure
 # endif
 
+#ifndef __LCC__
+/* LCC can't apply symver to COMMON (#31768). Because this is required only
+   for compatibility with glibc-2.0, this has been removed from our glibc.  */
+
 # ifdef _LIBC
 #  if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_3_4)
 /* A looong time ago (before 1994, anyway; we're not sure) this global variable
@@ -111,6 +120,8 @@ struct obstack *_obstack_compat = 0;
 compat_symbol (libc, _obstack_compat, _obstack, GLIBC_2_0);
 #  endif
 # endif
+
+#endif /* __LCC__ */
 
 /* Define a macro that either calls functions with the traditional malloc/free
    calling interface, or calls functions with the mmalloc/mfree interface
@@ -248,8 +259,10 @@ _obstack_newchunk (struct obstack *h, int length)
   struct _obstack_chunk *new_chunk;
   long new_size;
   long obj_size = h->next_free - h->object_base;
+#if ! (defined __e2k__ && defined __ptr128__)
   long i;
   long already;
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
   char *object_base;
 
   /* Compute size for new chunk.  */
@@ -268,6 +281,8 @@ _obstack_newchunk (struct obstack *h, int length)
   /* Compute an aligned object_base in the new chunk */
   object_base =
     __PTR_ALIGN ((char *) new_chunk, new_chunk->contents, h->alignment_mask);
+
+#if ! (defined __e2k__ && defined __ptr128__)
 
   /* Move the existing object to the new chunk.
      Word at a time is fast and is safe if the object
@@ -288,6 +303,11 @@ _obstack_newchunk (struct obstack *h, int length)
   /* Copy remaining bytes one by one.  */
   for (i = already; i < obj_size; i++)
     object_base[i] = h->object_base[i];
+
+#else /* defined __e2k__ && defined __ptr128__  */
+  /* Move the existing object to the new chunk.  */
+  memcpy (object_base, h->object_base, obj_size);
+#endif /* defined __e2k__ && defined __ptr128__  */
 
   /* If the object just copied was the only data in OLD_CHUNK,
      free that chunk and remove it from the chain.

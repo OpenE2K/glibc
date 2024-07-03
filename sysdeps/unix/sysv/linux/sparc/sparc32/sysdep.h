@@ -106,6 +106,87 @@ ENTRY(name);					\
 
 #else  /* __ASSEMBLER__ */
 
+# if defined __LCC__
+
+#  define __LOAD_ARGS_0							\
+  "mov %1, %%g1;"
+
+#  define __LOAD_ARGS_1							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"
+
+#  define __LOAD_ARGS_2							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"                                                      \
+  "ld [%2 + 4], %%o1;"
+
+#  define __LOAD_ARGS_3							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"                                                      \
+  "ld [%2 + 4], %%o1;"                                                  \
+  "ld [%2 + 8], %%o2;"
+
+#  define __LOAD_ARGS_4							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"                                                      \
+  "ld [%2 + 4], %%o1;"                                                  \
+  "ld [%2 + 8], %%o2;"                                                  \
+  "ld [%2 + 12], %%o3;"
+
+#  define __LOAD_ARGS_5							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"                                                      \
+  "ld [%2 + 4], %%o1;"                                                  \
+  "ld [%2 + 8], %%o2;"                                                  \
+  "ld [%2 + 12], %%o3;"                                                 \
+  "ld [%2 + 16], %%o4;"
+
+#  define __LOAD_ARGS_5_FOR_CLONE					\
+  "mov %2, %%g1;"                                                       \
+  "ld [%3], %%o0;"                                                      \
+  "ld [%3 + 4], %%o1;"                                                  \
+  "ld [%3 + 8], %%o2;"                                                  \
+  "ld [%3 + 12], %%o3;"                                                 \
+  "ld [%3 + 16], %%o4;"
+
+#  define __LOAD_ARGS_6							\
+  "mov %1, %%g1;"                                                       \
+  "ld [%2], %%o0;"                                                      \
+  "ld [%2 + 4], %%o1;"                                                  \
+  "ld [%2 + 8], %%o2;"                                                  \
+  "ld [%2 + 12], %%o3;"                                                 \
+  "ld [%2 + 16], %%o4;"                                                 \
+  "ld [%2 + 20], %%o5;"
+        
+
+#  define __SYSCALL_STRING						\
+	"ta	0x10;"							\
+	"bcc	1f;"							\
+	" nop;"								\
+	"sub	%%g0, %%o0, %%o0;"					\
+	"1:"								\
+	"mov	%%o0, %0;"
+
+#  define __SYSCALL_STRING_FOR_CLONE					\
+	"ta	0x10;"							\
+	"bcc	1f;"							\
+	" nop;"								\
+	"sub	%%g0, %%o0, %%o0;"					\
+	"1:"								\
+	"mov	%%o0, %0;"                                              \
+	"mov	%%o1, %1;"
+
+#  define __SYSCALL_CLOBBERS						\
+        "o0", "o1", "o2", "o3", "o4", "o5",                             \
+        "g1", "g2", "g3", "g4", "g5", "g6",                             \
+	"f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",			\
+	"f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15",		\
+	"f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",		\
+	"f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",		\
+	"cc", "memory"
+
+# else /* ! defined __LCC__  */
+
 #define __SYSCALL_STRING						\
 	"ta	0x10;"							\
 	"bcc	1f;"							\
@@ -119,6 +200,8 @@ ENTRY(name);					\
 	"f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",		\
 	"f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",		\
 	"cc", "memory"
+
+# endif /* ! defined __LCC__  */
 
 #undef HAVE_INTERNAL_BRK_ADDR_SYMBOL
 #define HAVE_INTERNAL_BRK_ADDR_SYMBOL 1

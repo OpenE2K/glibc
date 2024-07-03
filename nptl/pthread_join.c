@@ -31,5 +31,16 @@ strong_alias (___pthread_join, __pthread_join)
 #endif
 
 #if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_34)
+# if ! defined __e2k__
 compat_symbol (libc, ___pthread_join, pthread_join, GLIBC_2_0);
+# else /* defined __e2k__  */
+/* No pthread_join@... actually existed in libc-2.29.so, but we need
+   pthread_join@GLIBC_2.0 with exactly the same version it had in
+   libpthread-2.29.so which is why "libpthread" is specified here instead
+   of "libc". Here I also preserve its original WEAKness. But should this
+   actually be done taking into account that they do not take care about
+   that above?  */
+weak_alias (___pthread_join, ___pthread_join_weak)
+compat_symbol (libpthread, ___pthread_join_weak, pthread_join, GLIBC_2_0);
+# endif /* defined __e2k__  */
 #endif

@@ -1032,7 +1032,7 @@ send_dg(res_state statp,
 	}
 	__set_errno (0);
 	if (pfd[0].revents & POLLOUT) {
-#ifndef __ASSUME_SENDMMSG
+#if !(defined __ASSUME_SENDMMSG && ! defined __ptr128__)
 		static int have_sendmmsg;
 #else
 # define have_sendmmsg 1
@@ -1078,10 +1078,10 @@ send_dg(res_state statp,
 		      goto recompute_resend;
 		    else
 		      {
-#ifndef __ASSUME_SENDMMSG
+#if !(defined __ASSUME_SENDMMSG && ! defined __ptr128__)
 			if (__glibc_unlikely (have_sendmmsg == 0))
 			  {
-			    if (ndg < 0 && errno == ENOSYS)
+			    if (ndg < 0 /*&& errno == ENOSYS*/)
 			      {
 				have_sendmmsg = -1;
 				goto try_send;
@@ -1097,7 +1097,7 @@ send_dg(res_state statp,
 		else
 		  {
 		    ssize_t sr;
-#ifndef __ASSUME_SENDMMSG
+#if !(defined __ASSUME_SENDMMSG && ! defined __ptr128__)
 		  try_send:
 #endif
 		    if (nwritten != 0)

@@ -24,7 +24,11 @@
 
 /* Thread identifiers.  The structure of the attribute type is not
    exposed on purpose.  */
+#if ! defined __ptr128__
 typedef unsigned long int pthread_t;
+#else /* defined __ptr128__  */
+typedef void * pthread_t;
+#endif /* defined __ptr128__  */
 
 
 /* Data structures for mutex handling.  The structure of the attribute
@@ -56,7 +60,11 @@ typedef int __ONCE_ALIGNMENT pthread_once_t;
 union pthread_attr_t
 {
   char __size[__SIZEOF_PTHREAD_ATTR_T];
+#if ! defined __ptr128__
   long int __align;
+#else /* defined __ptr128__  */
+  void *__align;
+#endif /* defined __ptr128__  */
 };
 #ifndef __have_pthread_attr_t
 typedef union pthread_attr_t pthread_attr_t;
@@ -68,7 +76,11 @@ typedef union
 {
   struct __pthread_mutex_s __data;
   char __size[__SIZEOF_PTHREAD_MUTEX_T];
+#if ! (defined __e2k__ && defined __ptr128__)
   long int __align;
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *__align;
+#endif /* defined __e2k__ && defined __ptr128__  */
 } pthread_mutex_t;
 
 

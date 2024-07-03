@@ -281,3 +281,10 @@ $(objpfx)tst-bz22415-mem.out: $(objpfx)tst-bz22415.out
 $(objpfx)tst-bz24228-mem.out: $(objpfx)tst-bz24228.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz24228.mtrace > $@; \
 	$(evaluate-test)
+
+ifeq ($(compile-with-lcc),yes)
+# Once again, LCC turns out to be incapable of recognizing "advanced" sprintf-
+# like format specifiers.
+CFLAGS-tst_swscanf.c += -Wno-format
+CFLAGS-tst_wscanf.c += -Wno-format
+endif

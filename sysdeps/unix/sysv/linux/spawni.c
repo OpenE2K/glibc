@@ -382,7 +382,11 @@ __spawnix (pid_t * pid, const char *file,
     {
       .flags = CLONE_VM | CLONE_VFORK,
       .exit_signal = SIGCHLD,
-      .stack = (uintptr_t) stack,
+      .stack =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
+      stack,
       .stack_size = stack_size,
     };
   new_pid = __clone_internal (&clone_args, __spawni_child, &args);

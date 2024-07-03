@@ -229,6 +229,7 @@ __libc_dlclose (void *map)
 
 
 static bool __libc_freeres_fn_section
+__attribute_used__
 free_slotinfo (struct dtv_slotinfo_list **elemp)
 {
   size_t cnt;

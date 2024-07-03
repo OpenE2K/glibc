@@ -21,6 +21,11 @@
 
 #ifndef __OFF_T_MATCHES_OFF64_T
 
+#ifdef __e2k__
+# define __NR_pwrite64 __NR_pwrite
+#endif
+
+
 ssize_t
 __libc_pwrite (int fd, const void *buf, size_t count, off_t offset)
 {
@@ -31,7 +36,7 @@ strong_alias (__libc_pwrite, __pwrite)
 libc_hidden_weak (__pwrite)
 weak_alias (__libc_pwrite, pwrite)
 
-# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+# if ! defined __e2k__ &&  OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pwrite, pwrite, GLIBC_2_2);
 # endif
 

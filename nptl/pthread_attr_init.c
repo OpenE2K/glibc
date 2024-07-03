@@ -50,8 +50,14 @@ __pthread_attr_init (pthread_attr_t *attr)
 libc_hidden_def (__pthread_attr_init)
 versioned_symbol (libc, __pthread_attr_init, pthread_attr_init, GLIBC_2_1);
 
+#if defined __e2k__ && defined SHARED
+compat_symbol (libpthread, __pthread_attr_init, pthread_attr_init,
+	       GLIBC_2_1);
+#endif /* defined __e2k__ && defined SHARED  */
 
-#if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_1)
+
+
+#if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_1) || (defined __e2k__ && defined SHARED)
 int
 __pthread_attr_init_2_0 (pthread_attr_t *attr)
 {
@@ -80,5 +86,11 @@ __pthread_attr_init_2_0 (pthread_attr_t *attr)
      old attribute structure.  */
   return 0;
 }
-compat_symbol (libc, __pthread_attr_init_2_0, pthread_attr_init, GLIBC_2_0);
+compat_symbol (
+# if ! (defined __e2k__ && defined SHARED)
+	       libc,
+# else /* defined __e2k__ && defined SHARED  */
+	       libpthread,
+# endif /* defined __e2k__ && defined SHARED  */
+	       __pthread_attr_init_2_0, pthread_attr_init, GLIBC_2_0);
 #endif

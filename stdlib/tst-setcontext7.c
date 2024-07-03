@@ -75,7 +75,26 @@ do_test (void)
   ctx[1].uc_stack.ss_sp = st1;
   ctx[1].uc_stack.ss_size = sizeof st1;
   ctx[1].uc_link = &ctx[0];
-  makecontext (&ctx[1], (void (*) (void)) f1, 0);
+
+#if defined __e2k__
+  /* No idea where it could be possible to free ctx[1] as this ping-pong is
+     likely to finish with `exit (EXIT_SUCCESS)' in the associated f1 () if
+     no error happens.  */
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ctx[1], (void (*) (void)) f1, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+  
   puts ("swap contexts");
   if (swapcontext (&ctx[3], &ctx[1]) != 0)
     {

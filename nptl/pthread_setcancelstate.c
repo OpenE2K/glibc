@@ -57,4 +57,24 @@ __pthread_setcancelstate (int state, int *oldstate)
   return 0;
 }
 libc_hidden_def (__pthread_setcancelstate)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__pthread_setcancelstate, pthread_setcancelstate)
+
+#else /* defined __e2k__ && defined SHARED)  */
+
+weak_alias (__pthread_setcancelstate, __pthread_setcancelstate_weak)
+
+# include <shlib-compat.h>
+
+/* This matches weak_alias in non-e2k-specific case.  */
+versioned_symbol (libc, __pthread_setcancelstate_weak, pthread_setcancelstate,
+		  GLIBC_2_0);
+
+/* Unlike up-to-date glibc, in libpthread-2.29.so this symbol used to be
+   GLOBAL.  */
+compat_symbol (libpthread, __pthread_setcancelstate, pthread_setcancelstate,
+	       GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED)  */

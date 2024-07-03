@@ -40,11 +40,17 @@ thread_attr_compare (const pthread_attr_t *left, const pthread_attr_t *right)
 	  && ileft->guardsize == iright->guardsize
 	  && ileft->stackaddr == iright->stackaddr
 	  && ileft->stacksize == iright->stacksize
+#if 0
+	  /* Let this file compile somehow after removal of cpuset{,size}
+	     from `struct pthread_attr'  when making it "dynamically
+	     extensible".  */
 	  && ((ileft->cpuset == NULL && iright->cpuset == NULL)
 	      || (ileft->cpuset != NULL && iright->cpuset != NULL
 		  && ileft->cpusetsize == iright->cpusetsize
 		  && memcmp (ileft->cpuset, iright->cpuset,
-			     ileft->cpusetsize) == 0)));
+			     ileft->cpusetsize) == 0))
+#endif /* 0  */
+	  );
 }
 
 #endif	/* timer_routines.h */

@@ -18,22 +18,33 @@
 #include <sys/select.h>
 #include <sysdep-cancel.h>
 
+#if ! defined __e2k__ || __WORDSIZE == 64
 static int
 pselect64_syscall (int nfds, fd_set *readfds, fd_set *writefds,
 		   fd_set *exceptfds, const struct __timespec64 *timeout,
 		   const sigset_t *sigmask)
 {
-#ifndef __NR_pselect6_time64
-# define __NR_pselect6_time64 __NR_pselect6
-#endif
+# ifndef __NR_pselect6_time64
+#  define __NR_pselect6_time64 __NR_pselect6
+# endif
   /* NB: This is required by ARGIFY used in x32 internal_syscallN.  */
-  __syscall_ulong_t data[2] =
+# if ! defined __ptr128__
+  __syscall_ulong_t
+#else /* defined __ptr128__  */
+    void *
+#endif /* defined __ptr128__  */
+    data[2] =
     {
+# if ! defined __ptr128__
       (uintptr_t) sigmask, __NSIG_BYTES
+# else /* defined __ptr128__  */
+      (void *) sigmask, (void *) __NSIG_BYTES
+# endif /* defined __ptr128__  */
     };
   return SYSCALL_CANCEL (pselect6_time64, nfds, readfds, writefds, exceptfds,
 			 timeout, data);
 }
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 int
 __pselect64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
@@ -59,10 +70,12 @@ __pselect64 (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
   bool need_time64 = timeout != NULL && !in_time_t_range (timeout->tv_sec);
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       int r = pselect64_syscall (nfds, readfds, writefds, exceptfds, timeout,
 				 sigmask);
       if (r == 0 || errno != ENOSYS)
 	return r;
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
       __set_errno (EOVERFLOW);
       return -1;
     }

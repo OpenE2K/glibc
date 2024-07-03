@@ -34,7 +34,12 @@ cleanup() {
 }
 trap cleanup 0
 
-tempfile=$(mktemp "${objpfx}tst-setcontext3.XXXXXXXXXX")
+# The below test checking for existence of `$tempfile' doesn't seem to be
+# adequate because this file is sure to be created by `mktemp'. I believe that
+# its contents should be checked instead. For now I've stupidly added `-u' to
+# prevent it from being created by `mktemp'. However, this is probably unsafe
+# if multiple `make check's are run in parallel.
+tempfile=$(mktemp -u "${objpfx}tst-setcontext3.XXXXXXXXXX")
 
 # We want to run the test program and see if secontext called
 # exit() and wrote out the test file we specified.  If the

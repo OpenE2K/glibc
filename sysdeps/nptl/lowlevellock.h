@@ -81,6 +81,18 @@ libc_hidden_proto (__lll_lock_wait_private)
 extern void __lll_lock_wait (int *futex, int private);
 libc_hidden_proto (__lll_lock_wait)
 
+#if IS_IN (libc) || ! defined __LCC__
+# define __lll_lock_wait_ex(f, p) __lll_lock_wait (f, p)
+#else /* ! IS_IN (libc) && defined __LCC__  */
+# define __lll_lock_wait_ex(f, p)		\
+  {						\
+    if (p == LLL_PRIVATE)			\
+      __lll_lock_wait_private (f);		\
+    else					\
+      ((int *) 0)[0] = 0;			\
+  }
+#endif /* ! IS_IN (libc) && defined __LCC__  */
+
 /* This is an expression rather than a statement even though its value is
    void, so that it can be used in a comma expression or as an expression
    that's cast to void.  */
@@ -101,7 +113,7 @@ libc_hidden_proto (__lll_lock_wait)
          if (__builtin_constant_p (private) && (private) == LLL_PRIVATE) \
            __lll_lock_wait_private (__futex);                           \
          else                                                           \
-           __lll_lock_wait (__futex, private);                          \
+           __lll_lock_wait_ex (__futex, private);                       \
        }                                                                \
    }))
 #define lll_lock(futex, private)	\
@@ -130,6 +142,18 @@ libc_hidden_proto (__lll_lock_wake_private)
 extern void __lll_lock_wake (int *futex, int private);
 libc_hidden_proto (__lll_lock_wake)
 
+#if IS_IN (libc) || ! defined __LCC__
+# define __lll_lock_wake_ex(f, p) __lll_lock_wake (f, p)
+#else /* ! IS_IN (libc) && defined __LCC__  */
+# define __lll_lock_wake_ex(f, p)		\
+  {						\
+    if (p == LLL_PRIVATE)			\
+      __lll_lock_wake_private (f);		\
+    else					\
+      ((int *) 0)[0] = 0;			\
+  }
+#endif /* ! IS_IN (libc) && defined __LCC__  */
+
 /* This is an expression rather than a statement even though its value is
    void, so that it can be used in a comma expression or as an expression
    that's cast to void.  */
@@ -153,7 +177,7 @@ libc_hidden_proto (__lll_lock_wake)
          if (__builtin_constant_p (private) && (private) == LLL_PRIVATE) \
            __lll_lock_wake_private (__futex);                           \
          else                                                           \
-           __lll_lock_wake (__futex, __private);			\
+           __lll_lock_wake_ex (__futex, __private);			\
        }								\
    }))
 #define lll_unlock(futex, private)	\

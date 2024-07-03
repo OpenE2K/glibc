@@ -36,22 +36,61 @@ struct clone_args
 {
   /* Flags bit mask.  */
   __aligned_uint64_t flags;
+
   /* Where to store PID file descriptor (pid_t *).  */
-  __aligned_uint64_t pidfd;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  pidfd;
+
   /* Where to store child TID, in child's memory (pid_t *).  */
-  __aligned_uint64_t child_tid;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  child_tid;
+
   /* Where to store child TID, in parent's memory (int *). */
-  __aligned_uint64_t parent_tid;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  parent_tid;
+
   /* Signal to deliver to parent on child termination */
   __aligned_uint64_t exit_signal;
+
   /* The lowest address of stack.  */
-  __aligned_uint64_t stack;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  stack;
+
   /* Size of stack.  */
   __aligned_uint64_t stack_size;
+
   /* Location of new TLS.  */
-  __aligned_uint64_t tls;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  tls;
+
   /* Pointer to a pid_t array (since Linux 5.5).  */
-  __aligned_uint64_t set_tid;
+#if ! (defined __e2k__ && defined __ptr128__)
+  __aligned_uint64_t
+#else /* defined __e2k__ && defined __ptr128__  */
+  void *
+#endif /* defined __e2k__ && defined __ptr128__  */
+  set_tid;
+
   /* Number of elements in set_tid (since Linux 5.5). */
   __aligned_uint64_t set_tid_size;
   /* File descriptor for target cgroup of child (since Linux 5.7).  */

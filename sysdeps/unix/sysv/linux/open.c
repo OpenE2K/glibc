@@ -44,7 +44,31 @@ __libc_open (const char *file, int oflag, ...)
 }
 libc_hidden_def (__libc_open)
 
+/* No harm in SHARED case for e2k as this eventually results in
+   `__GI___open = __GI___libc_open'. I wonder if this alias is of
+   any use with the subsequent `libc_hidden_weak (__open)' disabled.  */
 weak_alias (__libc_open, __open)
+
+# if ! (defined __e2k__ && defined SHARED)
+
+/* Prevent {__,}open from being emitted without an explicitly specified
+   default version.  */
 libc_hidden_weak (__open)
 weak_alias (__libc_open, open)
+
+# else /* defined __e2k__ && defined SHARED  */
+
+#  include <shlib-compat.h>
+
+/* In 32-bit mode `{__,}open's are WEAK both in GLIBC_2.{0,2}.  */
+weak_alias (__libc_open, __libc_open_weak)
+
+versioned_symbol (libc, __libc_open_weak, __open, GLIBC_2_0);
+versioned_symbol (libc, __libc_open_weak, open, GLIBC_2_0);
+
+compat_symbol (libpthread, __libc_open_weak, __open, GLIBC_2_0);
+compat_symbol (libpthread, __libc_open_weak, open, GLIBC_2_0);
+  
+# endif /* defined __e2k__ && defined SHARED  */
+  
 #endif

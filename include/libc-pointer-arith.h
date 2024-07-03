@@ -38,7 +38,11 @@
 # define cast_to_integer(val) ((__integer_if_pointer_type (val)) (val))
 
 /* Cast an integer VAL to void * pointer.  */
-# define cast_to_pointer(val) ((void *) (uintptr_t) (val))
+# if ! (defined __e2k__ && defined __ptr128__)
+#  define cast_to_pointer(val) ((void *) (uintptr_t) (val))
+#else /* defined __e2k__ && defined __ptr128__  */
+#  define cast_to_pointer(val) ((void *) (val))
+#endif /* defined __e2k__ && defined __ptr128__  */
 
 /* Align a value by rounding down to closest size.
    e.g. Using size of 4096, we get this behavior:
@@ -52,6 +56,8 @@
   Note: The size argument has side effects (expanded multiple times).  */
 #define ALIGN_UP(base, size)	ALIGN_DOWN ((base) + (size) - 1, (size))
 
+#if ! defined __ptr128__
+
 /* Same as ALIGN_DOWN(), but automatically casts when base is a pointer.  */
 #define PTR_ALIGN_DOWN(base, size) \
   ((__typeof__ (base)) ALIGN_DOWN ((uintptr_t) (base), (size)))
@@ -59,6 +65,18 @@
 /* Same as ALIGN_UP(), but automatically casts when base is a pointer.  */
 #define PTR_ALIGN_UP(base, size) \
   ((__typeof__ (base)) ALIGN_UP ((uintptr_t) (base), (size)))
+
+#else /* defined __ptr128__  */
+
+/* Same as ALIGN_DOWN(), but automatically casts when base is a pointer.  */
+#define PTR_ALIGN_DOWN(base, size) \
+  ((__typeof__ (base)) ((char *) base - ((uintptr_t) base - ALIGN_DOWN ((uintptr_t) (base), (size)))))
+
+/* Same as ALIGN_UP(), but automatically casts when base is a pointer.  */
+#define PTR_ALIGN_UP(base, size) \
+  ((__typeof__ (base)) ((char *) base + (ALIGN_UP ((uintptr_t) (base), (size)) - (uintptr_t) base)))
+
+#endif /* defined __ptr128__  */
 
 /* Check if BASE is aligned on SIZE  */
 #define PTR_IS_ALIGNED(base, size) \

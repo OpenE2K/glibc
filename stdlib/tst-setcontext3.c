@@ -50,6 +50,12 @@ exit_called (void)
   ssize_t res;
   const char buf[] = "Called exit function\n";
 
+#if defined __e2k__
+  /* Use this `atexit ()' handler to free the context created in main () which
+     we are not going to return to. */
+  freecontext_e2k (&ctx);
+#endif
+
   fd = open (filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
   if (fd == -1)
     {
@@ -115,7 +121,16 @@ do_test (int argc, char **argv)
   ctx.uc_stack.ss_sp = st1;
   ctx.uc_stack.ss_size = sizeof (st1);
   ctx.uc_link = 0;
+
+#if !defined __e2k__
   makecontext (&ctx, cf, 0);
+#else /* defined __e2k__  */
+  if (makecontext_e2k (&ctx, cf, 0) != 0)
+    {
+      printf ("%s: makecontext_e2k: %m\n", __FUNCTION__);
+      exit (1);
+    }
+#endif /* defined __e2k__  */
 
   /* Without this check, a stub makecontext can make us spin forever.  */
   if (memcmp (&tempctx, &ctx, sizeof ctx) == 0)

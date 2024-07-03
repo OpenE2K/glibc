@@ -22,7 +22,11 @@
 #include <kernel-features.h>
 #include "pthreadP.h"
 #include <atomic.h>
+
+#if ! defined __ptr128__
 #include <pthread-offsets.h>
+#endif /* ! defined __ptr128__  */
+
 #include <futex-internal.h>
 #include <shlib-compat.h>
 
@@ -53,6 +57,8 @@ ___pthread_mutex_init (pthread_mutex_t *mutex,
 {
   const struct pthread_mutexattr *imutexattr;
 
+#if ! defined __ptr128__
+
   ASSERT_TYPE_SIZE (pthread_mutex_t, __SIZEOF_PTHREAD_MUTEX_T);
 
   /* __kind is the only field where its offset should be checked to
@@ -60,6 +66,8 @@ ___pthread_mutex_init (pthread_mutex_t *mutex,
   ASSERT_PTHREAD_INTERNAL_OFFSET (pthread_mutex_t, __data.__kind,
 				  __PTHREAD_MUTEX_KIND_OFFSET);
   ASSERT_PTHREAD_INTERNAL_MEMBER_SIZE (pthread_mutex_t, __data.__kind, int);
+
+#endif /* ! defined __ptr128__  */
 
   imutexattr = ((const struct pthread_mutexattr *) mutexattr
 		?: &default_mutexattr);
@@ -160,4 +168,10 @@ strong_alias (___pthread_mutex_init, __pthread_mutex_init)
 #if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_34)
 compat_symbol (libpthread, ___pthread_mutex_init, __pthread_mutex_init,
 	       GLIBC_2_0);
+
+# if defined __e2k__
+compat_symbol (libc, ___pthread_mutex_init, pthread_mutex_init,
+	       GLIBC_2_0);
+# endif /* defined __e2k__  */
+
 #endif

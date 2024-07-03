@@ -23,6 +23,8 @@
 static inline void __attribute__ ((always_inline))
 setup_vdso_pointers (void)
 {
+#if ! defined __e2k__
+
 #ifdef HAVE_CLOCK_GETTIME_VSYSCALL
   GLRO(dl_vdso_clock_gettime) = dl_vdso_vsym (HAVE_CLOCK_GETTIME_VSYSCALL);
 #endif
@@ -47,6 +49,8 @@ setup_vdso_pointers (void)
 #ifdef HAVE_GET_TBFREQ
   GLRO(dl_vdso_get_tbfreq) = dl_vdso_vsym (HAVE_GET_TBFREQ);
 #endif
+
+#endif /* ! defined __e2k__  */
 }
 
 #endif

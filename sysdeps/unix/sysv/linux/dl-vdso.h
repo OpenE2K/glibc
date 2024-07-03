@@ -33,6 +33,8 @@
 # define VDSO_HASH 0
 #endif
 
+# if ! defined __e2k__
+
 /* Functions for resolving symbols in the VDSO link map.  */
 static inline void *
 dl_vdso_vsym (const char *name)
@@ -54,5 +56,7 @@ dl_vdso_vsym (const char *name)
 					       &rfv, 0, 0, NULL);
   return ref != NULL ? DL_SYMBOL_ADDRESS (result, ref) : NULL;
 }
+
+# endif /* ! defined __e2k__  */
 
 #endif /* dl-vdso.h */

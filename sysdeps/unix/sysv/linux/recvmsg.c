@@ -56,5 +56,19 @@ __libc_recvmsg (int fd, struct msghdr *msg, int flags)
   return __recvmsg_syscall (fd, msg, flags);
 }
 #endif
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_recvmsg, recvmsg)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__libc_recvmsg, __libc_recvmsg_weak)
+versioned_symbol (libc, __libc_recvmsg_weak, recvmsg, GLIBC_2_0);
+compat_symbol (libpthread, __libc_recvmsg_weak, recvmsg, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */
+
 weak_alias (__libc_recvmsg, __recvmsg)

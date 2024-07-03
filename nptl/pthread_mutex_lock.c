@@ -375,8 +375,13 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 	  {
 	    /* Note: robust PI futexes are signaled by setting bit 0.  */
 	    THREAD_SETMEM (THREAD_SELF, robust_head.list_op_pending,
+#if ! defined __ptr128__
 			   (void *) (((uintptr_t) &mutex->__data.__list.__next)
-				     | 1));
+				     | 1)
+#else /* defined __ptr128__  */
+			   (void *) ((char *) &mutex->__data.__list.__next + 1)
+#endif /* defined __ptr128__  */
+			   );
 	    /* We need to set op_pending before starting the operation.  Also
 	       see comments at ENQUEUE_MUTEX.  */
 	    __asm ("" ::: "memory");
@@ -618,12 +623,29 @@ libc_hidden_ver (___pthread_mutex_lock, __pthread_mutex_lock)
 # ifndef SHARED
 strong_alias (___pthread_mutex_lock, __pthread_mutex_lock)
 # endif
-versioned_symbol (libpthread, ___pthread_mutex_lock, pthread_mutex_lock,
+
+/* Note that in libc-2.29.so for e2k we used to have
+   pthread_mutex_lock@@GLIBC_2.2 != pthread_mutex_lock@@GLIBC_2.0
+   in libpthread-2.29.so because of differing initial versions between these
+   libraries. That's why "libpthread" is replaced with "libc" for e2k.  */
+versioned_symbol (
+# if  ! defined __e2k__
+		  libpthread,
+# else /* defined __e2k__  */
+		  libc,
+# endif /* defined __e2k__  */
+		  ___pthread_mutex_lock, pthread_mutex_lock,
 		  GLIBC_2_0);
 
 # if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_34)
 compat_symbol (libpthread, ___pthread_mutex_lock, __pthread_mutex_lock,
 	       GLIBC_2_0);
+/* Create pthread_mutex_lock@GLIBC_2.0 for runtime compatibility with
+   libpthread-2.29.so on e2k.  */
+#  if defined __e2k__
+compat_symbol (libpthread, ___pthread_mutex_lock, pthread_mutex_lock,
+	       GLIBC_2_0);
+#  endif /* defined __e2k__  */
 # endif
 #endif /* PTHREAD_MUTEX_VERSIONS */
 

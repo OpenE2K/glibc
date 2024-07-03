@@ -103,7 +103,13 @@ struct __pthread_cond_s
 };
 
 typedef unsigned int __tss_t;
+
+#if ! (defined __e2k__ && defined __ptr128__)
 typedef unsigned long int __thrd_t;
+#else /* defined __e2k__ && defined __ptr128__  */
+typedef void * __thrd_t;
+#endif /* defined __e2k__ && defined __ptr128__  */
+
 
 typedef struct
 {

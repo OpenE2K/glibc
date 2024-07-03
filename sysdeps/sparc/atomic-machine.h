@@ -48,7 +48,7 @@
       __result = __arch_compare_and_exchange_val_int (mem, new, old,	      \
 							 __ATOMIC_ACQUIRE);   \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __result;								      \
   })
 

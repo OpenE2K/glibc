@@ -45,8 +45,12 @@ do_test (void)
     FAIL_EXIT1 (SONAME " is already on the search path");
 
   /* Install the default implementation of libmarkermod1.so.  */
-  xmkdirp ("/etc", 0777);
-  support_write_file_string ("/etc/ld.so.conf", "/glibc-test/lib\n");
+  /* FIXME: the explicit replacement of /etc with the matching subdirectory
+     within non-standard PREFIX is just a temporary hack making it possible
+     to test the related functionality. Eventually the actual prefix is to
+     be retrived from configuration files somehow.  */
+  xmkdirp ("/auto/malakhov/.work/toolchains/latest/e2k/fs/etc", 0777);
+  support_write_file_string ("/auto/malakhov/.work/toolchains/latest/e2k/fs/etc/ld.so.conf", "/glibc-test/lib\n");
   xmkdirp ("/glibc-test/lib/glibc-hwcaps/prepend2", 0777);
   xmkdirp ("/glibc-test/lib/glibc-hwcaps/prepend3", 0777);
   {

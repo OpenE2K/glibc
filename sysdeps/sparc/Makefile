@@ -33,3 +33,11 @@ endif
 
 # The assembler on SPARC needs the -fPIC flag even when it's assembler code.
 ASFLAGS-.os += -fPIC
+
+# As LCC expands `__builtin_{add,mul}_overflow ()' for Sparc it may rely on
+# liblcc stuff. This hack ensures that -llcc is linked into dynamic and static
+# programs respectively being part of glibc.
+ifeq (yes,$(compile-with-lcc))
+gnulib-arch = -llcc
+static-gnulib-arch = -llcc
+endif

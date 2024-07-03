@@ -1,0 +1,22 @@
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
+
+/* Return minimum numeric value of X and Y. */
+
+#include "f2c.h"
+
+float
+__fminf (float x, float y)
+{
+  _type_float_bits Y;
+
+  Y.value = y;
+  if (__glibc_unlikely ((Y.int0 & 0x7fffffff) > 0x7f800000)) /* y is NaN  */
+      return x;
+#pragma asm_inline
+  __asm ("fmins %0,%1,%0" : "+r" (x) : "r" (y));
+  return x;
+}
+
+weak_alias (__fminf, fminf)

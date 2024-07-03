@@ -32,3 +32,11 @@ __pthread_cond_destroy_2_0 (pthread_cond_2_0_t *cond)
 compat_symbol (libc, __pthread_cond_destroy_2_0, pthread_cond_destroy,
 	       GLIBC_2_0);
 #endif
+
+#if defined __e2k__ && defined SHARED
+/* Note that the above `compat_symbol (LIBC, ...)' will create
+   pthread_cond_destroy@GILBC_2_2 in fact as this is the minimal
+   version in libc.so.  */
+compat_symbol (libpthread, __pthread_cond_destroy_2_0, pthread_cond_destroy,
+	       GLIBC_2_0);
+#endif /* defined __e2k__ && defined SHARED  */

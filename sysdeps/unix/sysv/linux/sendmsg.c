@@ -30,7 +30,21 @@ __libc_sendmsg (int fd, const struct msghdr *msg, int flags)
   return SOCKETCALL_CANCEL (sendmsg, fd, msg, flags);
 # endif
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_sendmsg, sendmsg)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__libc_sendmsg, __libc_sendmsg_weak)
+versioned_symbol (libc, __libc_sendmsg_weak, sendmsg, GLIBC_2_0);
+compat_symbol (libpthread, __libc_sendmsg_weak, sendmsg, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */
+
 weak_alias (__libc_sendmsg, __sendmsg)
 #if __TIMESIZE != 64
 weak_alias (__sendmsg, __sendmsg64)

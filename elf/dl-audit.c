@@ -258,7 +258,11 @@ _dl_audit_symbind (struct link_map *l, struct reloc_result *reloc_result,
     }
 
   if (flags & LA_SYMB_ALTVALUE)
-    DL_FIXUP_BINDNOW_RELOC (value, new_value, sym.st_value);
+    DL_FIXUP_BINDNOW_RELOC (
+#if defined __e2k__ && defined __ptr128__
+			    l,
+#endif /* defined __e2k__ && defined __ptr128__  */
+			    value, new_value, sym.st_value);
 }
 
 void

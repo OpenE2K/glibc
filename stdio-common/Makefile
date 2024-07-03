@@ -216,3 +216,11 @@ $(objpfx)tst-setvbuf1-cmp.out: tst-setvbuf1.expect $(objpfx)tst-setvbuf1.out
 
 $(objpfx)tst-printf-round: $(libm)
 $(objpfx)tst-scanf-round: $(libm)
+
+ifeq ($(compile-with-lcc),yes)
+CFLAGS-tst-wc-printf.c += -Wno-format
+CFLAGS-tst-printfsz.c += -Wno-format -Wno-deprecated-declarations
+CFLAGS-tst-sprintf.c += -Wno-format
+CFLAGS-scanf16.c += -Wno-format
+CFLAGS-scanf16a.c += -Wno-format
+endif

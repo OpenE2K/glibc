@@ -1,0 +1,40 @@
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
+
+/*
+ * significand(x) computes just
+ * 	scalb(x, (double) -ilogb(x)),
+ * for exercising the fraction-part(F) IEEE 754-1985 test vector.
+ */
+
+#include <math.h>
+#include <math_private.h>
+
+#include "f2c.h"
+
+double __significand(double x)
+{
+  _type_double_bits X;
+  LL k;
+
+  X.value = x;
+  k = X.llong & 0x7fffffffffffffffLL;
+
+  if (__glibc_unlikely (k >= 0x7ff0000000000000LL))
+    return x * DB_MIN_UN;                                /* NaN or Inf */
+  if (__glibc_unlikely (k < 0x10000000000000LL))   /* 0 or subnormal x */
+    {
+      if (x == 0)
+        return x;                                  /* +-0 */
+      X.value *= DVAIN52;
+    }
+  X.llong &= ~0x7ff0000000000000LL;               /* обнуляем порядок */
+  X.llong |= 0x3ff0000000000000LL;               /* вставляем порядок */
+  return X.value;
+}
+weak_alias (__significand, significand)
+#ifdef NO_LONG_DOUBLE
+strong_alias (__significand, __significandl)
+weak_alias (__significand, significandl)
+#endif

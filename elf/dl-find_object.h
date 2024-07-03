@@ -26,6 +26,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if defined __ptr128__
+# define l_map_start   l_text_start
+# define l_map_end     l_text_end
+#endif /* defined __ptr128__  */
+
 /* Internal version of struct dl_find_object.  Does not include the
    (yet unused) flags member.  We need to make a copy of data also in
    struct link_map to support non-contiguous mappings, and to support

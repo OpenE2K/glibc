@@ -133,5 +133,19 @@ __libc_fork (void)
   return pid;
 }
 weak_alias (__libc_fork, __fork)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 libc_hidden_def (__fork)
 weak_alias (__libc_fork, fork)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+versioned_symbol (libc, __libc_fork, __fork, GLIBC_2_2);
+weak_alias (__libc_fork, __libc_fork_weak)
+versioned_symbol (libc, __libc_fork_weak, fork, GLIBC_2_2);
+
+compat_symbol (libpthread, __libc_fork, __fork, GLIBC_2_0);
+compat_symbol (libpthread, __libc_fork_weak, fork, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

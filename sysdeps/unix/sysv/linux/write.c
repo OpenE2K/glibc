@@ -28,6 +28,26 @@ __libc_write (int fd, const void *buf, size_t nbytes)
 libc_hidden_def (__libc_write)
 
 weak_alias (__libc_write, __write)
+#if ! (defined __e2k__ && defined SHARED)
 libc_hidden_weak (__write)
+#endif /* ! (defined __e2k__ && defined SHARED)  */
+
 weak_alias (__libc_write, write)
+#if ! (defined __e2k__ && defined SHARED)
 libc_hidden_weak (write)
+#endif /* ! (defined __e2k__ && defined SHARED)  */
+
+#if defined __e2k__ && defined SHARED
+
+#include <shlib-compat.h>
+
+/* Both {__,}write are WEAK. This is true both for their default and compat
+   versions.  */
+weak_alias (__libc_write, __write_weak)
+versioned_symbol (libc, __write_weak, __write, GLIBC_2_2);
+versioned_symbol (libc, __write_weak, write, GLIBC_2_2);
+
+compat_symbol (libpthread, __write_weak, __write, GLIBC_2_0);
+compat_symbol (libpthread, __write_weak, write, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

@@ -1,0 +1,68 @@
+/* Copyright (C) 1998, 1999 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, write to the Free
+   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   02111-1307 USA.  */
+
+#ifndef _SYS_UCONTEXT_H
+#define _SYS_UCONTEXT_H	1
+
+#include <features.h>
+#include <signal.h>
+#include <bits/wordsize.h>
+
+/* We need the signal context definitions even if they are not used
+   included in <signal.h>.  */
+#include <bits/sigcontext.h>
+
+#define MC_NGREG	551 /* asm/user.h: sizeof (struct user_regs_struct) / sizeof (greg_t) */
+
+typedef unsigned long long mc_greg_t;
+typedef mc_greg_t mc_gregset_t[MC_NGREG];
+
+/*
+ * A gregset_t is defined as an array type for compatibility with the reference
+ * source. This is important due to differences in the way the C language
+ * treats arrays and structures as parameters.
+ *
+ * Note that NGREG is really (sizeof (struct regs) / sizeof (greg_t)),
+ * but that the ABI defines it absolutely to be 21 (resp. 19).
+ */
+
+
+#define NGREG	551 /* asm/user.h: sizeof (struct user_regs_struct) / sizeof (greg_t) */
+typedef unsigned long long greg_t;
+
+typedef greg_t  gregset_t[NGREG];
+
+/* Userlevel context. Keep in mind that this structure differs in size from its
+   Kernel counterpart because of the last field: `sigset_t' has different sizes
+   in user space and within the Kernel. In other aspects this structure
+   corresponds to one of `struct ucontext{,_32}' defined within the Kernel
+   depending on the `__WORDSIZE'.  */
+typedef struct ucontext
+  {
+    unsigned long     uc_flags;
+    struct ucontext  *uc_link;
+    /* `stack_t' coming from `/sysdeps/unix/linux/bits/sigstack.h' coincides
+       with `stack{,32}_t' defined within the Kernel.  */
+    stack_t	      uc_stack;
+    struct sigcontext uc_mcontext;
+    __sigset_t	      uc_sigmask;
+    struct extra_ucontext uc_extra;
+  } ucontext_t;
+
+
+#endif /* sys/ucontext.h */

@@ -30,15 +30,19 @@ __pthread_early_init (void)
   /* Determine the default allowed stack size.  This is the size used
      in case the user does not specify one.  */
   struct rlimit limit;
+#if ! defined __ptr128__
   if (__getrlimit (RLIMIT_STACK, &limit) != 0
       || limit.rlim_cur == RLIM_INFINITY)
+#endif /* ! defined __ptr128__  */
     /* The system limit is not usable.  Use an architecture-specific
        default.  */
     limit.rlim_cur = ARCH_STACK_DEFAULT_SIZE;
+#if ! defined __ptr128__
   else if (limit.rlim_cur < PTHREAD_STACK_MIN)
     /* The system limit is unusably small.
        Use the minimal size acceptable.  */
     limit.rlim_cur = PTHREAD_STACK_MIN;
+#endif /* ! defined __ptr128__  */
 
   /* Make sure it meets the minimum size that allocate_stack
      (allocatestack.c) will demand, which depends on the page size.  */

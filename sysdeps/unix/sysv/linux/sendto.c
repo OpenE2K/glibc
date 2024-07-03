@@ -23,7 +23,22 @@ ssize_t
 __libc_sendto (int fd, const void *buf, size_t len, int flags,
 	       __CONST_SOCKADDR_ARG addr, socklen_t addrlen)
 {
-#ifdef __ASSUME_SENDTO_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+    long int d;
+    void *e;
+    long int f;
+  }
+  args = {(long int) fd, (void *) buf, (long int) len, (long int) flags,
+	  (void *) addr.__sockaddr__, (long int) addrlen};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_sendto, &args);
+
+#elif defined __ASSUME_SENDTO_SYSCALL
   return SYSCALL_CANCEL (sendto, fd, buf, len, flags, addr.__sockaddr__,
                          addrlen);
 #else
@@ -31,5 +46,19 @@ __libc_sendto (int fd, const void *buf, size_t len, int flags,
 			    addrlen);
 #endif
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_sendto, sendto)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__libc_sendto, __libc_sendto_weak)
+versioned_symbol (libc, __libc_sendto_weak, sendto, GLIBC_2_0);
+compat_symbol (libpthread, __libc_sendto_weak, sendto, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */
+
 weak_alias (__libc_sendto, __sendto)

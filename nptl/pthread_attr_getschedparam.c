@@ -32,4 +32,19 @@ __pthread_attr_getschedparam (const pthread_attr_t *attr,
 
   return 0;
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 strong_alias (__pthread_attr_getschedparam, pthread_attr_getschedparam)
+
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+
+/* Is the created versioned symbol going to become strong?  */
+versioned_symbol (libc, __pthread_attr_getschedparam,
+		  pthread_attr_getschedparam, GLIBC_2_2);
+
+compat_symbol (libpthread, __pthread_attr_getschedparam,
+	       pthread_attr_getschedparam, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

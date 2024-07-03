@@ -44,11 +44,15 @@ TEST_SIZE (sigjmp_buf, SIGJMP_BUF_SIZE);
 TEST_ALIGN (jmp_buf, JMP_BUF_ALIGN);
 TEST_ALIGN (sigjmp_buf, SIGJMP_BUF_ALIGN);
 
+#if ! defined __e2k__
+/* There seem to be no such fields on e2k.  */
+
 /* Check if internal fields in jmp_buf have the expected offsets.  */
 TEST_OFFSET (struct __jmp_buf_tag, __mask_was_saved,
 	     MASK_WAS_SAVED_OFFSET);
 TEST_OFFSET (struct __jmp_buf_tag, __saved_mask,
 	     SAVED_MASK_OFFSET);
+#endif /* ! defined __e2k__  */
 
 int
 main (int argc, char *argv[])

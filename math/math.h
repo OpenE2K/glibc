@@ -971,7 +971,9 @@ enum
 # endif
 
 /* Return nonzero value if sign of X is negative.  */
-# if __GNUC_PREREQ (6,0) || __glibc_clang_prereq (3,3)
+/* __builtin_signbit () is currently broken in LCC in gcc-7.3.0 compatibility
+   mode (Bug #105547).  */
+# if (__GNUC_PREREQ (6,0) && ! defined __LCC__) || __glibc_clang_prereq (3,3)
 #  define signbit(x) __builtin_signbit (x)
 # elif defined __cplusplus
   /* In C++ mode, __MATH_TG cannot be used, because it relies on
@@ -1294,6 +1296,13 @@ iszero (__T __val)
 # error "M_* values needed for _Float128x"
 #endif
 
+/* When compiling in strict ISO C compatible mode we must not use the
+   inline functions since they, among other things, do not set the
+   `errno' variable correctly.  */
+#if defined __STRICT_ANSI__ && !defined __NO_MATH_INLINES
+# define __NO_MATH_INLINES     1
+#endif
+
 #ifdef __USE_ISOC99
 # if __GNUC_PREREQ (3, 1)
 /* ISO C99 defines some macros to compare number while taking care for
@@ -1330,6 +1339,12 @@ iszero (__T __val)
 		    __u != __v && (__u != __u || __v != __v); }))
 # endif
 #endif
+
+/* Get machine-dependent inline versions (if there are any).  */
+#if defined __USE_EXTERN_INLINES && defined __LCC__
+# include <bits/mathinline.h>
+#endif
+
 
 #if __GLIBC_USE (IEC_60559_BFP_EXT_C2X)
 /* An expression whose type has the widest of the evaluation formats

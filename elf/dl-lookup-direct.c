@@ -25,7 +25,11 @@
    variant here is simplified because it requires symbol
    versioning.  */
 static const ElfW(Sym) *
-check_match (const struct link_map *const map, const char *const undef_name,
+check_match (
+#if ! defined __ptr128__
+	     const
+#endif /* ! defined __ptr128__  */
+	     struct link_map *const map, const char *const undef_name,
              const char *version, uint32_t version_hash,
              const Elf_Symndx symidx)
 {

@@ -71,6 +71,14 @@ do_test (void)
       printf ("%s: getcontext: %m\n", __FUNCTION__);
       exit (EXIT_FAILURE);
     }
+#if defined __e2k__
+  /* We may presumably "free" context obtained from the previous invocation
+     of makecontext_e2k (), but there's probably nowhere to free the last
+     context obtained this way as the associated f3 () eventually
+     `exit ()'s.  */
+  if (ctx[1].uc_link == &ctx[0])
+    freecontext_e2k (&ctx[1]);
+#endif /* defined __e2k__  */
   if (getcontext (&ctx[1]) != 0)
     {
       printf ("%s: getcontext: %m\n", __FUNCTION__);
@@ -79,7 +87,23 @@ do_test (void)
   ctx[1].uc_stack.ss_sp = st1;
   ctx[1].uc_stack.ss_size = sizeof st1;
   ctx[1].uc_link = &ctx[0];
-  makecontext (&ctx[1], (void (*) (void)) f3, 0);
+
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ctx[1], (void (*) (void)) f3, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   f1 ();
   puts ("FAIL: returned from f1 ()");
   exit (EXIT_FAILURE);

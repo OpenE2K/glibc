@@ -24,6 +24,8 @@
 #include <libc-pointer-arith.h>	/* For cast_to_pointer.  */
 #include <stackinfo.h>		/* For _STACK_GROWS_{UP,DOWN}.  */
 
+#if ! (defined __e2k__ && defined __ptr128__)
+
 #define CLONE_ARGS_SIZE_VER0 64 /* sizeof first published struct */
 #define CLONE_ARGS_SIZE_VER1 80 /* sizeof second published struct */
 #define CLONE_ARGS_SIZE_VER2 88 /* sizeof third published struct */
@@ -42,6 +44,8 @@ _Static_assert (offsetofend (struct clone_args, cgroup) == CLONE_ARGS_SIZE_VER2,
 		"offsetofend (struct clone_args, cgroup) != CLONE_ARGS_SIZE_VER2");
 _Static_assert (sizeof (struct clone_args) == CLONE_ARGS_SIZE_VER2,
 		"sizeof (struct clone_args) != CLONE_ARGS_SIZE_VER2");
+
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
 
 int
 __clone_internal (struct clone_args *cl_args,

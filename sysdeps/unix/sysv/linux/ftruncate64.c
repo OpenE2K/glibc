@@ -18,6 +18,13 @@
 #include <unistd.h>
 #include <sysdep.h>
 
+/* Take into account that this syscall isn't currently(?) supported in E2K
+   Linux Kernel. Ideally they shouldn't provide its number via <asm/unistd.h>
+   then.  */
+#if defined __e2k__ && (defined __ptr64__ || defined __ptr128__)
+#undef __NR_ftruncate64
+#endif
+
 #ifndef __NR_ftruncate64
 # define __NR_ftruncate64 __NR_ftruncate
 #endif

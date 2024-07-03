@@ -25,13 +25,19 @@
 int
 __sched_rr_get_interval64 (pid_t pid, struct __timespec64 *tp)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_sched_rr_get_interval_time64
 # define __NR_sched_rr_get_interval_time64 __NR_sched_rr_get_interval
 #endif
   int ret = INLINE_SYSCALL_CALL (sched_rr_get_interval_time64, pid, tp);
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 #ifndef __ASSUME_TIME64_SYSCALLS
+#if ! defined __e2k__ || __WORDSIZE == 64
   if (ret == 0 || errno != ENOSYS)
     return ret;
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+  int ret;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
 
   struct timespec tp32;
   ret = INLINE_SYSCALL_CALL (sched_rr_get_interval, pid, &tp32);

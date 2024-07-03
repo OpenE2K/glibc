@@ -34,6 +34,14 @@ headers	:= sys/utsname.h sys/times.h sys/wait.h sys/types.h unistd.h	      \
 	   cpio.h spawn.h bits/unistd.h bits/types/struct_sched_param.h	      \
 	   bits/unistd_ext.h
 
+ifeq ($(config-machine),e2k128)
+# This is required so as to avoid calling vfork () via PM PLT which results in
+# an inevitable extra return (or even two extra returns if a secondary PLT entry
+# is involved while performing the lazy binding), whereas vfork () seems to
+# allow for exactly one return to the function from which it was called.
+static-only-routines := vfork
+endif
+
 routines :=								      \
 	uname								      \
 	times								      \
@@ -451,3 +459,9 @@ $(objpfx)posix-conf-vars-def.h: $(..)scripts/gen-posix-conf-vars.awk \
 	$(make-target-directory)
 	$(AWK) -f $(filter-out Makefile, $^) > $@.tmp
 	mv -f $@.tmp $@
+
+ifeq ($(compile-with-lcc),yes)
+# Specify these options in CFLAGS because of the inability of LCC to apply them
+# locally via `#pragma GCC diagnostic's.
+CFLAGS-tst-dir.c += -Wno-deprecated-declarations
+endif

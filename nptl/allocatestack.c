@@ -271,7 +271,11 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       pd = (struct pthread *) ((uintptr_t) stackaddr
 			       - TLS_TCB_SIZE - adj);
 #elif TLS_DTV_AT_TP
-      pd = (struct pthread *) (((uintptr_t) stackaddr
+      pd = (struct pthread *) ((
+#if ! defined __ptr128__
+				(uintptr_t)
+#endif
+				stackaddr
 				- tls_static_size_for_stack - adj)
 			       - TLS_PRE_TCB_SIZE);
 #endif
@@ -349,6 +353,12 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       if (guardsize < attr->guardsize || size + guardsize < guardsize)
 	/* Arithmetic overflow.  */
 	return EINVAL;
+#if defined __ptr128__
+      /* This stupidly prevents subsequent manipulations with mprotect ()
+	 unworkable in PM due to readonly AP returned by the initial mmap ()
+	 from taking place.  */
+      guardsize = 0;
+#endif /* defined __ptr128__  */
       size += guardsize;
       if (__builtin_expect (size < ((guardsize + tls_static_size_for_stack
 				     + MINIMAL_REST_STACK + pagesize_m1)
@@ -385,6 +395,11 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 				    - tls_static_size_for_stack)
 				    & ~tls_static_align_m1)
 				   - TLS_PRE_TCB_SIZE);
+# if defined __ptr128__
+	  pd = (struct pthread *) ((char *) mem + (unsigned long) pd
+				   - (unsigned long) mem);
+# endif
+
 #endif
 
 	  /* Now mprotect the required region excluding the guard area.  */

@@ -174,11 +174,20 @@ $(foreach t,$(tests-cc-chk), $(eval $(call link-cc,$(t))))
 
 # backtrace_symbols only works if we link with -rdynamic.  backtrace
 # requires unwind tables on most architectures.
+
+# LCC doesn't support the '-funwind-tables' option meanwhile. Note that
+# '-fasynchronous-unwind-tables', which is also used to compile a number of
+# tests in this Makefile, has been supported as a stub for more than four
+# years now. Luckily, backtrace shouldn't require this option at E2K. But can
+# we do without it at Sparc?
+ifneq ($(compile-with-lcc),yes)
 CFLAGS-tst-backtrace2.c += -funwind-tables
 CFLAGS-tst-backtrace3.c += -funwind-tables
 CFLAGS-tst-backtrace4.c += -funwind-tables
 CFLAGS-tst-backtrace5.c += -funwind-tables
 CFLAGS-tst-backtrace6.c += -funwind-tables
+endif
+
 LDFLAGS-tst-backtrace2 = -rdynamic
 LDFLAGS-tst-backtrace3 = -rdynamic
 LDFLAGS-tst-backtrace4 = -rdynamic

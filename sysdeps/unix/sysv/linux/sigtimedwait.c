@@ -22,9 +22,11 @@ int
 __sigtimedwait64 (const sigset_t *set, siginfo_t *info,
 		  const struct __timespec64 *timeout)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_rt_sigtimedwait_time64
 # define __NR_rt_sigtimedwait_time64 __NR_rt_sigtimedwait
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
   int result;
 #ifdef __ASSUME_TIME64_SYSCALLS
@@ -34,10 +36,12 @@ __sigtimedwait64 (const sigset_t *set, siginfo_t *info,
   bool need_time64 = timeout != NULL && !in_time_t_range (timeout->tv_sec);
   if (need_time64)
     {
+# if ! defined __e2k__ || __WORDSIZE == 64
       result = SYSCALL_CANCEL (rt_sigtimedwait_time64, set, info, timeout,
 			       __NSIG_BYTES);
       if (result == 0 || errno != ENOSYS)
 	return result;
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
       __set_errno (EOVERFLOW);
       return -1;
     }

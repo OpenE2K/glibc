@@ -23,14 +23,20 @@ static int
 recvmmsg_syscall (int fd, struct mmsghdr *vmessages, unsigned int vlen,
 		  int flags, struct __timespec64 *timeout)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_recvmmsg_time64
 # define __NR_recvmmsg_time64 __NR_recvmmsg
 #endif
   int r = SYSCALL_CANCEL (recvmmsg_time64, fd, vmessages, vlen, flags,
 			  timeout);
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 #ifndef __ASSUME_TIME64_SYSCALLS
+#if ! defined __e2k__ || __WORDSIZE == 64
   if (r >= 0 || errno != ENOSYS)
     return r;
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+  int r;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
 
   struct timespec ts32, *pts32 = NULL;
   if (timeout != NULL)

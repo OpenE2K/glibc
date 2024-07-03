@@ -30,6 +30,13 @@ __libc_start_call_main (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   int result;
 
   /* Memory for the cancellation buffer.  */
+#if defined __ptr128__
+  /* FIXME: stupidly make it static for now (I guess that it should be located
+     on stack to do its job; see THREAD_SETMEM below where a pointer to it is
+     saved into `self->cleanup_jmp_buf') so as to make it possible to run PM
+     programs on LSIM without `-cg' as it happens to be in E2KT.  */
+  static
+#endif
   struct pthread_unwind_buf unwind_buf;
 
   int not_first_call;

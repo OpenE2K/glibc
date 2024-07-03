@@ -21,16 +21,25 @@
 #else
 # include <sysdep.h>
 
+#if ! defined __LCC__
+# define STARTUP_FATAL_NOT_CONSTANT					\
+  if (! __builtin_constant_p (__message_length))			\
+    {									\
+      extern void _startup_fatal_not_constant (void);			\
+      _startup_fatal_not_constant ();					\
+    }
+#else /* defined __LCC__  */
+# define STARTUP_FATAL_NOT_CONSTANT
+#endif /* defined __LCC__  */
+
 /* Avoid a run-time invocation of strlen.  */
 #define _startup_fatal(message)                                         \
   do                                                                    \
     {                                                                   \
       size_t __message_length = __builtin_strlen (message);             \
-      if (! __builtin_constant_p (__message_length))                    \
-        {                                                               \
-          extern void _startup_fatal_not_constant (void);               \
-          _startup_fatal_not_constant ();                               \
-        }                                                               \
+									\
+      STARTUP_FATAL_NOT_CONSTANT					\
+									\
       INTERNAL_SYSCALL_CALL (write, STDERR_FILENO, (message),           \
                              __message_length);                         \
       INTERNAL_SYSCALL_CALL (exit_group, 127);                          \

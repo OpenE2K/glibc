@@ -120,7 +120,7 @@ typedef union ksemun64 semctl_arg_t;
 static int
 semctl_syscall (int semid, int semnum, int cmd, semctl_arg_t arg)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#if defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS || defined __ptr128__
   return INLINE_SYSCALL_CALL (semctl, semid, semnum, cmd | __IPC_64,
 			      arg.array);
 #else

@@ -19,6 +19,10 @@
 #include <sysdep-cancel.h>
 #include <shlib-compat.h>
 
+#ifdef __e2k__
+# define __NR_pread64 __NR_pread
+#endif
+
 ssize_t
 __libc_pread64 (int fd, void *buf, size_t count, off64_t offset)
 {
@@ -34,12 +38,12 @@ strong_alias (__libc_pread64, __libc_pread)
 weak_alias (__libc_pread64, __pread)
 weak_alias (__libc_pread64, pread)
 
-# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+# if ! defined __e2k__ && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pread64, pread, GLIBC_2_2);
 # endif
 #endif
 
-#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+#if ! defined __e2k__ && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pread64, pread64, GLIBC_2_2);
 compat_symbol (libc, __libc_pread64, __pread64, GLIBC_2_2);
 #endif

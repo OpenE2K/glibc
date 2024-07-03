@@ -141,7 +141,7 @@ static bool __malloc_initialized = false;
   } while (0)
 
 #define arena_lock(ptr, size) do {					      \
-      if (ptr)								      \
+      if (__glibc_always ((ptr) != NULL))				      \
         __libc_lock_lock (ptr->mutex);					      \
       else								      \
         ptr = arena_get2 ((size), NULL);				      \

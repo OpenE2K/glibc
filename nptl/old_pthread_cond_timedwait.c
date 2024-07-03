@@ -44,4 +44,10 @@ __pthread_cond_timedwait_2_0 (pthread_cond_2_0_t *cond, pthread_mutex_t *mutex,
 }
 compat_symbol (libpthread, __pthread_cond_timedwait_2_0,
 	       pthread_cond_timedwait, GLIBC_2_0);
+
+# if defined __e2k__
+compat_symbol (libc, __pthread_cond_timedwait_2_0,
+	       pthread_cond_timedwait, GLIBC_2_0);
+# endif /* defined __e2k__  */
+
 #endif

@@ -19,8 +19,20 @@
 #include <alloca.h>
 #include <limits.h>
 
-
+/* Take into account that "lcc" configured with ECOMP_SUPPORT_0EH doesn't allow
+   for inlining at `-O0' which has been traditionally dependent on EDG frontend
+   and isn't supported by the latter unless "full portable lowering of exception
+   handling" has been enabled (see Bug #83209, Comment #1). To let one still
+   compile glibc without optimizations in such a case and avoid a linkage
+   failure, stupidly replace `extern __always_inline' with `static'.  */
+#if ! defined __LCC__
 extern __always_inline
+#else
+/* Take care of eliminating a warning if this function turns out to be
+   unused.  */
+static int __libc_use_alloca (size_t size) __attribute__ ((unused));
+static
+#endif
 int
 __libc_use_alloca (size_t size)
 {

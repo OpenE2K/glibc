@@ -46,7 +46,30 @@
 
 #include <stdlib.h>
 
+#if (! defined __LCC__)
+
+#define ABORT() abort ()
+
+#else /* __LCC__ */
+
+#define ABORT() \
+  ({            \
+    int *p = 0; \
+    *p = 0;     \
+   })
+
+#endif /* __LCC__ */
+
+
 #include <atomic-machine.h>
+
+#ifndef __atomic_val_by16
+# define __atomic_val_by16(pre, post, mem, ...)
+#endif
+
+#ifndef __atomic_bool_by16
+# define __atomic_bool_by16(pre, post, mem, ...)
+#endif
 
 /* Wrapper macros to call pre_NN_post (mem, ...) where NN is the
    bit width of *MEM.  The calling macro puts parens around MEM
@@ -62,8 +85,9 @@
       __atg1_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg1_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_val_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg1_result;							      \
   })
 #define __atomic_bool_bysize(pre, post, mem, ...)			      \
@@ -77,8 +101,9 @@
       __atg2_result = pre##_32_##post (mem, __VA_ARGS__);		      \
     else if (sizeof (*mem) == 8)					      \
       __atg2_result = pre##_64_##post (mem, __VA_ARGS__);		      \
+    __atomic_bool_by16 (pre, post, mem, __VA_ARGS__)			      \
     else								      \
-      abort ();								      \
+      ABORT ();								      \
     __atg2_result;							      \
   })
 
@@ -539,8 +564,20 @@
 
 /* We require 32b atomic operations; some archs also support 64b atomic
    operations.  */
+#if ! defined __LCC__
 void __atomic_link_error (void);
-# if __HAVE_64B_ATOMICS == 1
+#else /* __LCC__  */
+/* When building glibc with non-optimizing lcc the use of the original
+   '__atomic_link_error ()' leads to an ureasonable link error due to the
+   compiler's inability to eliminate dead code.  */
+#define __atomic_link_error() ABORT ()
+#endif /* __LCC__  */
+
+# if defined __e2k__ && defined __ptr128__
+#  define __atomic_check_size(mem) \
+   if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8) && (sizeof (*mem) != 16)) \
+     __atomic_link_error ();
+# elif __HAVE_64B_ATOMICS == 1
 #  define __atomic_check_size(mem) \
    if ((sizeof (*mem) != 4) && (sizeof (*mem) != 8))			      \
      __atomic_link_error ();
@@ -554,9 +591,14 @@ void __atomic_link_error (void);
    loads and stores makes this easier for archs that do not have native
    support for atomic operations to less-than-word-sized data.  */
 # if __HAVE_64B_ATOMICS == 1
+
+#  if ! defined __atomic_check_size_ls_16
+#   define __atomic_check_size_ls_16(mem)
+#  endif
+
 #  define __atomic_check_size_ls(mem) \
    if ((sizeof (*mem) != 1) && (sizeof (*mem) != 2) && (sizeof (*mem) != 4)   \
-       && (sizeof (*mem) != 8))						      \
+       && (sizeof (*mem) != 8) __atomic_check_size_ls_16 (mem))		      \
      __atomic_link_error ();
 # else
 #  define __atomic_check_size_ls(mem) \
@@ -570,6 +612,40 @@ void __atomic_link_error (void);
   __atomic_thread_fence (__ATOMIC_RELEASE)
 # define atomic_thread_fence_seq_cst() \
   __atomic_thread_fence (__ATOMIC_SEQ_CST)
+
+# if defined __ptr128__ && IS_IN (rtld)
+
+/* "Generic" __atomic_{load,store} ()' functions are currently used to
+   implement `__atomic_{load,store}_n ()' operating on pointers in PM
+   instead of missing from libatomic.so dedicated `__atomic_{load,
+   store}_ptr_16 ()' ones (see Bug #133790, Comment #3 and below).  */
+extern void * __atomic_load (const volatile void*, int)
+  __attribute__ ((weak));
+
+extern void __atomic_store (volatile void *, void *, int)
+  __attribute__ ((weak));
+
+#  define __atomic_load_n(mem, model)				\
+  ({								\
+    __typeof (*mem) res;					\
+								\
+    if (sizeof (*mem) == 16 && (&__atomic_load == NULL))	\
+      res = *mem;						\
+    else							\
+      res = __atomic_load_n (mem, model);			\
+								\
+    res;							\
+  })
+
+#  define __atomic_store_n(mem, val, model)			\
+  do {								\
+    if (sizeof (*mem) == 16 && (&__atomic_store == NULL))	\
+      *mem = val;						\
+    else							\
+      __atomic_store_n (mem, val, model);			\
+  } while (0)
+
+# endif /* defined __ptr128__ && IS_IN (rtld)  */
 
 # define atomic_load_relaxed(mem) \
   ({ __atomic_check_size_ls((mem));					      \

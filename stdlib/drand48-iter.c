@@ -15,6 +15,10 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#ifdef DONT_USE_FAST_DRAND48
+/* _drand48_iterate is manually inlined in erand48_r.c */
+/* so in case of some changes, please do the same in erand48_r.c */
+
 #include <errno.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -53,3 +57,5 @@ __drand48_iterate (unsigned short int xsubi[3], struct drand48_data *buffer)
 
   return 0;
 }
+
+#endif

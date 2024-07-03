@@ -139,6 +139,15 @@ CFLAGS-test-stat.c += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 CFLAGS-test-lfs.c += -D_LARGEFILE64_SOURCE
 CFLAGS-tst-lchmod.c += -D_FILE_OFFSET_BITS=64
 
+# Now that Linux-specific fchmodat () makes use of fstatat{,64} () missing from
+# libc.so (this function is defined in libc_nonshared.a) it's crucial that it
+# is inlined during the compilation. I don't see any other way for achieving
+# this except for a forced optimization.
+ifneq (,$(filter -O0,$(CC) $(CFLAGS)))
+CFLAGS-fchmodat.c += -O1
+endif
+
+
 test-stat2-ARGS = Makefile . $(objpfx)test-stat2
 
 tst-statvfs-ARGS = $(objpfx)tst-statvfs tst-statvfs.c /tmp

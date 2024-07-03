@@ -47,8 +47,14 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
 		  const struct r_found_version *version, void *const reloc_addr,
 		  int skip_ifunc);
 static inline void __attribute__((always_inline))
-elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
-			   void *const reloc_addr);
+elf_machine_rela_relative (
+#  if ! (defined __e2k__ && defined __ptr128__)
+			   ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
+			   void *const reloc_addr
+#  else
+			   struct link_map *map, const ElfW(Rela) *reloc
+#  endif
+			   );
 # endif
 # if ELF_MACHINE_NO_RELA || defined ELF_MACHINE_PLT_REL
 static inline void __attribute__((always_inline))
@@ -80,9 +86,24 @@ elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
 
 # define _ELF_DYNAMIC_DO_RELOC(RELOC, reloc, map, scope, do_lazy, skip_ifunc, test_rel) \
   do {									      \
-    struct { ElfW(Addr) start, size;					      \
+    struct { void *start; ElfW(Addr) size;				\
 	     __typeof (((ElfW(Dyn) *) 0)->d_un.d_val) nrelative; int lazy; }  \
-      ranges[2] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };			      \
+    ranges[2];                                                          \
+    /* For `ranges[2] = { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };' LCCS requires \
+       a relative relocation within GOT against some const obj which hasn't \
+       been processed by the time ld.so starts relocating itself. FIXME: \
+       this hack is required for Sparc only, for E2k there is no need for \
+       relative relocation against const obj in GOT. Find out why.  */  \
+    {                                                                   \
+      int i;                                                            \
+      for (i = 0; i < 2; i++)                                           \
+        {                                                               \
+         ranges[i].start = 0;                                           \
+         ranges[i].size = 0;                                            \
+         ranges[i].nrelative = 0;                                       \
+         ranges[i].lazy = 0;                                            \
+        }                                                               \
+    }                                                                   \
 									      \
     if ((map)->l_info[DT_##RELOC])					      \
       {									      \
@@ -95,7 +116,7 @@ elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
     if ((map)->l_info[DT_PLTREL]					      \
 	&& (!test_rel || (map)->l_info[DT_PLTREL]->d_un.d_val == DT_##RELOC)) \
       {									      \
-	ElfW(Addr) start = D_PTR ((map), l_info[DT_JMPREL]);		      \
+	void *start = D_PTR ((map), l_info[DT_JMPREL]);		      \
 	ElfW(Addr) size = (map)->l_info[DT_PLTRELSZ]->d_un.d_val;	      \
 									      \
 	if (ranges[0].start + ranges[0].size == (start + size))		      \

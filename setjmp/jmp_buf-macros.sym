@@ -7,5 +7,8 @@ JMP_BUF_SIZE		sizeof (jmp_buf)
 JMP_BUF_ALIGN		_Alignof (jmp_buf)
 SIGJMP_BUF_SIZE		sizeof (sigjmp_buf)
 SIGJMP_BUF_ALIGN	_Alignof (sigjmp_buf)
+
+#if ! defined __e2k__
 MASK_WAS_SAVED_OFFSET	offsetof (struct __jmp_buf_tag, __mask_was_saved)
 SAVED_MASK_OFFSET	offsetof (struct __jmp_buf_tag, __saved_mask)
+#endif

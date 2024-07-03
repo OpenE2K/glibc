@@ -45,13 +45,15 @@
 
 
 /* Globally enabled events.  */
-td_thr_events_t __nptl_threads_events;
+extern td_thr_events_t __nptl_threads_events;
 libc_hidden_proto (__nptl_threads_events)
+td_thr_events_t __nptl_threads_events;
 libc_hidden_data_def (__nptl_threads_events)
 
 /* Pointer to descriptor with the last event.  */
-struct pthread *__nptl_last_event;
+extern struct pthread *__nptl_last_event;
 libc_hidden_proto (__nptl_last_event)
+struct pthread *__nptl_last_event;
 libc_hidden_data_def (__nptl_last_event)
 
 #ifdef SHARED
@@ -285,12 +287,32 @@ static int create_thread (struct pthread *pd, const struct pthread_attr *attr,
   struct clone_args args =
     {
       .flags = clone_flags,
-      .pidfd = (uintptr_t) &pd->tid,
-      .parent_tid = (uintptr_t) &pd->tid,
-      .child_tid = (uintptr_t) &pd->tid,
-      .stack = (uintptr_t) stackaddr,
+      .pidfd =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
+      &pd->tid,
+      .parent_tid =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /*  ! (defined __e2k__ && defined __ptr128__)  */
+      &pd->tid,
+      .child_tid =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
+      &pd->tid,
+      .stack =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
+      stackaddr,
       .stack_size = stacksize,
-      .tls = (uintptr_t) tp,
+      .tls =
+#if ! (defined __e2k__ && defined __ptr128__)
+      (uintptr_t)
+#endif /* ! (defined __e2k__ && defined __ptr128__)  */
+      tp,
     };
   int ret = __clone_internal (&args, &start_thread, pd);
   if (__glibc_unlikely (ret == -1))
@@ -547,9 +569,11 @@ start_thread (void *arg)
     }
 #endif
 
+#if ! defined __ptr128__
   if (!pd->user_stack)
     advise_stack_range (pd->stackblock, pd->stackblock_size, (uintptr_t) pd,
 			pd->guardsize);
+#endif /* ! defined __ptr128__  */
 
   if (__glibc_unlikely (pd->cancelhandling & SETXID_BITMASK))
     {

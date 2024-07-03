@@ -110,7 +110,10 @@ __rtld_malloc_init_real (struct link_map *main_map)
 int weak_function
 __sigjmp_save (sigjmp_buf env, int savemask __attribute__ ((unused)))
 {
+#ifndef __e2k__
+  /* See Bugs #26432 and #43069.  */
   env[0].__mask_was_saved = 0;
+#endif /* __e2k__ */
   return 0;
 }
 
@@ -246,7 +249,11 @@ __strsep (char **stringp, const char *delim)
     {
       char *end = begin;
 
-      while (*end != '\0' || (end = NULL))
+      while (*end != '\0' || (end = NULL
+#if defined __LCC__
+			      , end != NULL
+#endif			      
+			      ))
 	{
 	  const char *dp = delim;
 

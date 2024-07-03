@@ -39,7 +39,12 @@ static inline off_t lseek_overflow (loff_t res)
 }
 
 off_t
-__lseek (int fd, off_t offset, int whence)
+#if IS_IN (rtld) || ! (defined __e2k__ && defined SHARED)
+__lseek
+#else /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+__lseek_local
+#endif /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+(int fd, off_t offset, int whence)
 {
 # ifdef __NR__llseek
   loff_t res;
@@ -51,7 +56,35 @@ __lseek (int fd, off_t offset, int whence)
   return INLINE_SYSCALL_CALL (lseek, fd, offset, whence);
 # endif
 }
+
+# if IS_IN (rtld) || ! (defined __e2k__ && defined SHARED)
+
 libc_hidden_def (__lseek)
 weak_alias (__lseek, lseek)
 strong_alias (__lseek, __libc_lseek)
+
+# else /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+
+#include <shlib-compat.h>
+
+/* This alias ensures the creation of __GI_* () HIDDEN symbol (to which
+   "aliasname" is transformed via libc_hidden_proto magic) intended for
+   internal use within libc.so.  */
+strong_alias (__lseek_local, __lseek)
+
+strong_alias (__lseek_local, __lseek_strong)
+weak_alias (__lseek_local, __lseek_weak)
+
+versioned_symbol (libc, __lseek_strong, __lseek, GLIBC_2_0);
+versioned_symbol (libc, __lseek_weak, lseek, GLIBC_2_0);
+/* In 32-bit libpthread-2.29.so __lseek@@GLIBC_2.0 is GLOBAL (i.e.
+   non-WEAK).  */
+compat_symbol (libpthread, __lseek_strong, __lseek, GLIBC_2_0);
+compat_symbol (libpthread, __lseek_weak, lseek, GLIBC_2_0);
+
+strong_alias (__lseek_local, __libc_lseek)
+
+# endif /* ! IS_IN (rtld) && (defined __e2k__ && defined SHARED)  */
+
+
 #endif /* __OFF_T_MATCHES_OFF64_T  */

@@ -22,7 +22,19 @@
 ssize_t
 __libc_recv (int fd, void *buf, size_t len, int flags)
 {
-#ifdef __ASSUME_RECV_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+    long int d;
+  }
+  args = {(long int) fd, (void *) buf, (long int) len, (long int) flags};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_recv, &args);
+
+#elif defined __ASSUME_RECV_SYSCALL
   return SYSCALL_CANCEL (recv, fd, buf, len, flags);
 #elif defined __ASSUME_RECVFROM_SYSCALL
   return SYSCALL_CANCEL (recvfrom, fd, buf, len, flags, NULL, NULL);
@@ -30,6 +42,22 @@ __libc_recv (int fd, void *buf, size_t len, int flags)
   return SOCKETCALL_CANCEL (recv, fd, buf, len, flags);
 #endif
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__libc_recv, recv)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__libc_recv, __libc_recv_weak)
+versioned_symbol (libc, __libc_recv_weak, recv, GLIBC_2_0);
+compat_symbol (libpthread, __libc_recv_weak, recv, GLIBC_2_0);
+
+# endif /* defined __e2k__ && defined SHARED  */
+
+/* There is no need to create a compat for __recv which has never been present
+   in libpthread.so.  */
 weak_alias (__libc_recv, __recv)
 libc_hidden_weak (__recv)

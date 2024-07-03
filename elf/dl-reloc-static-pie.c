@@ -21,7 +21,9 @@
 # pragma GCC visibility push(hidden)
 #include <assert.h>
 #include <unistd.h>
+#define FROM_DL_RELOC_STATIC_PIE
 #include <ldsodefs.h>
+#undef FROM_DL_RELOC_STATIC_PIE
 
 #include <dl-machine.h>
 #include <dl-debug.h>
@@ -41,7 +43,19 @@ _dl_relocate_static_pie (void)
   main_map->l_addr = elf_machine_load_address ();
 
   /* Read our own dynamic section and fill in the info array.  */
+#if ! defined __e2k__ || ! defined __ptr128__
   main_map->l_ld = ((void *) main_map->l_addr + elf_machine_dynamic ());
+#else /* defined __e2k__ && defined __ptr128__  */
+  main_map->l_ld = ({
+      void *res;
+      __asm__ ("gdtoap %1, %0\n\t"
+	       : "=r" (res) : "r" (elf_machine_dynamic ()));
+      res;
+    });
+
+  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (main_map->l_gd));
+#endif /* defined __e2k__ && defined __ptr128__  */
+
 
   const ElfW(Phdr) *ph, *phdr = GL(dl_phdr);
   size_t phnum = GL(dl_phnum);
@@ -52,7 +66,24 @@ _dl_relocate_static_pie (void)
 	break;
       }
 
+#if defined __e2k__ && defined __ptr128__
+  /* These should be set early enough to let get_offset () do its job for
+     packed PM ELFs a few lines below.  */
+  main_map->l_phdr = phdr;
+  main_map->l_phnum = phnum;
+#endif
+
   elf_get_dynamic_info (main_map, false, true);
+
+#if defined __e2k__ && defined __ptr128__ && defined HAVE_E2K_GOLD
+  /* Dynamic info should be available to evaluate GET_PL.  */
+  __asm__ ("getpl %1, %0"
+	   : "=r" (main_map->get_pl)
+	   : "r" (get_offset(main_map,
+			     main_map->l_info[DT_E2K_INIT_GOT
+					      - DT_LOPROC
+					      + DT_NUM]->d_un.d_ptr)));
+#endif /* defined __e2k__ && defined __ptr128__ && defined HAVE_E2K_GOLD  */
 
 # ifdef ELF_MACHINE_BEFORE_RTLD_RELOC
   ELF_MACHINE_BEFORE_RTLD_RELOC (main_map, main_map->l_info);

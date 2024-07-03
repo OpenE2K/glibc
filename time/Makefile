@@ -109,3 +109,9 @@ tst-tzname-ENV = TZDIR=${common-objpfx}timezone/testdata
 CPPFLAGS-tst-tzname.c += -DTZDEFRULES='"$(posixrules-file)"'
 
 bug-getdate1-ARGS = ${objpfx}bug-getdate1-fmt
+
+ifeq ($(compile-with-lcc),yes)
+# Specify these options in CFLAGS because of the inability of LCC to apply them
+# locally via `#pragma GCC diagnostic's.
+CFLAGS-tst-ftime.c += -Wno-deprecated-declarations
+endif

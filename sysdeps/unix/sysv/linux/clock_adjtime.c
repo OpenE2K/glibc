@@ -26,13 +26,19 @@
 int
 __clock_adjtime64 (const clockid_t clock_id, struct __timex64 *tx64)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_clock_adjtime64
 # define __NR_clock_adjtime64 __NR_clock_adjtime
 #endif
   int r = INLINE_SYSCALL_CALL (clock_adjtime64, clock_id, tx64);
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 #ifndef __ASSUME_TIME64_SYSCALLS
+#if ! defined __e2k__ || __WORDSIZE == 64
   if (r >= 0 || errno != ENOSYS)
     return r;
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+  int r;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
 
   if (tx64->modes & ADJ_SETOFFSET
       && ! in_time_t_range (tx64->time.tv_sec))

@@ -75,9 +75,11 @@
 # error FUTEX_PRIVATE must be equal to 0
 #endif
 
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_futex_time64
 # define __NR_futex_time64 __NR_futex
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 /* Calls __libc_fatal with an error message.  Convenience function for
    concrete implementations of the futex interface.  */
@@ -220,6 +222,8 @@ futex_wake (unsigned int* futex_word, int processes_to_wake, int private)
 		     act in this case.  */
       return;
     case -ENOSYS: /* Must have been caused by a glibc bug.  */
+      /* This may have been caused by LSIM bug as well . . .  */
+      return;
     /* No other errors are documented at this time.  */
     default:
       futex_fatal_error ();

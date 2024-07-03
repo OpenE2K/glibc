@@ -261,6 +261,23 @@ _dl_aux_init (ElfW(auxv_t) *av)
   for (int i = 0; i < array_length (auxv_values); ++i)
     auxv_values[i] = 0;
   _dl_parse_auxv (av, auxv_values);
+
+#if defined __e2k__ && defined __ptr128__
+  if (auxv_values[AT_PHDR] != 0)
+    {
+      GL(dl_phdr) = ({
+	  const void *res;
+	  const void *gd;
+	  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
+	  __asm__ ("gdtoap %1, %0\n\t"
+		   : "=r" (res)
+		   : "r" (auxv_values[AT_PHDR] - (uintptr_t) gd));
+	  res;
+	});
+
+      GL(dl_phnum) = auxv_values[AT_PHNUM];
+    }
+#endif
 }
 #endif
 
@@ -268,6 +285,12 @@ _dl_aux_init (ElfW(auxv_t) *av)
 void
 _dl_non_dynamic_init (void)
 {
+#if defined __e2k__ && defined __ptr128__
+  /* Required for `_dl_protect_relro ()' invoked for static executables
+     nowadays.  */
+  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (_dl_main_map.l_gd));
+  _dl_main_map.l_addr = (ElfW(Addr)) _dl_main_map.l_gd;
+#endif
   _dl_main_map.l_origin = _dl_get_origin ();
   _dl_main_map.l_phdr = GL(dl_phdr);
   _dl_main_map.l_phnum = GL(dl_phnum);

@@ -34,6 +34,8 @@
 #include "tst-tpp.h"
 #endif
 
+#include "adjust-ptr.h"
+
 
 /* A bogus clock value that tells run_test to use pthread_mutex_timedlock
    rather than pthread_mutex_clocklock.  */
@@ -68,8 +70,8 @@ do_test_clock (clockid_t clockid, int tmo_result)
 
   mem = xmmap (NULL, ps, PROT_READ | PROT_WRITE, MAP_SHARED, fd);
 
-  m = (pthread_mutex_t *) (((uintptr_t) mem + __alignof (pthread_mutex_t))
-			   & ~(__alignof (pthread_mutex_t) - 1));
+  m = (pthread_mutex_t *) ADJUST_PTR ((mem + __alignof (pthread_mutex_t)), &,
+				      ~(__alignof (pthread_mutex_t) - 1));
 
   TEST_COMPARE (pthread_mutexattr_init (&a), 0);
 

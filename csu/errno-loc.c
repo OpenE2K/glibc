@@ -21,8 +21,27 @@
 #include <tls.h>
 
 int *
-__errno_location (void)
+#if ! (defined __e2k__ && defined SHARED && ! IS_IN (rtld))
+__errno_location
+#else /* defined __e2k__  */
+__errno_location_local
+#endif /* defined __e2k__  */
+(void)
 {
   return &errno;
 }
+
+#if ! (defined __e2k__ && defined SHARED && ! IS_IN (rtld))
+
 libc_hidden_def (__errno_location)
+
+#else /* defined __e2k__ && defined SHARED && ! IS_IN (rtld) */
+
+strong_alias (__errno_location_local, __errno_location)
+
+#include <shlib-compat.h>
+
+versioned_symbol (libc, __errno_location_local, __errno_location, GLIBC_2_0);
+compat_symbol (libpthread, __errno_location_local, __errno_location, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

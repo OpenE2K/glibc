@@ -35,5 +35,19 @@ __sigwait (const sigset_t *set, int *sig)
   return 0;
 }
 libc_hidden_def (__sigwait)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__sigwait, sigwait)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__sigwait, __sigwait_weak)
+versioned_symbol (libc, __sigwait_weak, sigwait, GLIBC_2_0);
+compat_symbol (libpthread, __sigwait_weak, sigwait, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */
+
 strong_alias (__sigwait, __libc_sigwait)

@@ -24,6 +24,8 @@
    Computed using gmp.
  */
 
+/* For the definition of GET_FLOAT_WORD() macro.  */
+#include <math.h>
 /* Include to grab typedefs and wrappers for _Float128 and such.  */
 #include <math_private.h>
 

@@ -20,6 +20,15 @@ cookieread (void *cookie, char *buf, size_t count)
   if (cookie != THE_COOKIE)
     ++errors;
   cookieread_called = 1;
+
+#if defined __ptr128__
+  /* Generic glibc code is likely to touch the contents of the returned buffer
+     which may obviously result in `exc_illegal_operand' in PM if you don't
+     take care of actually setting it up.  */
+  for (size_t i = 0; i < count; i++)
+    buf[i] = (char) i;
+#endif /* defined __ptr128__  */
+
   return 42;
 }
 

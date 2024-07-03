@@ -29,23 +29,9 @@
 #define NEED_SPEC_ARRAY 1
 #include <posix-conf-vars.h>
 
-/* If all of the environments are defined in environments.h, then we don't need
-   to bother with doing a runtime check for a specific environment.  */
-#if (defined _SC_V6_ILP32_OFF32 \
-     && defined _SC_V7_LPBIG_OFFBIG \
-     && defined _SC_XBS5_LP64_OFF64 \
-     && defined _SC_V6_LP64_OFF64 \
-     && defined _SC_V7_ILP32_OFFBIG \
-     && defined _SC_V6_LPBIG_OFFBIG \
-     && defined _SC_V7_LP64_OFF64 \
-     && defined _SC_V7_ILP32_OFF32 \
-     && defined _SC_XBS5_LPBIG_OFFBIG \
-     && defined _SC_XBS5_ILP32_OFFBIG \
-     && defined _SC_V6_ILP32_OFFBIG \
-     && defined _SC_XBS5_ILP32_OFF32)
-# define ALL_ENVIRONMENTS_DEFINED 1
-#endif
-
+/* The definition of ALL_ENVIRONMENTS_DEFINED moved to `scripts/
+   gen-posix-conf-vars.awk' generating posix-conf-vars-def.h so as to
+   avoid creation of useless `static const' variables in this header.  */
 struct conf
   {
     const char *name;

@@ -25,34 +25,66 @@
 
 extern int __sprintf_chk (char *__restrict __s, int __flag, size_t __slen,
 			  const char *__restrict __format, ...) __THROW
-    __attr_access ((__write_only__, 1, 3));
+    __attr_access ((__write_only__, 1, 3))
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 4, 5)))
+#endif /* __LCC__  */
+  ;
 extern int __vsprintf_chk (char *__restrict __s, int __flag, size_t __slen,
 			   const char *__restrict __format,
 			   __gnuc_va_list __ap) __THROW
-    __attr_access ((__write_only__, 1, 3));
+    __attr_access ((__write_only__, 1, 3))
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 4, 0)))
+#endif /* __LCC__  */
+  ;
 
 #if defined __USE_ISOC99 || defined __USE_UNIX98
 
 extern int __snprintf_chk (char *__restrict __s, size_t __n, int __flag,
 			   size_t __slen, const char *__restrict __format,
 			   ...) __THROW
-    __attr_access ((__write_only__, 1, 2));
+    __attr_access ((__write_only__, 1, 2))
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 5, 6)))
+#endif /* __LCC__  */
+  ;
 extern int __vsnprintf_chk (char *__restrict __s, size_t __n, int __flag,
 			    size_t __slen, const char *__restrict __format,
 			    __gnuc_va_list __ap) __THROW
-    __attr_access ((__write_only__, 1, 2));
+    __attr_access ((__write_only__, 1, 2))
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 5, 0)))
+#endif /* __LCC__  */
+  ;
 
 #endif
 
 #if __USE_FORTIFY_LEVEL > 1
 
 extern int __fprintf_chk (FILE *__restrict __stream, int __flag,
-			  const char *__restrict __format, ...);
-extern int __printf_chk (int __flag, const char *__restrict __format, ...);
+			  const char *__restrict __format, ...)
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 3, 4)))
+#endif /* __LCC__  */
+  ;
+extern int __printf_chk (int __flag, const char *__restrict __format, ...)
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 2, 3)))
+#endif /* __LCC__  */
+  ;
 extern int __vfprintf_chk (FILE *__restrict __stream, int __flag,
-			   const char *__restrict __format, __gnuc_va_list __ap);
+			   const char *__restrict __format, __gnuc_va_list __ap)
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 3, 0)))
+#endif /* __LCC__  */
+  ;
 extern int __vprintf_chk (int __flag, const char *__restrict __format,
-			  __gnuc_va_list __ap);
+			  __gnuc_va_list __ap)
+#if defined __LCC__
+    __attribute__ ((__format__ (__printf__, 2, 0)))
+#endif /* __LCC__  */
+  ;
 
 # ifdef __USE_XOPEN2K8
 extern int __dprintf_chk (int __fd, int __flag, const char *__restrict __fmt,

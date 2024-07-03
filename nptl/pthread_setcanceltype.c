@@ -57,5 +57,28 @@ __pthread_setcanceltype (int type, int *oldtype)
 
   return 0;
 }
+
+/* What is this needed for in the absence of __pthread_setcanceltype@@GLIBC_...
+   dynamic symbol?  */
 libc_hidden_def (__pthread_setcanceltype)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__pthread_setcanceltype, pthread_setcanceltype)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+weak_alias (__pthread_setcanceltype, __pthread_setcanceltype_weak)
+versioned_symbol (libc, __pthread_setcanceltype_weak, pthread_setcanceltype,
+		  GLIBC_2_0);
+
+/* pthread_setcanceltype@@GLIBC_2.0 in libpthread-2.29.so
+   used to be GLOBAL. Amazingly, it's the above "useless" libc_hidden_def ()
+   producing "__pthread_setcanceltype" symbol in assembler that let's me do
+   without another subsidiary `__pthread_setcanceltype_strong ()' here.  */
+compat_symbol (libpthread, __pthread_setcanceltype, pthread_setcanceltype,
+	       GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

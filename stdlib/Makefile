@@ -57,12 +57,23 @@ routines	:=							      \
 	a64l l64a							      \
 	rpmatch strfmon strfmon_l getsubopt xpg_basename fmtmsg		      \
 	getcontext setcontext makecontext swapcontext
+
+ifeq ($(base-machine),e2k)
+sysdep_routines += makecontext_helper
+endif
+
 aux =	grouping groupingwc tens_in_limb
 
 # These routines will be omitted from the libc shared object.
 # Instead the static object files will be included in a special archive
 # linked against when the shared library will be used.
 static-only-routines = atexit at_quick_exit
+
+ifeq ($(config-machine),e2k128)
+# In PM these should go to libc_nonshared.a instead of libc.so due to the same
+# reason as setjmp ()-like functions.
+static-only-routines += getcontext swapcontext
+endif
 
 test-srcs	:= tst-fmtmsg
 tests := \
@@ -219,6 +230,13 @@ CFLAGS-tst-makecontext2.c += $(stack-align-test-flags)
 
 CFLAGS-testmb.c += -D_FORTIFY_SOURCE=2 -Wall -Werror
 
+ifeq ($(compile-with-lcc),yes)
+# LCC stupidly ignores (Bug #78841) `#pragma GCC diagnostic ignored "-Wnonnull"'
+# that is to disable this warning locally when compiling a troublesome code
+# snippet in tst-environ.c. Therefore, inhibit this warning globally for the
+# whole test.
+CFLAGS-tst-environ.c += -Wno-nonnull
+endif
 
 # Run a test on the header files we use.
 tests-special += $(objpfx)isomac.out
@@ -301,3 +319,9 @@ $(objpfx)tst-setcontext3.out: tst-setcontext3.sh $(objpfx)tst-setcontext3
 		 '$(run-program-env)' '$(test-program-prefix-after-env)' \
 		 $(common-objpfx)stdlib/; \
 	$(evaluate-test)
+
+ifeq ($(compile-with-lcc),yes)
+# Inhibit a warning on an unsuccessful attempt to set greater than "natural"
+# alignment of a stack variable in this test compiled with LCC.
+CFLAGS-tst-makecontext-align.c += -Wno-reduced-alignment
+endif

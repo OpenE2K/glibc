@@ -34,12 +34,14 @@ ___pthread_rwlock_init (pthread_rwlock_t *rwlock,
 {
   ASSERT_TYPE_SIZE (pthread_rwlock_t, __SIZEOF_PTHREAD_RWLOCK_T);
 
+#if ! defined __ptr128__
   /* The __flags is the only field where its offset should be checked to
      avoid ABI breakage with static initializers.  */
   ASSERT_PTHREAD_INTERNAL_OFFSET (pthread_rwlock_t, __data.__flags,
 				  __PTHREAD_RWLOCK_FLAGS_OFFSET);
   ASSERT_PTHREAD_INTERNAL_MEMBER_SIZE (pthread_rwlock_t, __data.__flags,
 				       int);
+#endif /* ! defined __ptr128__  */
 
   const struct pthread_rwlockattr *iattr;
 

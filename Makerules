@@ -126,22 +126,14 @@ ifneq (,$(CXX))
 # the target is out of date.  We make a copy of <cstdlib> and <cmath>
 # in the glibc build directory so that stdlib/stdlib.h and math/math.h
 # will be used instead of /usr/include/stdlib.h and /usr/include/math.h.
-before-compile := $(common-objpfx)cstdlib $(common-objpfx)cmath \
-	          $(before-compile)
-$(common-objpfx)cstdlib: $(c++-cstdlib-header)
-	$(INSTALL_DATA) $< $@T
-	$(move-if-change) $@T $@
-$(common-objpfx)cmath: $(c++-cmath-header)
-	$(INSTALL_DATA) $< $@T
-	$(move-if-change) $@T $@
-ifneq (,$(c++-bits-std_abs-h))
-# Also make a copy of <bits/std_abs.h> from GCC 7 to prevent it from
-# including /usr/include/stdlib.h.
-before-compile := $(common-objpfx)bits/std_abs.h $(before-compile)
-$(common-objpfx)bits/std_abs.h: $(c++-bits-std_abs-h)
-	$(INSTALL_DATA) $< $@T
-	$(move-if-change) $@T $@
-endif
+#before-compile := $(common-objpfx)cstdlib $(common-objpfx)cmath $(common-objpfx)bits/std_abs.h \
+#	          $(before-compile)
+
+install_cxx_header = @tmp=$$(echo "\#include <$(notdir $1)>" | $(CXX) -M -MP -x c++ - 2>/dev/null | sed -n "\,$(notdir $1):,{s/:\$$//;p}"); \
+if [ -n "$$tmp" ]; then $(INSTALL_DATA) $$tmp $1T; $(move-if-change) $1T $1; else echo $1 won\'t be installed now!; fi
+
+$(common-objpfx)cstdlib $(common-objpfx)cmath $(common-objpfx)bits/std_abs.h:
+	$(call install_cxx_header,$@)
 endif
 
 before-compile := $(common-objpfx)libc-abis.h $(before-compile)
@@ -225,6 +217,13 @@ sed-remove-dotdot := -e 's@  *\([^ 	\/$$][^ 	\]*\)@ $$(..)\1@g' \
 		     -e 's@^\([^ 	\/$$][^ 	\]*\)@$$(..)\1@g'
 endif
 
+# Ensure that `-masm-inline' doesn't have an effect when generating headers
+# below no matter what the user has specified in $(CC) or $(CFLAGS) .
+ifeq ($(compile-with-lcc),yes)
+mno-asm-inline = -mno-asm-inline
+endif
+
+
 ifdef gen-py-const-headers
 # We'll use a static pattern rule to match .pysym files with their
 # corresponding generated .py files.
@@ -249,7 +248,7 @@ $(py-const): $(py-const-dir)%.py: %.pysym $(py-const-script) \
 	     $(common-before-compile)
 	$(make-target-directory)
 	$(PYTHON) $(py-const-script) --python \
-		  --cc="$(CC) $(CFLAGS) $(CPPFLAGS)" $< \
+		  --cc="$(CC) $(CFLAGS) $(CPPFLAGS) $(mno-asm-inline)" $< \
 		  > $@.tmp
 	mv -f $@.tmp $@
 
@@ -268,7 +267,7 @@ ifdef gen-as-const-headers
 # may lead to build hang on a many-core machine.
 $(common-objpfx)%.h $(common-objpfx)%.h.d: $(..)scripts/gen-as-const.py \
 					   %.sym $(common-before-compile)
-	$(PYTHON) $< --cc="$(CC) $(CFLAGS) $(CPPFLAGS) -DGEN_AS_CONST_HEADERS \
+	$(PYTHON) $< --cc="$(CC) $(CFLAGS) $(CPPFLAGS) $(mno-asm-inline) -DGEN_AS_CONST_HEADERS \
 			   -MD -MP -MF $(@:.h=.h.d)T \
 			   -MT '$(@:.h=.h.d) $(@:.h.d=.h)'" \
 		  $(filter %.sym,$^) > $(@:.h.d=.h)T
@@ -512,6 +511,12 @@ link-libc-args = -Wl,--start-group \
 		 $(common-objpfx)libc_nonshared.a \
 		 -Wl,--as-needed $(elf-objpfx)ld.so -Wl,--no-as-needed \
 		 -Wl,--end-group
+
+ifeq (yes,$(compile-with-lcc))
+ifeq ($(config-machine),e2k128)
+$(common-objpfx)nptl/libpthread.so: link-libc-args += -Wl,--as-needed -latomic -Wl,--no-as-needed
+endif
+endif
 
 # The corresponding shared libc to use.  This may be modified for a
 # particular target.
@@ -1060,10 +1065,16 @@ $(inst_libdir)/libc.so: $(common-objpfx)format.lds \
 	(echo '/* GNU ld script';\
 	 echo '   Use the shared library, but some functions are only in';\
 	 echo '   the static library, so try that secondarily.  */';\
+	 local rtld_or_slib_dir;\
+	 if [ "$(enable-debian-multiarch)" != "yes" ]; then \
+	 rtld_or_slib_dir="$(rtlddir)"; \
+	 else \
+	 rtld_or_slib_dir="$(slibdir)"; \
+	 fi; \
 	 cat $<; \
 	 echo 'GROUP ( $(slibdir)/libc.so$(libc.so-version)' \
 	      '$(libdir)/$(patsubst %,$(libtype.oS),$(libprefix)$(libc-name))'\
-	      ' AS_NEEDED (' $(rtlddir)/$(rtld-installed-name) ') )' \
+	      ' AS_NEEDED (' $$rtld_or_slib_dir/$(rtld-installed-name) ') )' \
 	) > $@.new
 	mv -f $@.new $@
 

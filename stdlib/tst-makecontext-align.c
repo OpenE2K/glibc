@@ -109,6 +109,8 @@ __attribute__ ((noinline, noclone, weak))
 void
 check_align_32 (void)
 {
+  /* This test probably makes little sense for LCC with its inability to ensure
+     a greater than "natural" alignment for variables on stack.  */
   struct aligned
   {
     double x0  __attribute__ ((aligned (32)));
@@ -150,7 +152,21 @@ callback_0 (void)
 static void
 invoke_callback_0 (void *closure)
 {
-  makecontext (&ucp, (void *) callback_0, 0);
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ucp, (void *) callback_0, 0)
+#if defined __e2k__
+      != 0)
+    {
+      FAIL_EXIT1 ("makecontext_e2k returned non-zero");
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   if (setcontext (&ucp) != 0)
     FAIL_EXIT1 ("setcontext");
   FAIL_EXIT1 ("setcontext returned");
@@ -168,7 +184,21 @@ callback_1 (int arg1)
 static void
 invoke_callback_1 (void *closure)
 {
-  makecontext (&ucp, (void *) callback_1, 1, 101);
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ucp, (void *) callback_1, 1, 101)
+#if defined __e2k__
+      != 0)
+    {
+      FAIL_EXIT1 ("makecontext_e2k returned non-zero");
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   if (setcontext (&ucp) != 0)
     FAIL_EXIT1 ("setcontext");
   FAIL_EXIT1 ("setcontext returned");
@@ -187,7 +217,21 @@ callback_2 (int arg1, int arg2)
 static void
 invoke_callback_2 (void *closure)
 {
-  makecontext (&ucp, (void *) callback_2, 2, 201, 202);
+  #if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ucp, (void *) callback_2, 2, 201, 202)
+#if defined __e2k__
+      != 0)
+    {
+      FAIL_EXIT1 ("makecontext_e2k returned non-zero");
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   if (setcontext (&ucp) != 0)
     FAIL_EXIT1 ("setcontext");
   FAIL_EXIT1 ("setcontext returned");
@@ -207,7 +251,21 @@ callback_3 (int arg1, int arg2, int arg3)
 static void
 invoke_callback_3 (void *closure)
 {
-  makecontext (&ucp, (void *) callback_3, 3, 301, 302, 303);
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ucp, (void *) callback_3, 3, 301, 302, 303)
+#if defined __e2k__
+      != 0)
+    {
+      FAIL_EXIT1 ("makecontext_e2k returned non-zero");
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   if (setcontext (&ucp) != 0)
     FAIL_EXIT1 ("setcontext");
   FAIL_EXIT1 ("setcontext returned");

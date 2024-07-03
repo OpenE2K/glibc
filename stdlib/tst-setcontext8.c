@@ -70,7 +70,25 @@ do_test (void)
   ctx[1].uc_stack.ss_sp = st1;
   ctx[1].uc_stack.ss_size = sizeof st1;
   ctx[1].uc_link = &ctx[0];
-  makecontext (&ctx[1], (void (*) (void)) f1, 0);
+
+#if defined __e2k__
+  /* No idea where it could be possible to free ctx[1] as the test should
+     normally `exit (EXIT_SUCCESS)' from the associated f1 ().  */
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&ctx[1], (void (*) (void)) f1, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
+
   if (setcontext (&ctx[1]) != 0)
     {
       printf ("%s: setcontext: %m\n", __FUNCTION__);

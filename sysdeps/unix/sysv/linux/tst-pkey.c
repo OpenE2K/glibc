@@ -42,7 +42,13 @@ static int keys[key_count];
 static volatile int *pages[key_count];
 
 /* Used to report results from the signal handler.  */
-static volatile void *sigsegv_addr;
+static volatile
+#if ! defined __ptr128__
+void *
+#else /* defined __ptr128__  */
+unsigned long
+#endif /* defined __ptr128__  */
+sigsegv_addr;
 static volatile int sigsegv_code;
 static volatile int sigsegv_pkey;
 static sigjmp_buf sigsegv_jmp;

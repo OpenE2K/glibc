@@ -38,29 +38,45 @@ extern __typeof (realloc) *__rtld_realloc attribute_hidden;
    functions.  Instead the function pointers must be used
    directly.  */
 
-__extern_inline void *
+#ifndef __LCC__
+__extern_always_inline void *
 calloc (size_t a, size_t b)
 {
   return __rtld_calloc (a, b);
 }
+#else /* defined __LCC__  */
+# define calloc(a, b) __rtld_calloc (a, b)
+#endif /* defined __LCC__  */
 
-__extern_inline void
+#ifndef __LCC__
+__extern_always_inline void
 free (void *ptr)
 {
    __rtld_free (ptr);
 }
+#else /* defined __LCC__  */
+# define free(a) __rtld_free (a)
+#endif /* defined __LCC__  */
 
-__extern_inline void *
+#ifndef __LCC__
+__extern_always_inline void *
 malloc (size_t size)
 {
   return __rtld_malloc (size);
 }
+#else /* defined __LCC__  */
+# define malloc(a) __rtld_malloc (a)
+#endif /* defined __LCC__  */
 
-__extern_inline void *
+#ifndef __LCC__
+__extern_always_inline void *
 realloc (void *ptr, size_t size)
 {
   return __rtld_realloc (ptr, size);
 }
+#else /* defined __LCC__  */
+# define realloc(a, b) __rtld_realloc (a, b)
+#endif /* defined __LCC__  */
 
 /* Called after the first self-relocation to activate the minimal malloc
    implementation.  */

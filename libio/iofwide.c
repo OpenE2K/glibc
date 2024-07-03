@@ -116,7 +116,11 @@ __libio_codecvt_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 
   struct __gconv_step *gs = codecvt->__cd_out.step;
   int status;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
   codecvt->__cd_out.step_data.__outbuf = (unsigned char *) to_start;
@@ -168,7 +172,11 @@ __libio_codecvt_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 
   struct __gconv_step *gs = codecvt->__cd_in.step;
   int status;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
   codecvt->__cd_in.step_data.__outbuf = (unsigned char *) to_start;
@@ -236,7 +244,11 @@ __libio_codecvt_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
   const unsigned char *cp = (const unsigned char *) from_start;
   wchar_t to_buf[max];
   struct __gconv_step *gs = codecvt->__cd_in.step;
-  size_t dummy;
+  size_t dummy
+#if defined __ptr128__
+    = 0
+#endif /* defined __ptr128__  */
+    ;
 
   codecvt->__cd_in.step_data.__outbuf = (unsigned char *) to_buf;
   codecvt->__cd_in.step_data.__outbufend = (unsigned char *) &to_buf[max];

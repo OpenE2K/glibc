@@ -419,6 +419,13 @@ TLS_INIT_HELPER
 DL_SYSINFO_IMPLEMENTATION
 #endif
 
+#if defined __LCC__ && defined __sparc__
+/* Undo the setting made unconditionally by sysdeps/sparc/configure.ac
+   in belief that all reasonable gcc versions provide support for GOTDATA
+   nowadays.  */
+# undef PI_STATIC_AND_HIDDEN
+#endif
+
 /* Before ld.so is relocated we must not access variables which need
    relocations.  This means variables which are exported.  Variables
    declared as static are fine.  If we can mark a variable hidden this
@@ -484,12 +491,37 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
 	  sizeof GL(dl_rtld_map).l_info);
   GL(dl_rtld_map).l_mach = info->l.l_mach;
   GL(dl_rtld_map).l_relocated = 1;
+
+# if defined __ptr128__
+  GL(dl_rtld_map).l_gd = info->l.l_gd;
+  GL(dl_rtld_map).l_code_addr = info->l.l_code_addr;
+# endif /* __ptr128__  */
 #endif
   _dl_setup_hash (&GL(dl_rtld_map));
   GL(dl_rtld_map).l_real = &GL(dl_rtld_map);
+
+#if ! defined __ptr128__
   GL(dl_rtld_map).l_map_start = (ElfW(Addr)) _begin;
   GL(dl_rtld_map).l_map_end = (ElfW(Addr)) _end;
+#else /* defined __ptr128__  */
+  /* FIXME: these ones are setup in a rather meaningless way for now so as just
+     to let this file compile. Presumably e2k-linux-ld should be made to produce
+     some non-standard symbols in PM to initialize `l_{text,data}_{start,end}'
+     correctly.  */
+    GL(dl_rtld_map).l_data_start = (ElfW(Addr)) _begin;
+    GL(dl_rtld_map).l_data_end = (ElfW(Addr)) _end;
+#endif /* defined __ptr128__  */
+#if ! defined __ptr128__
+    /* This is incorrect in principle in PM because `_etext' belongs to the
+       TEXT segment whereas this will result in GDTOAP. Noticed during the
+       execution of EF_E2K_PACK_SEGMENTS ld.so: in the legacy one GD.size is
+       almost sure to exceed CUD.size which is why GDTOAP does not result
+       in exc_array_bounds .  */
   GL(dl_rtld_map).l_text_end = (ElfW(Addr)) _etext;
+#else /* defined __ptr128__  */
+  /* Formally assign some meaningless value.  */
+  GL(dl_rtld_map).l_text_end = 0x12345670;
+#endif /* defined __ptr128__  */
   /* Copy the TLS related data if necessary.  */
 #ifndef DONT_USE_BOOTSTRAP_MAP
 # if NO_TLS_OFFSET != 0
@@ -497,8 +529,12 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
 # endif
 #endif
 
+  /* FIXME: `__builtin_frame_address (0)' in Protected Mode results in a faulty
+     instruction sequence at present.  */
+#if ! defined __ptr128__
   /* Initialize the stack end variable.  */
   __libc_stack_end = __builtin_frame_address (0);
+#endif
 
   /* Call the OS-dependent function to set up life so we can do things like
      file access.  It will call `dl_main' (below) to do all the real work
@@ -522,9 +558,26 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
 # define bootstrap_map info.l
 #endif
 
-static ElfW(Addr) __attribute_used__
+#if ! defined __ptr128__
+typedef ElfW(Addr) dl_start_type;
+#else
+typedef void (*dl_start_type) (void);
+#endif
+
+static dl_start_type __attribute_used__
 _dl_start (void *arg)
 {
+#if 0
+  /* This is a debugging feature which lets me start GDB while `ld.so' is
+     sleeping in the very beginning of its work. Currently I don't know a
+     better way of debugging `ld.so' provided that it has not been started
+     explicitly.  */
+  {
+    struct timespec ts = {15, 0};
+    INTERNAL_SYSCALL_CALL (nanosleep, &ts, NULL);
+  }
+#endif /* 0  */
+
 #ifdef DONT_USE_BOOTSTRAP_MAP
   rtld_timer_start (&start_time);
 #else
@@ -552,10 +605,71 @@ _dl_start (void *arg)
   /* Figure out the run-time load address of the dynamic linker itself.  */
   bootstrap_map.l_addr = elf_machine_load_address ();
 
+#if defined __e2k__ && defined __ptr128__
+  /* In PM ld.so Program Headers should be available much in advance as
+     compared to "ordinary" modes because of `get_offset ()'. This code
+     is a Copy/Paste of the analogous one in `dl_main ()' (note that the
+     latter is not disabled in PM because the repetition of these actions
+     should make no harm).  */
+  const ElfW(Ehdr) *rtld_ehdr;
+  extern const ElfW(Ehdr) __ehdr_start[]
+    __attribute__ ((visibility ("hidden")));
+
+  rtld_ehdr = &__ehdr_start[0];
+
+  assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
+  assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
+
+  /* Needed for `get_offset ()'.  */
+  bootstrap_map.l_phdr = (const void *) rtld_ehdr + rtld_ehdr->e_phoff;
+  bootstrap_map.l_phnum = rtld_ehdr->e_phnum;
+#endif /* defined __e2k__ && defined __ptr128__  */
+
   /* Read our own dynamic section and fill in the info array.  */
+#if ! defined __e2k__ || ! defined __ptr128__
   bootstrap_map.l_ld = (void *) bootstrap_map.l_addr + elf_machine_dynamic ();
+#else /* defined __e2k__ && defined __ptr128__  */
+  /* This PM-specific code relies on `_GLOBAL_OFFSET_TABLE_[0] == packed offset
+     of "_DYNAMIC" in GD' which is what e2k-linux-ld currently emits to `EF_E2K
+     _PACK_SEGMENTS' ELFs. Alternatively this entry could still contain an ELF
+     address in which case `get_offset ()' would have to be inserted here and
+     to `elf_machine_load_address ()'. The latter would probably require an
+     additional argument to make the use of `get_offset ()' possible which
+     would be undesirable because of the way this method is invoked from few
+     places in generic code.  */
+  bootstrap_map.l_ld = ({
+      void *res;
+      __asm__ ("gdtoap %1, %0\n\t"
+	       : "=r" (res) : "r" (elf_machine_dynamic ()));
+      res;
+    });
+
+  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (bootstrap_map.l_gd));
+
+  /* If this is left uninitialized, we'll fail when calling `elf_machine_rela
+     ()' from `elf_dynamic_do_Rel ()' during ld.so bootstrap.  */
+  bootstrap_map.l_versions = NULL;
+
+  bootstrap_map.l_code_addr = ({
+      register unsigned long cud;
+      asm volatile ("rrd %%cud.lo, %0" : "=r" (cud));
+      (unsigned int) (cud & 0xffffffff);
+    });
+#endif /* defined __e2k__ && defined __ptr128__  */
+
   bootstrap_map.l_ld_readonly = DL_RO_DYN_SECTION;
   elf_get_dynamic_info (&bootstrap_map, true, false);
+
+#if defined __e2k__ && defined __ptr128__ && defined HAVE_E2K_GOLD
+  /* Dynamic info should be available to evaluate GET_PL.  */
+  __asm__ ("getpl %1, %0"
+	   : "=r" (bootstrap_map.get_pl)
+	   : "r" (get_offset(&bootstrap_map,
+			     bootstrap_map.l_info[DT_E2K_INIT_GOT
+						  - DT_LOPROC
+						  + DT_NUM]->d_un.d_ptr)));
+#endif /* defined __e2k__ && defined __ptr128__ && defined HAVE_E2K_GOLD  */
+
 
 #if NO_TLS_OFFSET != 0
   bootstrap_map.l_tls_offset = NO_TLS_OFFSET;
@@ -858,6 +972,7 @@ ERROR: ld.so: object '%s' from %s cannot be preloaded (%s): ignored.\n",
 static void
 security_init (void)
 {
+#if ! defined __ptr128__
   /* Set up the stack checker's canary.  */
   uintptr_t stack_chk_guard = _dl_setup_stack_chk_guard (_dl_random);
 #ifdef THREAD_SET_STACK_GUARD
@@ -874,6 +989,7 @@ security_init (void)
 #endif
   __pointer_chk_guard_local = pointer_chk_guard;
 
+#endif /* ! defined __ptr128__  */
   /* We do not need the _dl_random value anymore.  The less
      information we leave behind, the better, so clear the
      variable.  */
@@ -1142,14 +1258,23 @@ rtld_setup_main_map (struct link_map *main_map)
 
   bool has_interp = false;
 
+#if ! defined __ptr128__
   main_map->l_map_end = 0;
   main_map->l_text_end = 0;
   /* Perhaps the executable has no PT_LOAD header entries at all.  */
   main_map->l_map_start = ~0;
+#else /* defined __ptr128__  */
+  main_map->l_data_end = 0;
+  main_map->l_text_end = 0;
+  main_map->l_data_start = ~0;
+  main_map->l_text_start = ~0;
+#endif /* defined __ptr128__  */
+
   /* And it was opened directly.  */
   ++main_map->l_direct_opencount;
   main_map->l_contiguous = 1;
 
+#if ! defined __ptr128__
   /* A PT_LOAD segment at an unexpected address will clear the
      l_contiguous flag.  The ELF specification says that PT_LOAD
      segments need to be sorted in in increasing order, but perhaps
@@ -1164,6 +1289,7 @@ rtld_setup_main_map (struct link_map *main_map)
      create holes in this case, and the code here still uses 0
      conservatively for the glibc-loaded case, too.  */
   ElfW(Addr) expected_load_address = 0;
+#endif /* ! defined __ptr128__  */
 
   /* Scan the program header table for the dynamic section.  */
   for (const ElfW(Phdr) *ph = phdr; ph < &phdr[phnum]; ++ph)
@@ -1171,12 +1297,26 @@ rtld_setup_main_map (struct link_map *main_map)
       {
       case PT_PHDR:
 	/* Find out the load address.  */
-	main_map->l_addr = (ElfW(Addr)) phdr - ph->p_vaddr;
+	main_map->l_addr = ((ElfW(Addr)) phdr
+			    -
+#if defined __ptr128__
+			    get_offset (main_map,
+#endif
+					ph->p_vaddr
+#if defined __ptr128__
+					)
+#endif
+			    );
 	break;
       case PT_DYNAMIC:
 	/* This tells us where to find the dynamic section,
 	   which tells us everything we need to do.  */
+#if ! defined __ptr128__
 	main_map->l_ld = (void *) main_map->l_addr + ph->p_vaddr;
+#else
+	main_map->l_ld = ((void *) main_map->l_gd
+			  + get_offset (main_map, ph->p_vaddr));
+#endif
 	main_map->l_ld_readonly = (ph->p_flags & PF_W) == 0;
 	break;
       case PT_INTERP:
@@ -1186,8 +1326,13 @@ rtld_setup_main_map (struct link_map *main_map)
 	   dlopen call or DT_NEEDED entry, for something that wants to link
 	   against the dynamic linker as a shared library, will know that
 	   the shared object is already loaded.  */
+#if ! defined __ptr128__
 	_dl_rtld_libname.name = ((const char *) main_map->l_addr
 				 + ph->p_vaddr);
+#else
+	_dl_rtld_libname.name = ((const char *) main_map->l_gd
+				 + get_offset (main_map, ph->p_vaddr));
+#endif
 	/* _dl_rtld_libname.next = NULL;	Already zero.  */
 	GL(dl_rtld_map).l_libname = &_dl_rtld_libname;
 
@@ -1221,6 +1366,7 @@ rtld_setup_main_map (struct link_map *main_map)
 	  ElfW(Addr) mapstart;
 	  ElfW(Addr) allocend;
 
+#if ! defined __ptr128__
 	  /* Remember where the main program starts in memory.  */
 	  mapstart = (main_map->l_addr
 		      + (ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
@@ -1242,6 +1388,31 @@ rtld_setup_main_map (struct link_map *main_map)
 	     segment.  */
 	  expected_load_address = ((allocend + GLRO(dl_pagesize) - 1)
 				   & ~(GLRO(dl_pagesize) - 1));
+#else /* defined __ptr128__  */
+	  if (ph->p_flags & PF_X)
+	    {
+	      mapstart = (main_map->l_code_addr
+			  + get_offset (main_map, ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
+	      if (main_map->l_text_start > mapstart)
+		main_map->l_text_start = mapstart;
+
+	      allocend = main_map->l_code_addr + get_offset (main_map, ph->p_vaddr) + ph->p_memsz;
+	      if (main_map->l_text_end < allocend)
+		main_map->l_text_end = allocend;
+	    }
+	  else
+	    {
+	      mapstart = (main_map->l_addr
+			  + get_offset (main_map, ph->p_vaddr & ~(GLRO(dl_pagesize) - 1)));
+
+	      if (main_map->l_data_start > mapstart)
+		main_map->l_data_start = mapstart;
+
+	      allocend = main_map->l_addr + get_offset (main_map, ph->p_vaddr) + ph->p_memsz;
+	      if (main_map->l_data_end < allocend)
+		main_map->l_data_end = allocend;
+	    }
+#endif /* defined __ptr128__  */
 	}
 	break;
 
@@ -1260,7 +1431,13 @@ rtld_setup_main_map (struct link_map *main_map)
 	      main_map->l_tls_firstbyte_offset = (ph->p_vaddr
 						  & (ph->p_align - 1));
 	    main_map->l_tls_initimage_size = ph->p_filesz;
+#if ! defined __ptr128__
 	    main_map->l_tls_initimage = (void *) ph->p_vaddr;
+#else /* defined __ptr128__  */
+	    main_map->l_tls_initimage
+	      = &((char *) main_map->l_gd)[get_offset (main_map, ph->p_vaddr)];
+#endif /* defined __ptr128__  */
+
 
 	    /* This image gets the ID one.  */
 	    GL(dl_tls_max_dtv_idx) = main_map->l_tls_modid = 1;
@@ -1291,11 +1468,22 @@ rtld_setup_main_map (struct link_map *main_map)
 
   /* Adjust the address of the TLS initialization image in case
      the executable is actually an ET_DYN object.  */
+#if ! defined __ptr128__
+  /* This makes sense only in ordinary modes. In PM case it's evaluated
+     correctly from the very beginning.  */
   if (main_map->l_tls_initimage != NULL)
     main_map->l_tls_initimage
       = (char *) main_map->l_tls_initimage + main_map->l_addr;
+#endif /* ! defined __ptr128__  */
+
+#if !defined __ptr128__
   if (! main_map->l_map_end)
     main_map->l_map_end = ~0;
+#else /* defined __ptr128__  */
+  if (! main_map->l_data_end)
+    main_map->l_data_end = ~0;
+#endif /* defined __ptr128__  */
+  
   if (! main_map->l_text_end)
     main_map->l_text_end = ~0;
   if (! GL(dl_rtld_map).l_libname && GL(dl_rtld_map).l_name)
@@ -1402,8 +1590,30 @@ dl_main (const ElfW(Phdr) *phdr,
 #endif
 
   const char *ld_so_name = _dl_argv[0];
+  /* In E2K Protected Mode the Kernel _never_ maps the main executable no matter
+     whether ld.so is started explicitly or as an interpreter. Therefore, we
+     unconditionally follow this branch in which the main executable is mapped
+     by ld.so.  */
+#if ! defined __ptr128__
   if (*user_entry == (ElfW(Addr)) ENTRY_POINT)
+#endif
     {
+      char *argv0 = NULL;
+      char **orig_argv = _dl_argv;
+
+#if defined __ptr128__
+      /* However, in case ld.so has been started as an interpreter, there's no
+	 point in skipping `argv[0]', interpreting it as the name of ld.so and
+	 trying to recognize ld.so options among subsequent elements of argv[].
+	 This case can be distinguished from an explicit invocation of ld.so by
+	 means of the zero value of AT_ENTRY auxv element, which is passed here
+	 as `*user_entry'. In case `*user_entry == 0' (in "ordinary" modes where
+	 the Kernel maps the main executable itself it would be its entry point,
+	 not of ld.so, but in PM the Kernel isn't aware of the main executable's
+	 entry point yet, which is signalized by zero) the following test will
+	 surely fail:  */
+      if (*user_entry == (ElfW(Addr)) ENTRY_POINT) {
+#endif
       /* Ho ho.  We are not the program interpreter!  We are the program
 	 itself!  This means someone ran ld.so as a command.  Well, that
 	 might be convenient to do sometimes.  We support it by
@@ -1420,9 +1630,6 @@ dl_main (const ElfW(Phdr) *phdr,
 	 ourselves).  This is an easy way to test a new ld.so before
 	 installing it.  */
       rtld_is_main = true;
-
-      char *argv0 = NULL;
-      char **orig_argv = _dl_argv;
 
       /* Note the place where the dynamic linker actually came from.  */
       GL(dl_rtld_map).l_name = rtld_progname;
@@ -1566,6 +1773,10 @@ dl_main (const ElfW(Phdr) *phdr,
       --_dl_argc;
       ++_dl_argv;
 
+#if defined __ptr128__
+      }
+#endif
+
       /* The initialization of _dl_stack_flags done below assumes the
 	 executable's PT_GNU_STACK may have been honored by the kernel, and
 	 so a PT_GNU_STACK with PF_X set means the stack started out with
@@ -1612,9 +1823,18 @@ dl_main (const ElfW(Phdr) *phdr,
 	}
       else
 	{
+	  const char *progname;
+#if defined __ptr128__
+	  if (*user_entry == (ElfW(Addr)) ENTRY_POINT)
+#endif
+	    progname = rtld_progname;
+#if defined __ptr128__
+	  else
+	    progname = "/proc/self/exe";
+#endif
 	  RTLD_TIMING_VAR (start);
 	  rtld_timer_start (&start);
-	  _dl_map_object (NULL, rtld_progname, lt_executable, 0,
+	  _dl_map_object (NULL, progname, lt_executable, 0,
 			  __RTLD_OPENEXEC, LM_ID_BASE);
 	  rtld_timer_stop (&load_time, start);
 	}
@@ -1632,6 +1852,19 @@ dl_main (const ElfW(Phdr) *phdr,
 	 implementations which has no real free() function it does not
 	 makes sense to free the old string first.  */
       main_map->l_name = (char *) "";
+#if defined __ptr128__
+      /* This temporary pointer variable is required to overcome an unexpected
+	 -Woverflow (if it is found to be appropriate, it should probably be
+	 adapted to PM by analogy with -Wpointer-to-int-cast) when evaluating
+	 `(ElfW(Addr)) &func_or_var' (Bug #130602 on LCC).  */
+      void *entry_point = (void *) ENTRY_POINT;
+      /* Because of PM specifics one needs to know if ld.so was started
+	 explicitly as a program to properly handle --argv0 below. Remember
+	 this now before *USER_ENTRY is set to its final value before --argv0
+	 is processed.  */
+      int ldso_started_as_program
+	= (*user_entry == (ElfW(Addr)) entry_point /* ENTRY_POINT  */);
+#endif /* defined __ptr128__  */
       *user_entry = main_map->l_entry;
 
       /* Set bit indicating this is the main program map.  */
@@ -1658,13 +1891,22 @@ dl_main (const ElfW(Phdr) *phdr,
 	  }
 #endif
 
+#if defined __ptr128__
+      if (ldso_started_as_program) {
+#endif
       /* Set the argv[0] string now that we've processed the executable.  */
       if (argv0 != NULL)
         _dl_argv[0] = argv0;
+#if defined __ptr128__
+      }
+#endif
 
       /* Adjust arguments for the application entry point.  */
       _dl_start_args_adjust (_dl_argv - orig_argv);
     }
+  /* See my comment before the preceding if for why this case is of no interest
+     in E2K Protected Mode.  */
+#if ! defined __ptr128__
   else
     {
       /* Create a link_map for the executable itself.
@@ -1699,6 +1941,7 @@ dl_main (const ElfW(Phdr) *phdr,
       /* We delay initializing the path structure until we got the dynamic
 	 information for the program.  */
     }
+#endif /* __ptr128__  */
 
   bool has_interp = rtld_setup_main_map (main_map);
 
@@ -1801,11 +2044,23 @@ dl_main (const ElfW(Phdr) *phdr,
      segment that also includes the phdrs.  If that's not available, we use
      the old method that assumes the beginning of the file is part of the
      lowest-addressed PT_LOAD segment.  */
-  extern const ElfW(Ehdr) __ehdr_start __attribute__ ((visibility ("hidden")));
+  extern const ElfW(Ehdr) __ehdr_start
+#if defined __ptr128__
+    /* This symbol is used to get access to rtld Program Headers below (see
+       rtld_phdr) lying beyond ElfW(Ehdr) object it describes. To avoid `exc_
+       array_bounds' make it describe an array of such objects of unspecified
+       size.  */
+    []
+#endif /* defined __ptr128__  */
+    __attribute__ ((visibility ("hidden")));
 
   /* Set up the program header information for the dynamic linker
      itself.  It is needed in the dl_iterate_phdr callbacks.  */
-  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start;
+  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start
+#if defined __ptr128__
+    [0]
+#endif /* defined __ptr128__  */    
+    ;
   assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
   assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
 
@@ -2119,8 +2374,15 @@ dl_main (const ElfW(Phdr) *phdr,
 	      _dl_printf ("\t%s => %s (0x%0*Zx, 0x%0*Zx)",
 			  DSO_FILENAME (l->l_libname->name),
 			  DSO_FILENAME (l->l_name),
+#if ! defined __ptr128__
 			  (int) sizeof l->l_map_start * 2,
 			  (size_t) l->l_map_start,
+#else /* defined __ptr128__  */
+			  /* FIXME: both l_{text,data}_start should be output
+			     here in fact.  */
+			  (int) sizeof l->l_data_start * 2,
+			  (size_t) l->l_data_start,
+#endif /* defined __ptr128__  */
 			  (int) sizeof l->l_addr * 2,
 			  (size_t) l->l_addr);
 
@@ -2188,12 +2450,29 @@ dl_main (const ElfW(Phdr) *phdr,
 	      _dl_printf ("\t%s => not found\n", l->l_libname->name);
 	    else if (strcmp (l->l_libname->name, l->l_name) == 0)
 	      _dl_printf ("\t%s (0x%0*Zx)\n", l->l_libname->name,
+#if !defined __ptr128__
 			  (int) sizeof l->l_map_start * 2,
-			  (size_t) l->l_map_start);
+			  (size_t) l->l_map_start
+
+#else /* defined __ptr128__  */
+			  /* FIXME: consider printing out l_text_start here as
+			     well. Format string will have to be hacked to
+			     achieve this, of course.  */
+			  (int) sizeof l->l_data_start * 2,
+			  (size_t) l->l_data_start
+#endif /* defined __ptr128__  */
+			  );
 	    else
 	      _dl_printf ("\t%s => %s (0x%0*Zx)\n", l->l_libname->name,
-			  l->l_name, (int) sizeof l->l_map_start * 2,
-			  (size_t) l->l_map_start);
+			  l->l_name,
+#if !defined __ptr128__
+			  (int) sizeof l->l_map_start * 2,
+			  (size_t) l->l_map_start
+#else /* defined __ptr128__  */
+			  (int) sizeof l->l_data_start * 2,
+			  (size_t) l->l_data_start
+#endif /* defined __ptr128__  */
+			  );
 	}
 
       if (__glibc_unlikely (state.mode != rtld_mode_trace))

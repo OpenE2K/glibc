@@ -56,11 +56,23 @@ f (void *a)
 static inline int
 futex_wait (int *futexp, int val)
 {
-#ifdef __NR_futex
-  return syscall (__NR_futex, futexp, FUTEX_WAIT, val);
-#else
-  return syscall (__NR_futex_time64, futexp, FUTEX_WAIT, val);
+#ifdef __ptr128__
+  /* Why don't they take care of TIMEOUT for FUTEX_WAIT in "ordinary"
+     modes?  */
+  struct timespec *timeout = NULL;
 #endif
+
+  return syscall (
+#ifdef __NR_futex 
+		  __NR_futex,
+#else
+		  __NR_futex_time64,
+#endif		  
+		  futexp, FUTEX_WAIT, val
+#ifdef __ptr128__
+		  , &timeout
+#endif
+		  );
 }
 
 static int

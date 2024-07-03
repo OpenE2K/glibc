@@ -31,4 +31,19 @@ __pthread_attr_getinheritsched (const pthread_attr_t *attr, int *inherit)
 
   return 0;
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 strong_alias (__pthread_attr_getinheritsched, pthread_attr_getinheritsched)
+
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+
+/* Is the created versioned symbol going to become strong?  */
+versioned_symbol (libc, __pthread_attr_getinheritsched,
+		  pthread_attr_getinheritsched, GLIBC_2_2);
+
+compat_symbol (libpthread, __pthread_attr_getinheritsched,
+	       pthread_attr_getinheritsched, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

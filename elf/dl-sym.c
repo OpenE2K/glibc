@@ -133,8 +133,19 @@ do_sym (void *handle, const char *name, void *who,
       if (__glibc_unlikely (match == GL(dl_ns)[LM_ID_BASE]._ns_loaded))
 	{
 	  if (match == NULL
+#if ! defined __ptr128__
 	      || caller < match->l_map_start
-	      || caller >= match->l_map_end)
+	      || caller >= match->l_map_end
+#else /* defined __ptr128__  */
+	      /* FIXME: here I rather stupidly replicate the above test in PM,
+		 but what's the point in allowing the CALLER belong to the whole
+		 mapped address space including its data part?  */
+	      || ((caller < match->l_text_start
+		   || caller >= match->l_text_end)
+		  && (caller < match->l_data_start
+		      || caller >= match->l_data_end))
+#endif /* defined __ptr128__  */
+	      )
 	    _dl_signal_error (0, NULL, NULL, N_("\
 RTLD_NEXT used in code not dynamically loaded"));
 	}

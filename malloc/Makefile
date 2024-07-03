@@ -297,6 +297,9 @@ endif
 
 sLIBdir := $(shell echo $(slibdir) | sed 's,lib\(\|64\)$$,\\\\$$LIB,')
 
+# FIXME: standard PERL location at gerhildes.
+REMOTE_PERL = /usr/bin/perl
+
 $(objpfx)mtrace: mtrace.pl
 	rm -f $@.new
 	sed -e 's|@PERL@|$(PERL)|' -e 's|@XXX@|$(address-width)|' \
@@ -367,3 +370,11 @@ tst-mallocstate-malloc-check-ENV = LD_PRELOAD=$(objpfx)libc_malloc_debug.so
 # libc_malloc_debug.so.
 $(objpfx)tst-mallocstate: $(objpfx)libc_malloc_debug.so
 $(objpfx)tst-mallocstate-malloc-check: $(objpfx)libc_malloc_debug.so
+
+
+ifeq ($(compile-with-lcc),yes)
+# Compensate for unworkable (with LCC in use) `#pragma GCC diagnostic's
+# intended to  locally disable this warning within these tests.
+CFLAGS-tst-malloc-tcache-leak.c += -Wno-deprecated-declarations
+CFLAGS-tst-mxfast.c += -Wno-deprecated-declarations
+endif

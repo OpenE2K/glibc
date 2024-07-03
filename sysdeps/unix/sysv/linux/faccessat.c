@@ -26,7 +26,12 @@
 int
 __faccessat (int fd, const char *file, int mode, int flag)
 {
+#if ! defined __e2k__
   int ret = INLINE_SYSCALL_CALL (faccessat2, fd, file, mode, flag);
+#else /* defined __e2k__  */
+  int ret = 1;
+  errno = ENOSYS;
+#endif /* defined __e2k__  */
 #if __ASSUME_FACCESSAT2
   return ret;
 #else

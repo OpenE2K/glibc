@@ -39,6 +39,8 @@ _dl_early_allocate (size_t size)
 {
   void *result;
 
+#if ! defined __ptr128__
+
   if (__curbrk != NULL)
     /* If the break has been initialized, brk must have run before,
        so just call it once more.  */
@@ -58,13 +60,21 @@ _dl_early_allocate (size_t size)
       else
         result = previous;
     }
+#else /* defined __ptr128__  */
+  result = NULL;
+#endif /* defined __ptr128__  */
 
   /* If brk fails, fall back to mmap.  This can happen due to
      unfortunate ASLR layout decisions and kernel bugs, particularly
      for static PIE.  */
   if (result == NULL)
     {
+#if ! defined __ptr128__
       long int ret;
+#else
+      void *ret;
+#endif
+
       int prot = PROT_READ | PROT_WRITE;
       int flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #ifdef __NR_mmap2

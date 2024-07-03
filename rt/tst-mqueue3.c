@@ -126,8 +126,16 @@ do_test (void)
     }
 
   pthread_barrier_t *b;
-  b = (pthread_barrier_t *) (((uintptr_t) mem + __alignof (pthread_barrier_t))
-                             & ~(__alignof (pthread_barrier_t) - 1));
+  b = (pthread_barrier_t *)
+#if defined __ptr128__
+    ((char *) mem + (
+#endif
+		     (((uintptr_t) mem + __alignof (pthread_barrier_t))
+		      & ~(__alignof (pthread_barrier_t) - 1))
+#if defined __ptr128__
+		     - (uintptr_t) mem))
+#endif
+    ;
 
   pthread_barrierattr_t a;
   if (pthread_barrierattr_init (&a) != 0)

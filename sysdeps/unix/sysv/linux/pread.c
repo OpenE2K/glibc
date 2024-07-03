@@ -21,6 +21,10 @@
 
 #ifndef __OFF_T_MATCHES_OFF64_T
 
+#ifdef __e2k__
+# define __NR_pread64 __NR_pread
+#endif
+
 ssize_t
 __libc_pread (int fd, void *buf, size_t count, off_t offset)
 {
@@ -31,7 +35,7 @@ strong_alias (__libc_pread, __pread)
 libc_hidden_weak (__pread)
 weak_alias (__libc_pread, pread)
 
-# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+# if ! defined __e2k__ && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pread, pread, GLIBC_2_2);
 #endif
 

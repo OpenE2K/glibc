@@ -38,10 +38,11 @@ __clock_nanosleep_time64 (clockid_t clock_id, int flags,
 
   /* If the call is interrupted by a signal handler or encounters an error,
      it returns a positive value similar to errno.  */
-
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_clock_nanosleep_time64
 # define __NR_clock_nanosleep_time64 __NR_clock_nanosleep
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
   int r;
 #ifdef __ASSUME_TIME64_SYSCALLS
@@ -50,9 +51,11 @@ __clock_nanosleep_time64 (clockid_t clock_id, int flags,
 #else
   if (!in_time_t_range (req->tv_sec))
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       r = INTERNAL_SYSCALL_CANCEL (clock_nanosleep_time64, clock_id, flags,
 				   req, rem);
       if (r == -ENOSYS)
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 	r = -EOVERFLOW;
     }
   else

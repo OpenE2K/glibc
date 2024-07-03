@@ -70,3 +70,8 @@ LDFLAGS-tst-minsigstksz-2 = -Wl,-z,now
 LDFLAGS-tst-minsigstksz-3 = -Wl,-z,now
 LDFLAGS-tst-minsigstksz-3a = -Wl,-z,now
 LDFLAGS-tst-minsigstksz-4 = -Wl,-z,now
+
+ifeq ($(compile-with-lcc),yes)
+CFLAGS-tst-sigsimple.c += -Wno-deprecated-declarations
+CFLAGS-tst-sigset2.c += -Wno-deprecated-declarations
+endif

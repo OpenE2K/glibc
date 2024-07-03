@@ -193,7 +193,8 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
   ((((type) == R_SPARC_JMP_SLOT						      \
      || ((type) >= R_SPARC_TLS_GD_HI22 && (type) <= R_SPARC_TLS_TPOFF64))     \
     * ELF_RTYPE_CLASS_PLT)						      \
-   | (((type) == R_SPARC_COPY) * ELF_RTYPE_CLASS_COPY))
+   | (((type) == R_SPARC_COPY) * ELF_RTYPE_CLASS_COPY)			      \
+   | (((type) == R_SPARC_GLOB_DAT) * ELF_RTYPE_CLASS_EXTERN_PROTECTED_DATA))
 
 /* A reloc type used for ld.so cmdline arg lookups to reject PLT entries.  */
 #define ELF_MACHINE_JMP_SLOT	R_SPARC_JMP_SLOT

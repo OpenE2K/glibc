@@ -258,7 +258,9 @@
 #elif defined __has_builtin
 # define _GL_HAS_BUILTIN_OVERFLOW_P __has_builtin (__builtin_mul_overflow_p)
 #else
-# define _GL_HAS_BUILTIN_OVERFLOW_P (7 <= __GNUC__)
+/* LCC does not currently support __builtin_{add,sub}_overflow_p ()
+   builtins.  */
+# define _GL_HAS_BUILTIN_OVERFLOW_P (7 <= __GNUC__ && ! defined __LCC__)
 #endif
 
 /* The _GL*_OVERFLOW macros have the same restrictions as the

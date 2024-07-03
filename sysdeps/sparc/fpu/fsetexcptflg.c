@@ -20,8 +20,9 @@
 #include <fenv_private.h>
 #include <math.h>
 #include <shlib-compat.h>
+#include <sysdep.h>
 
-int
+int ATTRIBUTE_NOINLINE_WHOLE
 __fesetexceptflag (const fexcept_t *flagp, int excepts)
 {
   fenv_t tmp;

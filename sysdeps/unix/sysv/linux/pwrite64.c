@@ -19,6 +19,10 @@
 #include <sysdep-cancel.h>
 #include <shlib-compat.h>
 
+#ifdef __e2k__
+# define __NR_pwrite64 __NR_pwrite
+#endif
+
 ssize_t
 __libc_pwrite64 (int fd, const void *buf, size_t count, off64_t offset)
 {
@@ -34,12 +38,12 @@ strong_alias (__libc_pwrite64, __libc_pwrite)
 weak_alias (__libc_pwrite64, __pwrite)
 weak_alias (__libc_pwrite64, pwrite)
 
-# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
+# if ! defined __e2k__ && OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pwrite64, pwrite, GLIBC_2_2);
 # endif
 #endif
 
-#if SHLIB_COMPAT (libc, GLIBC_2_1, GLIBC_2_2)
+#if ! defined __e2k__ && SHLIB_COMPAT (libc, GLIBC_2_1, GLIBC_2_2)
 compat_symbol (libc, __libc_pwrite64, pwrite64, GLIBC_2_2);
 compat_symbol (libc, __libc_pwrite64, __pwrite64, GLIBC_2_2);
 #endif

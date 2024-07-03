@@ -107,6 +107,16 @@ __pthread_kill_esrch (pthread_t threadid, int signo)
 
   return __pthread_kill_implementation (threadid, signo, ESRCH);
 }
-compat_symbol (libc, __pthread_kill_esrch, pthread_kill, GLIBC_2_0);
+compat_symbol (
+#  if ! defined __e2k__
+	       libc,
+#  else /* defined __e2k__  */
+	       /* For e2k because of the different initial versions between
+		  libc.so (GLIBC_2.2) and libpthread.so (GLIBC_2.0) the use
+		  of "libc" would result in creation of pthread_kill@GLIBC_2.2
+		  in fact.  */
+	       libpthread,
+#  endif /* defined __e2k__  */
+	       __pthread_kill_esrch, pthread_kill, GLIBC_2_0);
 # endif
 #endif

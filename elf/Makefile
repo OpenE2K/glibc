@@ -149,6 +149,25 @@ rtld-routines = \
 all-rtld-routines = $(rtld-routines) $(sysdep-rtld-routines)
 
 CFLAGS-dl-runtime.c += -fexceptions -fasynchronous-unwind-tables
+
+ifeq ($(base-machine),e2k)
+ifneq ($(compile-with-lcc),yes)
+# Non-optimizing `gcc -fexceptions' (when glibc is built with
+# `e2k-linux-gcc -O0') may quite unpredictably turn out not to be capable of
+# getting rid of all empty never reached "cleanup" (i.e. those invoking
+# destructors) EH regions (would it be correct to say landing pads?) containing
+# useless invocations of _Unwind_Resume () breaking glibc link. Therefore
+# stupidly suppress `-fexceptions' leaving such an invocation of _Unwind_Resume
+# () in elf/dl-runtime.c for now.
+
+# TODO: find out why it's not enough to use only -fasynchronous-unwind-tables
+# to let exceptions propagate through the functions in this file here taking
+# into account that dl-{runtime,lookup}.c do not seem to contain any
+# `__attribute__ ((cleanup (...)))'s?
+CFLAGS-dl-runtime.c += -fno-exceptions
+endif
+endif
+
 CFLAGS-dl-lookup.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-dl-iteratephdr.c += $(uses-callbacks)
 
@@ -1289,8 +1308,14 @@ $(objpfx)librtld.mk: $(objpfx)librtld.map Makefile
 $(objpfx)rtld-libc.a: $(objpfx)librtld.mk FORCE
 	$(MAKE) -f $< -f rtld-Rules
 
+ifeq (yes,$(compile-with-lcc))
+lgcc = -lgcc -llcc
+else
+lgcc = -lgcc
+endif
+
 $(objpfx)librtld.os: $(objpfx)dl-allobjs.os $(objpfx)rtld-libc.a
-	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ -lgcc '-Wl,-)' \
+	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ $(lgcc) '-Wl,-)' \
 		  -Wl,-Map,$@.map
 
 generated += librtld.map librtld.mk rtld-libc.a librtld.os.map
@@ -1307,7 +1332,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
 		  -Wl,-defsym=_begin=0
 	$(call after-link,$@.new)
 	$(READELF) -s $@.new \
-	  | $(AWK) '($$7 ~ /^UND(|EF)$$/ && $$1 != "0:" && $$4 != "REGISTER") { print; p=1 } END { exit p != 0 }'
+	  | $(AWK) '($$7 ~ /^UND(|EF)$$/ && $$1 != "0:" && $$4 != "REGISTER" && $$5 != "WEAK") { print; p=1 } END { exit p != 0 }'
 	mv -f $@.new $@
 
 ifeq (yes,$(build-shared))
@@ -1332,7 +1357,11 @@ $(objpfx)trusted-dirs.st: Makefile $(..)Makeconfig
 	$(make-target-directory)
 	echo "$(subst :, ,$(default-rpath) $(user-defined-trusted-dirs))"    \
 	| $(AWK) -f gen-trusted-dirs.awk > ${@:st=T};
-	echo '#define DL_DST_LIB "$(notdir $(slibdir))"' >> ${@:st=T}
+	if [ "$(enable-debian-multiarch)" = "yes" ] ; then \
+	  echo '#define DL_DST_LIB "$(shell echo $(slibdir) | sed 's,/,,')"' >> ${@:st=T}; \
+	else \
+	  echo '#define DL_DST_LIB "$(notdir $(slibdir))"' >> ${@:st=T}; \
+	fi
 	$(move-if-change) ${@:st=T} ${@:st=h}
 	touch $@
 CPPFLAGS-dl-load.c += -I$(objpfx). -I$(csu-objpfx).
@@ -1398,6 +1427,13 @@ CFLAGS-dl-usage.c += $(SYSCONF-FLAGS) \
 CFLAGS-dl-diagnostics.c += $(SYSCONF-FLAGS) \
   -D'PREFIX="$(prefix)"' \
   -D'RTLD="$(rtlddir)/$(rtld-installed-name)"'
+
+ifeq ($(base-machine),e2k)
+ifneq ($(compile-with-lcc),yes)
+# Ensure that -fno-plt-inline is appended when compiling with e2k-linux-gcc
+# CFLAGS-rtld.c += -fno-plt-inline
+endif
+endif
 
 cpp-srcs-left := $(all-rtld-routines:=.os)
 lib := rtld

@@ -36,7 +36,18 @@ __pthread_exit (void *value)
   __do_cancel ();
 }
 libc_hidden_def (__pthread_exit)
+#if ! (defined __e2k__ && defined SHARED)
 weak_alias (__pthread_exit, pthread_exit)
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_2)
+weak_alias (__pthread_exit, __pthread_exit_weak)
+/* NOTE: pthread_exit () used to be non-WEAK in libc-2.29.so unlike
+   libpthread-2.29.so, but in upstream libc.so it's WEAK.  */
+versioned_symbol (libc, __pthread_exit_weak, pthread_exit, GLIBC_2_0);
+compat_symbol (libpthread, __pthread_exit_weak, pthread_exit, GLIBC_2_0);
+# endif
+#endif /* defined __e2k__ && defined SHARED  */
 
 /* Ensure that the unwinder is always linked in (the __pthread_unwind
    reference from __do_cancel is weak).  Use ___pthread_unwind_next

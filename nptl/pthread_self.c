@@ -24,4 +24,21 @@ __pthread_self (void)
   return (pthread_t) THREAD_SELF;
 }
 libc_hidden_def (__pthread_self)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__pthread_self, pthread_self)
+
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+
+/* pthread_self@GLIBC_2.2 used to be "strong", but has become WEAK as a result
+   of recent changes.  */
+weak_alias (__pthread_self, __pthread_self_weak)
+versioned_symbol (libc, __pthread_self_weak, pthread_self, GLIBC_2_2);
+
+/* Let pthread_self@GLIBC_2.0 remain "strong" for compatibility with
+   libpthread-2.29.so.  */
+compat_symbol (libpthread, __pthread_self, pthread_self, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

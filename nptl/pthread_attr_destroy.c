@@ -43,4 +43,18 @@ __pthread_attr_destroy (pthread_attr_t *attr)
   return 0;
 }
 libc_hidden_def (__pthread_attr_destroy)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__pthread_attr_destroy, pthread_attr_destroy)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+weak_alias (__pthread_attr_destroy, __pthread_attr_destroy_weak)
+versioned_symbol (libc, __pthread_attr_destroy_weak, pthread_attr_destroy,
+		  GLIBC_2_2);
+
+compat_symbol (libpthread, __pthread_attr_destroy_weak, pthread_attr_destroy,
+	       GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

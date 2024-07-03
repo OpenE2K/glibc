@@ -187,6 +187,7 @@ __gconv_release_shlib (struct __gconv_loaded_object *handle)
 
 /* We run this if we debug the memory allocation.  */
 static void __libc_freeres_fn_section
+__attribute_used__
 do_release_all (void *nodep)
 {
   struct __gconv_loaded_object *obj = (struct __gconv_loaded_object *) nodep;

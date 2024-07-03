@@ -48,6 +48,13 @@ libc_hidden_def (__pthread_sigmask)
 
 versioned_symbol (libc, __pthread_sigmask, pthread_sigmask, GLIBC_2_32);
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_32)
+/* What's the point in __pthread_sigmask_2 here? Wouldn't it be possible to pass
+ __pthread_sigmask to compat_symbol ()?  */
 strong_alias (__pthread_sigmask, __pthread_sigmask_2);
 compat_symbol (libc, __pthread_sigmask_2, pthread_sigmask, GLIBC_2_0);
+
+# if defined __e2k__ /* no point in && defined SHARED as it's ensured by the
+			outer conditional.  */
+compat_symbol (libpthread, __pthread_sigmask_2, pthread_sigmask, GLIBC_2_0);
+# endif /* defined __e2k__  */
 #endif

@@ -288,6 +288,7 @@ LOCALES := \
 	pl_PL.UTF-8 \
 	ps_AF.UTF-8 \
 	ro_RO.UTF-8 \
+	ru_RU.KOI8-R \
 	ru_RU.UTF-8 \
 	sah_RU.UTF-8 \
 	sc_IT.UTF-8 \
@@ -489,3 +490,8 @@ bug-setlocale1-static-ENV-only = $(bug-setlocale1-ENV-only)
 
 $(objdir)/iconvdata/gconv-modules:
 	$(MAKE) -C ../iconvdata subdir=iconvdata $@
+
+ifeq (yes,$(compile-with-lcc))
+# LCC is likely not to adequately interpret "%Id" sprintf format specifier.
+CFLAGS-tst-trans.c += -Wno-format
+endif

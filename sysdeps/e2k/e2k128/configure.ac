@@ -1,0 +1,7 @@
+GLIBC_PROVIDES dnl See aclocal.m4 in the top level source directory.
+# Local configure fragment for sysdeps/e2k/e2k128
+
+# e2k-linux-ld.bfd currently crashes when linking PM PIEs. It's time
+# that it was fixed at last.
+# AC_DEFINE(PIE_UNSUPPORTED)
+# work around problem with autoconf and empty lines at the end of files

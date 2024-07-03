@@ -347,7 +347,7 @@ __nss_module_get_function (struct nss_module *module, const char *name)
                                        array_length (nss_function_name_array),
                                        sizeof (function_name), name_search);
   assert (name_entry != NULL);
-  size_t idx = name_entry - nss_function_name_array;
+  size_t idx = (const function_name *) name_entry - nss_function_name_array;
   void *fptr = module->functions.untyped[idx];
 #ifdef PTR_DEMANGLE
   PTR_DEMANGLE (fptr);

@@ -104,8 +104,14 @@ __alloc_dir (int fd, bool close_fd, int flags,
   enum { max_buffer_size = 1048576 };
 
   enum { allocation_size = 32768 };
+#if defined __LCC__
+  /* This is going to result in "expression in static assertion is not constant"
+     error when being compiled with non-optimizing GCC. Funnily enough, non-
+     optimizing LCC is capable of folding it to constant whereas in many other
+     similar looking cases the situation is exactly the opposite.  */
   _Static_assert (allocation_size >= sizeof (struct dirent64),
 		  "allocation_size < sizeof (struct dirent64)");
+#endif /* defined __LCC__  */
 
   /* Increase allocation if requested, but not if the value appears to
      be bogus.  It will be between 32Kb and 1Mb.  */

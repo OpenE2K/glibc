@@ -97,6 +97,8 @@ static const unsigned char test_pattern[16] =
 
 static ucontext_t uc_main, uc_co;
 
+static unsigned char *cur_buf;
+
 static __attribute__ ((noinline, noclone)) int
 use_test_buffer (unsigned char *buf)
 {
@@ -124,6 +126,11 @@ prepare_test_buffer (unsigned char *buf)
 {
   for (unsigned int i = 0; i < PATTERN_REPS; i++)
     memcpy (buf + i*PATTERN_SIZE, test_pattern, PATTERN_SIZE);
+
+  /* Set a pointer to BUF[] in the current subtest by which its contents
+     will be accessed in the main context.  */
+  cur_buf = buf;
+
 
   if (swapcontext (&uc_co, &uc_main))
     abort ();
@@ -197,18 +204,12 @@ static unsigned char *co_stack_buffer;
 static size_t co_stack_size;
 
 static unsigned int
-count_test_patterns (unsigned char *buf, size_t bufsiz)
+count_test_patterns (unsigned char *buf)
 {
-  unsigned char *first = memmem (buf, bufsiz, test_pattern, PATTERN_SIZE);
-  if (!first)
-    return 0;
   unsigned int cnt = 0;
   for (unsigned int i = 0; i < PATTERN_REPS; i++)
     {
-      unsigned char *p = first + i*PATTERN_SIZE;
-      if (p + PATTERN_SIZE - buf > bufsiz)
-	break;
-      if (memcmp (p, test_pattern, PATTERN_SIZE) == 0)
+      if (memcmp (buf + i * PATTERN_SIZE, test_pattern, PATTERN_SIZE) == 0)
 	cnt++;
     }
   return cnt;
@@ -218,7 +219,7 @@ static void
 check_test_buffer (enum test_expectation expected,
 		   const char *label, const char *stage)
 {
-  unsigned int cnt = count_test_patterns (co_stack_buffer, co_stack_size);
+  unsigned int cnt = count_test_patterns (cur_buf);
   switch (expected)
     {
     case EXPECT_NONE:
@@ -312,9 +313,32 @@ do_test (void)
   uc_co.uc_stack.ss_sp   = co_stack_buffer;
   uc_co.uc_stack.ss_size = co_stack_size;
   uc_co.uc_link          = &uc_main;
-  makecontext (&uc_co, test_coroutine, 0);
+
+#if defined __e2k__
+  if (makecontext_e2k
+#else /* ! defined __e2k__  */
+      makecontext
+#endif /* ! defined __e2k__  */
+      (&uc_co, test_coroutine, 0)
+#if defined __e2k__
+      != 0)
+    {
+      printf ("%s: makecontext_e2k returned non-zero: %m\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+#else /* ! defined __e2k__  */
+   ;
+#endif /* ! defined __e2k__  */
 
   test_loop ();
+
+#if defined __e2k__
+  /* It's likely that the test normally finishes here out of UC_CO context
+     which makes it possible to free hardware stacks allocated for it by
+     the kernel.  */
+  freecontext_e2k (&uc_co);
+#endif /* defined __e2k__  */
+
   return test_status;
 }
 

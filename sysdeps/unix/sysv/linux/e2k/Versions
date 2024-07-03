@@ -1,0 +1,23 @@
+libc {
+  GLIBC_2.1 {
+    freecontext_e2k;
+    makecontext_e2k;
+  }
+  GLIBC_2.2 {
+    # linuxthreads
+    __clone2; clone2;
+  }
+  GLIBC_2.24 {
+    recvmsg; sendmsg;
+  }
+  GLIBC_PRIVATE {
+    __libc_e2k_fast_syscalls;
+    __libc_e2k_system_info;
+  }
+}
+ld {
+  GLIBC_PRIVATE {
+    __libc_e2k_fast_syscalls;
+    __libc_e2k_system_info;
+  }
+}

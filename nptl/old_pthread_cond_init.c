@@ -42,3 +42,12 @@ __pthread_cond_init_2_0 (pthread_cond_2_0_t *cond,
 compat_symbol (libc, __pthread_cond_init_2_0, pthread_cond_init,
 	       GLIBC_2_0);
 #endif
+
+#if defined __e2k__ && defined SHARED
+/* Note that the above `compat_symbol (LIBC, ...)' will create
+   pthread_cond_init@GILBC_2_2 in fact as this is the minimal
+   version in libc.so unlike libpthread.so where the minimal
+   version is GLIBC_2_0.  */
+compat_symbol (libpthread, __pthread_cond_init_2_0, pthread_cond_init,
+	       GLIBC_2_0);
+#endif /* defined __e2k__ && defined SHARED  */

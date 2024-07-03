@@ -26,7 +26,19 @@
 int
 listen (int fd, int backlog)
 {
-#ifdef __ASSUME_LISTEN_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    long int b;
+    /* FIXME: this field is just to ensure the proper alignment for now.  */
+    void *c;
+  }
+  args = {(long int) fd, (long int) backlog};
+
+  return INLINE_SYSCALL (socketcall, 2, SOCKOP_listen, &args);
+
+#elif defined __ASSUME_LISTEN_SYSCALL
   return INLINE_SYSCALL (listen, 2, fd, backlog);
 #else
   return SOCKETCALL (listen, fd, backlog);

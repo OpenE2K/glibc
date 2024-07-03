@@ -72,9 +72,27 @@ END {
       spec[c] = sc_prefixes[c] "_" conf[c]
   }
 
+  print "/* If all of the environments are defined in environments.h, then we don't need"
+  print "   to bother with doing a runtime check for a specific environment.  */"
+  print "#if (defined _SC_V6_ILP32_OFF32 \\"
+  print "     && defined _SC_V7_LPBIG_OFFBIG \\"
+  print "     && defined _SC_XBS5_LP64_OFF64 \\"
+  print "     && defined _SC_V6_LP64_OFF64 \\"
+  print "     && defined _SC_V7_ILP32_OFFBIG \\"
+  print "     && defined _SC_V6_LPBIG_OFFBIG \\"
+  print "     && defined _SC_V7_LP64_OFF64 \\"
+  print "     && defined _SC_V7_ILP32_OFF32 \\"
+  print "     && defined _SC_XBS5_LPBIG_OFFBIG \\"
+  print "     && defined _SC_XBS5_ILP32_OFFBIG \\"
+  print "     && defined _SC_V6_ILP32_OFFBIG \\"
+  print "     && defined _SC_XBS5_ILP32_OFF32)"
+  print "# define ALL_ENVIRONMENTS_DEFINED 1"
+  print "#endif"
+
+
   # Print the specification array.  Define the macro NEED_SPEC_ARRAY before
   # including posix-conf-vars.h to make it available in the compilation unit.
-  print "#if NEED_SPEC_ARRAY"
+  print "#if NEED_SPEC_ARRAY && ! ALL_ENVIRONMENTS_DEFINED"
   print "static const struct { const char *name; int num; } specs[] ="
   print "  {"
   for (s in spec) {

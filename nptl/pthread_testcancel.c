@@ -37,5 +37,15 @@ strong_alias (___pthread_testcancel, __pthread_testcancel)
 #endif
 
 #if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_34)
-compat_symbol (libc, ___pthread_testcancel, pthread_testcancel, GLIBC_2_0);
+compat_symbol (
+# if ! defined __e2k__
+	       libc,
+# else /* defined __e2k__  */
+	       /* The dynamic symbol in question was present in
+		  libpthread-2.29.so only, not in libc-2.29.so. Therefore, just
+		  reuse this directive and hack it to get @GLIBC_2.0 version
+		  from libpthread-2.29.so.  */
+	       libpthread,
+# endif /* defined __e2k__  */
+	       ___pthread_testcancel, pthread_testcancel, GLIBC_2_0);
 #endif

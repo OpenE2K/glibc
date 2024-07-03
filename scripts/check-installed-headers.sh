@@ -36,11 +36,19 @@ fi
 case "$1" in
     (c)
         lang_modes="$c_modes"
-        cih_test_c=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX.c)
+	# On E2K hosts an ancient (or non-conformant?) mktemp is incapable of
+	# using "cih_test_XXXXXX.c" template. This hack overcomes this somehow.
+        cih_test=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX)
+        cih_test_c=${cih_test}.c
+        mv $cih_test $cih_test_c
     ;;
     (c++)
         lang_modes="$cxx_modes"
-        cih_test_c=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX.cc)
+	# On E2K hosts an ancient (or non-conformant?) mktemp is incapable of
+	# using "cih_test_XXXXXX.cc" template. This hack overcomes this somehow.
+        cih_test=$(mktemp ${TMPDIR-/tmp}/cih_test_XXXXXX)
+        cih_test_c=${cih_test}.cc
+        mv $cih_test $cih_test_c
     ;;
     (*)
         echo "usage: $0 c|c++ \"compile command\" header header header..." >&2

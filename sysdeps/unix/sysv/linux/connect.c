@@ -22,12 +22,50 @@
 int
 __libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
-#ifdef __ASSUME_CONNECT_SYSCALL
+#if defined __ptr128__
+  struct
+  {
+    long int a;
+    void *b;
+    long int c;
+  }
+  args = {(long int) fd, (void *) addr.__sockaddr__, (long int) len};
+
+  return SYSCALL_CANCEL (socketcall, SOCKOP_connect, &args);
+
+#elif defined __ASSUME_CONNECT_SYSCALL
   return SYSCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
 #else
   return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
 #endif
 }
+#if ! (defined __e2k__ && defined SHARED)
+/* Disable this in SHARED case for e2k as it actually makes connect
+   a WEAK alias of __libc_connect, whereas we need connect@@GLIBC_2.2.  */
 weak_alias (__libc_connect, connect)
+#endif /* ! (defined __e2k__ && defined SHARED)  */
+
+/* No point to disable in e2k SHARED case as __GI___connect is actually made a
+   WEAK alias of __libc_connect.  */
 weak_alias (__libc_connect, __connect)
+
+#if ! (defined __e2k__ && defined SHARED)
+
+/* Prevent __connect from being output as an alias of __GI___connect without an
+   explicitly specified default version.  */
 libc_hidden_weak (__connect)
+
+#else /* defined __e2k__ && defined SHARED  */
+
+# include <shlib-compat.h>
+
+/* All of `{__,}connect@{@GLIBC_2.2,GLIBC_2.0}'s should be WEAK.  */
+weak_alias (__libc_connect, __libc_connect_weak)
+
+versioned_symbol (libc, __libc_connect_weak, connect, GLIBC_2_0);
+versioned_symbol (libc, __libc_connect_weak, __connect, GLIBC_2_0);
+
+compat_symbol (libpthread, __libc_connect_weak, connect, GLIBC_2_0);
+compat_symbol (libpthread, __libc_connect_weak, __connect, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */

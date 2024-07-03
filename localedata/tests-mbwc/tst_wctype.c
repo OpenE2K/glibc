@@ -25,7 +25,12 @@ tst_wctype (FILE * fp, int debug_flg)
 
       if (debug_flg)
 	{
-	  fprintf (stderr, "tst_wctype : [ %d ] ret = %ld\n", rec + 1, ret);
+	  fprintf (stderr, "tst_wctype : [ %d ] ret = %ld\n", rec + 1,
+		   (
+#if defined __ptr128__
+		    (long)
+#endif
+		    ret));
 	}
 
       TST_IF_RETURN (S_WCTYPE)

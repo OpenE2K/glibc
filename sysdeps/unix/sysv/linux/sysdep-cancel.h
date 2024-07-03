@@ -27,11 +27,26 @@
 /* Set cancellation mode to asynchronous.  */
 extern int __pthread_enable_asynccancel (void);
 libc_hidden_proto (__pthread_enable_asynccancel)
-#define LIBC_CANCEL_ASYNC() __pthread_enable_asynccancel ()
+
+#if ! defined __LCC__ || IS_IN (libc) || IS_IN (libpthread) || IS_IN (librt)
+# define LIBC_CANCEL_ASYNC() __pthread_enable_asynccancel ()
+#else /* defined __LCC__ && ! IS_IN (libc) && ! IS_IN (libpthread) && ! IS_IN (librt)  */
+/* Provide a do-nothing implementation for the sake of ld.so build with
+   (non-optimizing) LCC.  */
+# define LIBC_CANCEL_ASYNC()	0 /* Just a dummy value.  */
+#endif /* defined __LCC__ && ! IS_IN (libc) && ! IS_IN (libpthread) && ! IS_IN (librt)  */
 
 /* Reset to previous cancellation mode.  */
 extern void __pthread_disable_asynccancel (int oldtype);
 libc_hidden_proto (__pthread_disable_asynccancel)
-#define LIBC_CANCEL_RESET(oldtype) __pthread_disable_asynccancel (oldtype)
+
+#if ! defined __LCC__ || IS_IN (libc) || IS_IN (libpthread) || IS_IN (librt)
+# define LIBC_CANCEL_RESET(oldtype) __pthread_disable_asynccancel (oldtype)
+#else /* defined __LCC__ && ! IS_IN (libc) && ! IS_IN (libpthread) && ! IS_IN (librt)  */
+/* Provide a do-nothing implementation for the sake of ld.so build with
+   (non-optimizing) LCC.  */
+# define LIBC_CANCEL_RESET(val)	((void) (val)) /* Nothing, but evaluate it.  */
+#endif /* defined __LCC__ && ! IS_IN (libc) && ! IS_IN (libpthread) && ! IS_IN (librt)  */
+
 
 #endif

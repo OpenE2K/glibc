@@ -47,4 +47,17 @@ __nanosleep (const struct timespec *req, struct timespec *rem)
 }
 #endif
 libc_hidden_def (__nanosleep)
+
+#if ! (defined __e2k__ && defined SHARED)
+
 weak_alias (__nanosleep, nanosleep)
+
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+
+weak_alias (__nanosleep, __nanosleep_weak)
+versioned_symbol (libc, __nanosleep_weak, nanosleep, GLIBC_2_2);
+
+compat_symbol (libpthread, __nanosleep_weak, nanosleep, GLIBC_2_0);
+
+#endif /* defined __e2k__  */

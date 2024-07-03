@@ -252,15 +252,34 @@ _dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
 	 long enough to relocate them.  */
       const ElfW(Phdr) *ph;
       for (ph = l->l_phdr; ph < &l->l_phdr[l->l_phnum]; ++ph)
-	if (ph->p_type == PT_LOAD && (ph->p_flags & PF_W) == 0)
+	if (ph->p_type == PT_LOAD && (ph->p_flags & PF_W) == 0
+#if defined __ptr128__
+	    /* ld.so has no R/W access to the dynamic object's CUD in PM.
+	       Therefore, do not process executable ELF segments mapped
+	       into CUD. FIXME: taking into account that this TEXTREL
+	       activity makes sense for text rather than for data segments
+	       it could probably be entirely disabled in PM without any
+	       harm.  */
+	    && (ph->p_flags & PF_X) == 0
+#endif /* defined __ptr128__  */
+	    )
 	  {
 	    struct textrels *newp;
 
 	    newp = (struct textrels *) alloca (sizeof (*newp));
+
+	    /* Hopefully this calculation is also valid for PM "packed"
+	       ELFs.  */
 	    newp->len = ALIGN_UP (ph->p_vaddr + ph->p_memsz, GLRO(dl_pagesize))
 			- ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize));
+
+#if ! defined __ptr128__
 	    newp->start = PTR_ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize))
 			  + (caddr_t) l->l_addr;
+#else /* defined __ptr128__  */
+	    newp->start = (l->l_gd + ALIGN_DOWN (get_offset (l, ph->p_vaddr),
+						 GLRO(dl_pagesize)));
+#endif /* defined __ptr128__  */
 
 	    newp->prot = 0;
 	    if (ph->p_flags & PF_R)
@@ -347,8 +366,21 @@ _dl_protect_relro (struct link_map *l)
 			       + l->l_relro_addr
 			       + l->l_relro_size),
 			      GLRO(dl_pagesize));
+
+#if defined __ptr128__
+  start = get_offset (l, start);
+  end = get_offset (l, end);
+#endif
+
   if (start != end
-      && __mprotect ((void *) start, end - start, PROT_READ) < 0)
+      && getenv ("PROTECT_RELRO") != NULL
+      && __mprotect (
+#if !defined __ptr128__
+		     (void *) start,
+#else
+		     l->l_gd + (start - l->l_addr),
+#endif
+		     end - start, PROT_READ) < 0)
     {
       static const char errstring[] = N_("\
 cannot apply additional memory protection after relocation");

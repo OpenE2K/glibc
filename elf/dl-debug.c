@@ -93,8 +93,12 @@ _dl_debug_initialize (ElfW(Addr) ldbase, Lmid_t ns)
     }
 
   if (r->base.r_map == NULL)
-    atomic_store_release (&r->base.r_map,
-			  (void *) GL(dl_ns)[ns]._ns_loaded);
+    {
+      // atomic_store_release (&r->base.r_map,
+      // (void *) GL(dl_ns)[ns]._ns_loaded);
+
+      r->base.r_map = (void *) GL(dl_ns)[ns]._ns_loaded;
+    }
 
   if (pp != NULL)
     {

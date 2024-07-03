@@ -201,7 +201,7 @@ name_to_database_index (const char *name)
                                        sizeof (database_name), name_search);
   if (name_entry == NULL)
     return -1;
-  return name_entry - nss_database_name_array;
+  return (const database_name *) name_entry - nss_database_name_array;
 }
 
 static bool

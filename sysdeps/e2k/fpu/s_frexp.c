@@ -1,0 +1,51 @@
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
+
+/*
+ * for non-zero x
+ *	x = frexp(arg,&exp);
+ * return a double fp quantity x such that 0.5 <= |x| < 1.0
+ * and the corresponding binary exponent "exp". That is
+ *	arg = x*2^exp.
+ * If arg is inf, 0.0, or NaN, then frexp(arg,&exp) returns arg
+ * with *exp=0.
+ */
+
+#include <math.h>
+#include <math_private.h>
+
+#include "f2c.h"
+
+double
+__frexp (double x, int *eptr)
+{
+  _type_double_bits X;
+  LL ix;
+
+  X.value = x;
+  ix = X.llong & 0x7fffffffffffffffLL;
+  if (__glibc_unlikely (ix >= 0x7ff0000000000000LL || ix == 0))
+    {
+      *eptr = 0;
+      return x;                                           /* 0,inf,nan */
+    }
+  if (__glibc_unlikely (ix < 0x0010000000000000LL))              /* subnormal */
+    {
+      X.value *= DVAIN52;
+      ix = X.llong & 0x7fffffffffffffffLL;
+      *eptr = (ix >> 52) - 1074;                          /* extract exponent */
+      X.llong &= ~0x7ff0000000000000LL; /* обнуляем порядок */
+      X.llong |= 0x3fe0000000000000LL; /* вставляем 0-й порядок */
+      return X.value;
+    }
+  *eptr = (ix >> 52) - 1022;
+  X.llong &= ~0x7ff0000000000000LL; /* обнуляем порядок */
+  X.llong |= 0x3fe0000000000000LL; /* вставляем 0-й порядок */
+  return X.value;
+}
+weak_alias (__frexp, frexp)
+#ifdef NO_LONG_DOUBLE
+strong_alias (__frexp, __frexpl)
+weak_alias (__frexp, frexpl)
+#endif

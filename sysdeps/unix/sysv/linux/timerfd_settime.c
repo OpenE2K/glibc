@@ -26,9 +26,11 @@ int
 __timerfd_settime64 (int fd, int flags, const struct __itimerspec64 *value,
                      struct __itimerspec64 *ovalue)
 {
+#if ! defined __e2k__ || __WORDSIZE == 64
 #ifndef __NR_timerfd_settime64
 # define __NR_timerfd_settime64 __NR_timerfd_settime
 #endif
+#endif /* ! defined __e2k__ || __WORDSIZE == 64  */
 
 #ifdef __ASSUME_TIME64_SYSCALLS
   return INLINE_SYSCALL_CALL (timerfd_settime64, fd, flags, value, ovalue);
@@ -37,10 +39,14 @@ __timerfd_settime64 (int fd, int flags, const struct __itimerspec64 *value,
 		     || !in_time_t_range (value->it_interval.tv_sec);
   if (need_time64)
     {
+#if ! defined __e2k__ || __WORDSIZE == 64
       int r = INLINE_SYSCALL_CALL (timerfd_settime64, fd, flags, value,
 				   ovalue);
       if (r == 0 || errno != ENOSYS)
 	return r;
+#else /* defined __e2k__ && __WORDSIZE != 64  */
+      int r = -1;
+#endif /* defined __e2k__ && __WORDSIZE != 64  */
       __set_errno (EOVERFLOW);
       return r;
     }

@@ -22,10 +22,39 @@
 
 /* Close the file descriptor FD.  */
 int
-__close (int fd)
+#if ! (defined __e2k__ && defined SHARED)
+__close
+#else /* defined __e2k__ && defined SHARED  */
+static
+__close_local
+#endif /* defined __e2k__ && defined SHARED  */
+(int fd)
 {
   return SYSCALL_CANCEL (close, fd);
 }
+
+#if ! (defined __e2k__ && defined SHARED)
+
 libc_hidden_def (__close)
 strong_alias (__close, __libc_close)
 weak_alias (__close, close)
+
+#else /* defined __e2k__ && defined SHARED  */
+# include <shlib-compat.h>
+
+/* This alias ensures the creation of __GI_* () HIDDEN symbol (to which
+   "aliasname" is transformed via libc_hidden_proto magic) intended for
+   internal use within libc.so.  */
+strong_alias (__close_local, __close)
+
+strong_alias (__close_local, __close_strong)
+versioned_symbol (libc, __close_strong, __close, GLIBC_2_0);
+compat_symbol (libpthread, __close_strong, __close, GLIBC_2_0);
+
+strong_alias (__close_local, __libc_close)
+
+weak_alias (__close_strong, __close_weak)
+versioned_symbol (libc, __close_weak, close, GLIBC_2_0);
+compat_symbol (libpthread, __close_weak, close, GLIBC_2_0);
+
+#endif /* defined __e2k__ && defined SHARED  */
