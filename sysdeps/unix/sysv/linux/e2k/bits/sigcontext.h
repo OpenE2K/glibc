@@ -108,6 +108,13 @@ struct extra_ucontext {
   /* Offsets from base suitable for passing to sys_access_hw_stacks  */
   unsigned long long chain_stack_offset;
   unsigned long long proc_stack_offset;
+
+  /* According to ABI registers %g16-%g31 are saved before signal entry */
+  unsigned int bgr;
+  unsigned long long g[16];
+  unsigned char gtag[16];
+  unsigned long long gext[16];
+  unsigned char gext_tag[16];
 };
 
 #endif /* _BITS_SIGCONTEXT_H  */

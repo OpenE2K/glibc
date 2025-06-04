@@ -127,6 +127,10 @@ FUNCNAME:
 	    STD     ARG0, jmpbuf_ip, TEMP1
 	}	
 	{
+! MCSTBug #163716.
+#if __iset__ <= 6
+	nop     1
+#endif /* __iset__ <= 6  */
 	    STD     ARG0, jmpbuf_reserv3, TEMP0
 	    STD     ARG0, jmpbuf_sigmask, TEMP0
 	}	
@@ -138,7 +142,7 @@ FUNCNAME:
 ! interrupt, the one which may have changed the registers will trigger RBRANCH.
 !
 ! ATTENTION: there should be no memory accesses between lock and unlock (see
-! Bug #33705)
+! MCSTBug #33705)
 !
 ! ATTENTION: to make rrd execution take a single tick, ALC2 should be used to
 ! store its result.

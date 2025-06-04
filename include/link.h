@@ -396,7 +396,7 @@ struct link_map
     union
     {
       void (* selfinit) (void);
-      void (* (* get_pl) (unsigned int)) (void);
+      void (* (* get_pl) (unsigned long)) (void);
     };
 #endif /* defined __ptr128__  */
   

@@ -9,7 +9,16 @@ pthread_spin_lock (pthread_spinlock_t *lock)
 {
   register int tmp, locked = SPIN_LOCK_LOCKED_VAL;
   asm volatile
-    ("   disp    %%ctpr1, 3f\n"
+    (
+#if __iset__ <= 6
+     "   {\n"
+#endif /* __iset__ <= 6  */
+     "    disp    %%ctpr1, 3f\n"
+#if __iset__ <= 6
+     /* MCSTBug #163716.  */
+     "    nop     1\n"
+     "   }\n"
+#endif /* __iset__ <= 6  */
      "1:\n" LDW ",0 %1, 0x0, %0, mas = 0x7\n"
      "   {\n"
      "   " STW ",2 %1, 0x0, %2, mas = 0x2\n"

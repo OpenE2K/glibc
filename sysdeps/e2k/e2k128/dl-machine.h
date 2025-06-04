@@ -149,9 +149,10 @@ void (* _start2 (void)) (void)						\
   char **argv, **envp;							\
   void (* entry_point) (void);						\
 									\
-  extern void _dl_init (struct link_map *main_map, int argc, char **argv, char **env); \
-									\
   SELFINIT_IF_NOT_GOLD;							\
+									\
+  extern  int __cpu_init (void);					\
+  __cpu_init ();							\
 									\
   fp +=1;								\
                                                                         \
@@ -166,6 +167,8 @@ void (* _start2 (void)) (void)						\
   argv = (char **)(fp + 1);						\
   envp = argv + argc + 1;						\
 									\
+extern void _dl_init (struct link_map *main_map, int argc, char **argv, char **env); \
+									\
   /* For most other architectures _dl_init( *_rtld_local,...) call is	\
      performed in assembler here. Do the same for E2K in C.  */		\
   _dl_init (_rtld_local._dl_ns[0]._ns_loaded, argc, argv, envp);	\
@@ -174,6 +177,14 @@ void (* _start2 (void)) (void)						\
 }									\
 									\
  RTLD_START_EARLY
+
+#if __iset__ < 7
+# define _GOT_		"0x0"
+# define _SET_GOT_	""
+#else /* __iset__ >= 7  */
+# define _GOT_		"%dr2"
+# define _SET_GOT_	"addd,1 0x0, _GLOBAL_OFFSET_TABLE_, "_GOT_
+#endif /* __iset__ >= 7  */
 
 #define RTLD_START_EARLY                                                \
   __asm__ ( "\n"                                                        \
@@ -184,23 +195,24 @@ void (* _start2 (void)) (void)						\
             "$_start:\n"                                                \
             "{\n"                                                       \
             "  setwd wsz = 0x8, nfx = 0x0\n"                            \
-	    "  movtq %r0, %r8\n"						\
+	    "  movtq %r0, %r8\n"					\
             "  disp %ctpr1, $_start2\n"                                 \
             "}\n"                                                       \
             "{\n"                                                       \
             "  call %ctpr1, wbs = 0x4\n"                                \
-            "  adds,1 0x0, 0x0, %r1\n"                                  \
             "}\n"                                                       \
             "{\n"                                                       \
             "  movtd,0 %dr8, %ctpr1\n"                                  \
+	    "  "_SET_GOT_						\
 	    "}\n"							\
 	    "{\n"							\
             "  movtq %r0, %r8\n"					\
             "}\n"                                                       \
 	    "{\n"							\
-            "  ldgdq,3 0x0, _dl_fini@PL_GOT, %qr10\n"			\
+            "  ldgdq,3 "_GOT_", _dl_fini@PL_GOT, %qr10\n"		\
             "}\n"                                                       \
             "call %ctpr1, wbs = 0x4\n"                                  \
+	    "adds,0 0x0, 0x0, %r1\n"					\
             "stgdw,2 0x0, 0x0, %r1\n" );
 
 

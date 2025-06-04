@@ -91,9 +91,14 @@ runtime_compatible_host (uint32_t flg, char *errmsg)
   int incompat = ((flg & EF_E2K_INCOMPAT) != 0);
   /* "Regular" elbrus-v{X>=7} ELFs should not be executed on deficient
      elbrus-maket32c (see Bug #161286, Comment #7 and a slight
-     refinement in Bug #159001, Comment #26). Uncomment this as soon
-     as the builtin of interest is supported.  */
-  const int maket = 0; /* __builtin_cpu_is ("elbrus-maket32c");  */
+     refinement in Bug #159001, Comment #26).  */
+  const int maket =
+#ifdef __MCST_SUPPORT_ELBRUS_MAKET32C__
+    __builtin_cpu_is ("elbrus-maket32c")
+#else /* ! defined __MCST_SUPPORT_ELBRUS_MAKET32C__  */
+    0
+#endif /* ! defined __MCST_SUPPORT_ELBRUS_MAKET32C__  */
+    ;
 
   int iset;
   /* __builtin_e2k_cpu_iset () could be more naturally used for this purpose
@@ -167,14 +172,13 @@ runtime_compatible_host (uint32_t flg, char *errmsg)
       if (__builtin_cpu_is ("elbrus-8v7"))
 	return 1;
       break;
+#ifdef __MCST_SUPPORT_ELBRUS_MAKET32C__
     case E_E2K_MACH_MAKET32C:
-      /* elbrus-maket32c ELFs shouldn't be allowed to run on "real" elbrus-v7.
-	 However, until MAKET is properly initialized above, use this logically
-	 incorrect condition to let them be executed on elbrus-maket32c host
-	 somehow. TODO: "iset == 7" is to be eventually replaced with "maket",
-	 of course.  */
-      if (/* maket  */ iset == 7)
+      /* elbrus-maket32c ELFs should be allowed to run on elbrus-maket32c
+	 only.  */
+      if (maket)
 	return 1;
+#endif /* __MCST_SUPPORT_ELBRUS_MAKET32C__  */
     }
 
   if (errmsg != NULL)
@@ -254,11 +258,10 @@ runtime_compatible_host (uint32_t flg, char *errmsg)
 	host = "48c";
       else if (__builtin_cpu_is ("elbrus-8v7"))
 	host = "8v7";
-      /* Wait until "elbrus-maket32c" is recognized.  */
-#if 0
+#ifdef __MCST_SUPPORT_ELBRUS_MAKET32C__
       else if (__builtin_cpu_is ("elbrus-maket32c"))
 	host = "maket32c";
-#endif /* 0  */
+#endif /* __MCST_SUPPORT_ELBRUS_MAKET32C__  */
 
       for (i = 0; host[i] != '\0'; i++)
 	errmsg[j++] = host[i];
