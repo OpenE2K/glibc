@@ -1,6 +1,7 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* gmp-mparam.h -- Compiler/machine parameter header file.
 
-Copyright (c) 2016 AO MCST.
 Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.

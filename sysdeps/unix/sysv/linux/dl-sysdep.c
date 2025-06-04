@@ -70,6 +70,15 @@ struct dl_main_arguments
   ElfW(Addr) user_entry;
 };
 
+#if defined __e2k__ && defined __ptr128__
+# if __iset__ < 7
+#  define GDTOAP "gdtoap"
+# else /* __iset__ >= 7  */
+#  define GDTOAP "gdincr"
+# endif /* __iset__ >= 7  */
+#endif /* defined __e2k__ && defined __ptr128__  */
+
+
 /* Separate function, so that dl_main can be called without the large
    array on the stack.  */
 static void
@@ -98,8 +107,8 @@ _dl_sysdep_parse_arguments (void **start_argptr,
   args->phdr = ({
       const ElfW(Phdr) *res;
       const void *gd;
-      __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (gd));
-      __asm__ ("gdtoap %1, %0\n\t"
+      __asm__ (GDTOAP " 0x0, %0\n\t" : "=r" (gd));
+      __asm__ (GDTOAP " %1, %0\n\t"
 	       : "=r" (res)
 	       : "r" (auxv_values[AT_PHDR] - (ElfW(Addr)) gd));
       res;

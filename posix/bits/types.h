@@ -204,7 +204,15 @@ typedef __off64_t __loff_t;	/* Type of file sizes and offsets (LFS).  */
 typedef char *__caddr_t;
 
 /* Duplicates info from stdint.h but this is used in unistd.h.  */
+#if __INTPTR_WIDTH__ == 128
+# ifdef __MCST_INTPTR_DYNAMIC__
+typedef __intdescr_t	__intptr_t;
+# else /* ! __MCST_INTPTR_DYNAMIC__  */
+typedef __int128_t		__intptr_t;
+# endif /* ! __MCST_INTPTR_DYNAMIC__  */
+#else /* __INTPTR_WIDTH__ != 128  */
 __STD_TYPE __SWORD_TYPE __intptr_t;
+#endif /* __INTPTR_WIDTH__ != 128  */
 
 /* Duplicate info from sys/socket.h.  */
 __STD_TYPE __U32_TYPE __socklen_t;

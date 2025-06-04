@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 #ifndef _LINUX_E2K_E2K128_LDSODEFS_H
 #define _LINUX_E2K_E2K128_LDSODEFS_H	1
 
@@ -43,7 +25,7 @@
 
 #include_next <ldsodefs.h>
 
-static unsigned int get_offset (struct link_map *map, unsigned int off);
+static unsigned long get_offset (struct link_map *map, unsigned long off);
 
 static __attribute__ ((unused)) int
 dl_addr_sym_match(struct link_map *l, const ElfW(Sym) *sym,
@@ -85,7 +67,7 @@ dl_addr_sym_match(struct link_map *l, const ElfW(Sym) *sym,
   if (addr_in_cud != sym_in_cud)
     return 0;
 
-  unsigned int sym_offset = get_offset (l, sym->st_value);
+  unsigned long sym_offset = get_offset (l, sym->st_value);
   return (addr >= base + sym_offset
 	  && (((sym->st_shndx == SHN_UNDEF || sym->st_size == 0)
 	       && addr == base + sym_offset)
@@ -176,13 +158,13 @@ fill_ranges (struct link_map *map, void *p)
 	}
     }
 
-  uintptr_t max_page_aligned = 0;
-  uintptr_t cud_size = 0, gd_size = 0;
+  size_t max_page_aligned = 0;
+  size_t cud_size = 0, gd_size = 0;
 
   for (i = 0; i < map->range_num; i++)
     {
-      uintptr_t min_page_aligned = ranges[i].min & ~(ranges[i].align - 1);
-      uintptr_t b, r, pos;
+      size_t min_page_aligned = ranges[i].min & ~(ranges[i].align - 1);
+      size_t b, r, pos;
 
       /* MAX_PAGE_ALIGNED corresponds to the preceding segment in this
 	 comparison, of course.  */
@@ -233,8 +215,8 @@ see_if_packed (struct link_map *map)
 	{
 	  /* This should be the "first" (i.e. the one at 0 offset in ELF)
 	     segment containing Program Headers.  */
-	  uintptr_t phdr_offset;
-	  phdr_offset = (uintptr_t) map->l_phdr - (uintptr_t) map->l_gd;
+	  size_t phdr_offset;
+	  phdr_offset = (size_t) map->l_phdr - (size_t) map->l_gd;
 	  /* In non-packed case Program Headers would be mapped at offset
 	     within GD equal to their "address" in ELF, i.e. the one
 	     exceeding p_vaddr of the containing segment. This condition could
@@ -275,9 +257,9 @@ see_if_packed (struct link_map *map)
   fill_ranges (map, map->ranges);
 }
 
-static unsigned int
+static unsigned long
 get_packed_offset_in_ranges (struct link_map *map, struct range *ranges,
-			     unsigned int off, int in_cud)
+			     unsigned long off, int in_cud)
 {
   size_t i;
   if (! in_cud)
@@ -293,8 +275,8 @@ get_packed_offset_in_ranges (struct link_map *map, struct range *ranges,
       for (i = 0; i < map->range_num; i++)
 	{
 	  if (ranges[i].in_cud
-	      && off >= (ranges[i].min & -((uintptr_t) 0x1000))
-	      && off <= ((ranges[i].max + 0xfff) & -((uintptr_t) 0x1000)))
+	      && off >= (ranges[i].min & -((size_t) 0x1000))
+	      && off <= ((ranges[i].max + 0xfff) & -((size_t) 0x1000)))
 	    return off + ranges[i].delta;
 	}
     }
@@ -303,8 +285,8 @@ get_packed_offset_in_ranges (struct link_map *map, struct range *ranges,
   return off;
 }
 
-static unsigned int
-get_packed_offset_slow (struct link_map *map, unsigned int off, int in_cud)
+static unsigned long
+get_packed_offset_slow (struct link_map *map, unsigned long off, int in_cud)
 {
   struct range ranges[map->range_num];
 
@@ -312,8 +294,8 @@ get_packed_offset_slow (struct link_map *map, unsigned int off, int in_cud)
   return get_packed_offset_in_ranges (map, ranges, off, in_cud);
 }
 
-static unsigned int
-get_packed_offset (struct link_map *map, unsigned int off, int in_cud)
+static unsigned long
+get_packed_offset (struct link_map *map, unsigned long off, int in_cud)
 {
   if (map->range_num <= 8)
     return get_packed_offset_in_ranges (map, map->ranges, off, in_cud);
@@ -321,8 +303,8 @@ get_packed_offset (struct link_map *map, unsigned int off, int in_cud)
   return get_packed_offset_slow (map, off, in_cud);
 }
 
-static __attribute__ ((unused)) unsigned int
-get_offset_ex (struct link_map *map, unsigned int off, int in_cud)
+static __attribute__ ((unused)) unsigned long
+get_offset_ex (struct link_map *map, unsigned long off, int in_cud)
 {
   if (map->packed == PACKED_UNKNOWN)
     see_if_packed (map);
@@ -333,15 +315,15 @@ get_offset_ex (struct link_map *map, unsigned int off, int in_cud)
   return get_packed_offset (map, off, in_cud);
 }
 
-static __attribute__ ((unused)) unsigned int
-get_offset (struct link_map *map, unsigned int off)
+static __attribute__ ((unused)) unsigned long
+get_offset (struct link_map *map, unsigned long off)
 {
   return get_offset_ex (map, off, 0);
 }
 
 
 static __attribute__ ((unused)) unsigned int *
-get_uint_slot (struct link_map *map, unsigned int off)
+get_uint_slot (struct link_map *map, unsigned long off)
 {
   unsigned int *res;
 
@@ -351,7 +333,7 @@ get_uint_slot (struct link_map *map, unsigned int off)
 }
 
 static __attribute__ ((unused)) void **
-get_ap_slot (struct link_map *map, unsigned int off)
+get_ap_slot (struct link_map *map, unsigned long off)
 {
   void **res;
 
@@ -361,7 +343,7 @@ get_ap_slot (struct link_map *map, unsigned int off)
 }
 
 static __attribute__ ((unused)) void
-(** get_pl_slot (struct link_map *map, unsigned int off)) (void)
+(** get_pl_slot (struct link_map *map, unsigned long off)) (void)
 {
   void (** res) (void);
   off = get_offset (map, off);
@@ -372,8 +354,8 @@ static __attribute__ ((unused)) void
 
 
 static __attribute__ ((unused)) void *
-get_ap (struct link_map *map, unsigned int off,
-	unsigned int addend, unsigned int size)
+get_ap (struct link_map *map, unsigned long off,
+	unsigned long addend, unsigned long size)
 {
   char *res;
   off = get_offset (map, off);
@@ -400,12 +382,12 @@ get_ap (struct link_map *map, unsigned int off,
 }
 
 static __attribute__ ((unused)) void
-(* get_pl (struct link_map *map, unsigned int off)) (void)
+(* get_pl (struct link_map *map, unsigned long off)) (void)
 {
   if (map->l_info[DT_E2K_NO_SELFINIT - DT_LOPROC + DT_NUM] == NULL)
     {
-      unsigned int i;
-      unsigned int size = map->l_info[DT_E2K_EXPORT_PLSZ - DT_LOPROC
+      unsigned long i;
+      unsigned long size = map->l_info[DT_E2K_EXPORT_PLSZ - DT_LOPROC
 				      + DT_NUM]->d_un.d_val;
       void (**pl) (void)
 	= get_ap (map, (map->l_info[DT_E2K_EXPORT_PL
@@ -415,8 +397,8 @@ static __attribute__ ((unused)) void
       /* Take into account that upstream e2k-linux-ld always reserves 16 bytes per
 	 function pointer in `.data.export_pl' no matter whether it's 16 or 8 bytes
 	 long in fact.  */
-      unsigned int n_slots = size / 16;
-      unsigned int scale = 16 / sizeof (void (*) (void));
+      unsigned long n_slots = size / 16;
+      unsigned long scale = 16 / sizeof (void (*) (void));
 
       for (i = 0; i < n_slots; i++)
 	{
@@ -432,14 +414,14 @@ static __attribute__ ((unused)) void
 
 
 static __attribute__ ((unused)) void **
-get_ap_slot_relative (struct link_map *map, unsigned int off)
+get_ap_slot_relative (struct link_map *map, unsigned long off)
 {
   void **res = __builtin_e2k_create_ap_subarray (map->l_gd, off, 16);
   return res;
 }
 
 static __attribute__ ((unused)) void
-(** get_pl_slot_relative (struct link_map *map, unsigned int off)) (void)
+(** get_pl_slot_relative (struct link_map *map, unsigned long off)) (void)
 {
   void (** res) (void)
     = __builtin_e2k_create_ap_subarray (map->l_gd, off,
@@ -449,8 +431,8 @@ static __attribute__ ((unused)) void
 
 
 static __attribute__ ((unused)) void *
-get_ap_relative (struct link_map *map, unsigned int off,
-		 unsigned int addend, unsigned int size)
+get_ap_relative (struct link_map *map, unsigned long off,
+		 unsigned long addend, unsigned long size)
 {
   char *res;
 
@@ -476,7 +458,7 @@ get_ap_relative (struct link_map *map, unsigned int off,
 }
 
 static __attribute__ ((unused)) void
-(* get_pl_relative (struct link_map *map, unsigned int off)) (void)
+(* get_pl_relative (struct link_map *map, unsigned long off)) (void)
 {
   /* There's no point in considering non-DT_E2K_NO_SELFINIT case here as "pc-
      relative" R_E2K_PL's are NOT used in it.  */

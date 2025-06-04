@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain.  Use, modify, and
@@ -32,6 +14,58 @@
   Hacked up for uClibc by Erik Andersen <andersen@codepoet.org>
 */
 
+#if defined __PROTECTED__ && __iset__ >= 7 && ! defined __elbrus_maket32c__
+static void
+recolorize (void *colorless, void *colored, size_t size)
+{
+  size_t i;
+  for (i = 0; i + 16 <= size; i += 16, colorless += 16, colored += 16)
+    {
+      void *tmp;
+      __asm__ ("\n\t ldapq,sm %1, 0x0, %0"
+	       "\n\t stapq,sm %1, 0x0, %0"
+	       "\n\t stapq,sm %2, 0x0, %0"
+	       : "=r" (tmp) : "r" (colorless), "r" (colored));
+    }
+
+    for (; i + 8 <= size; i += 8, colorless += 8, colored += 8)
+    {
+      unsigned long long tmp;
+      __asm__ ("\n\t ldapd,sm %1, 0x0, %0"
+	       "\n\t stapd,sm %1, 0x0, %0"
+	       "\n\t stapd,sm %2, 0x0, %0"
+	       : "=r" (tmp) : "r" (colorless), "r" (colored));
+    }
+
+    for (; i + 4 <= size; i += 4, colorless += 4, colored += 4)
+    {
+      unsigned int tmp;
+      __asm__ ("\n\t ldapw,sm %1, 0x0, %0"
+	       "\n\t stapw,sm %1, 0x0, %0"
+	       "\n\t stapw,sm %2, 0x0, %0"
+	       : "=r" (tmp) : "r" (colorless), "r" (colored));
+    }
+
+    for (; i + 2 <= size; i += 2, colorless += 2, colored += 2)
+    {
+      unsigned short tmp;
+      __asm__ ("\n\t ldaph,sm %1, 0x0, %0"
+	       "\n\t staph,sm %1, 0x0, %0"
+	       "\n\t staph,sm %2, 0x0, %0"
+	       : "=r" (tmp) : "r" (colorless), "r" (colored));
+    }
+
+    for (; i + 1 <= size; i += 1, colorless += 1, colored += 1)
+    {
+      unsigned char tmp;
+      __asm__ ("\n\t ldapb,sm %1, 0x0, %0"
+	       "\n\t stapb,sm %1, 0x0, %0"
+	       "\n\t stapb,sm %2, 0x0, %0"
+	       : "=r" (tmp) : "r" (colorless), "r" (colored));
+    }
+
+}
+#endif /* defined __PROTECTED__ && __iset__ >= 7 && ! defined __elbrus_maket32c__  */
 
 /* ------------------------------ realloc ------------------------------ */
 void* realloc(void* oldmem, size_t bytes)
@@ -59,10 +93,13 @@ void* realloc(void* oldmem, size_t bytes)
 #ifndef __PROTECTED__ /* Unused variable in PM */
     unsigned int     ncopies;         /* size_t words to copy */
 #endif
-    size_t* s;               /* copy source */
-    size_t* d;               /* copy destination */
+    // size_t* s;               /* copy source */
+    // size_t* d;               /* copy destination */
 
     void *retval;
+#ifdef __PROTECTED__
+    void *retval_ap;
+#endif
 
     /* Check for special cases.  */
     if (! oldmem)
@@ -78,6 +115,12 @@ void* realloc(void* oldmem, size_t bytes)
 
 #ifdef __PROTECTED__
     void* user_oldmem = oldmem;
+#if __iset__ >= 7 && ! defined __elbrus_maket32c__
+    unsigned long oldcolor;
+    _Pragma ("no_asm_inline")
+    __asm__ ("getptrc %1, %0" : "=r" (oldcolor) : "r" (user_oldmem));
+    oldcolor >>= 60;
+#endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
 
     oldmem = pmem2mem(oldmem, av);
 #endif
@@ -188,9 +231,11 @@ void* realloc(void* oldmem, size_t bytes)
 		    /* Copy whole chunk except 'size of next chunk' field.
 		       As for 64 bit mode */
 		    copysize = oldsize - (sizeof(size_t));
-		    s = (size_t*)(oldmem);
-                    d = (size_t*)(newmem);
-		    memcpy(d, s, copysize);
+		    memcpy(newmem, oldmem, copysize);
+
+		    size_t i;
+		    for (i = copysize; i < bytes; i++)
+		      ((unsigned char *) newmem)[i] = 0;
 #endif /* __PROTECTED__ e2k */
 
 #ifndef __PROTECTED__
@@ -317,6 +362,9 @@ void* realloc(void* oldmem, size_t bytes)
 #ifndef __PROTECTED__
 		free(oldmem);
 #else /* __PROTECTED__  */
+		size_t i;
+		for (i = oldsize - 2*(sizeof (size_t)); i < bytes; i++)
+		  ((unsigned char *) newmem)[i] = 0;
 		free_1(oldmem, 0);
 #endif /* __PROTECTED__  */
 	    }
@@ -327,8 +375,25 @@ void* realloc(void* oldmem, size_t bytes)
  DONE:
     __MALLOC_UNLOCK;
 #ifdef __PROTECTED__
-    retval = mem2pmem(retval, bytes);
-#endif
-    return retval;
-}
+# if __iset__ >= 7 && ! defined __elbrus_maket32c__
+    /* Take care of preserving the color unless the relocated buffer changed
+       its location in memory with respect to the original one so as to save
+       the user the trouble of adjusting pre-existing pointers to content
+       within the original buffer in such a case (Bug #162401, Comments #3,
+       #4).  */
+    if (retval != user_oldmem)
+# endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+      retval_ap = mem2pmem(retval, bytes);
+# if __iset__ >= 7 && ! defined __elbrus_maket32c__
+    else
+      retval_ap = mem2pmem_with_color(retval, bytes, oldcolor);
+# endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
 
+# if __iset__ >= 7 && ! defined __elbrus_maket32c__
+    recolorize (retval, retval_ap, bytes);
+# endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+    return retval_ap;
+#else /* ! defined __PROTECTED__  */
+    return retval;
+#endif /* ! defined  __PROTECTED__  */
+}

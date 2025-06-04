@@ -1,5 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* System-specific settings for dynamic linker code.  E2k version.
-   Copyright (c) 2016 AO MCST.
    Copyright (C) 2002-2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 #ifndef _FENV_H
 # error "Never use <bits/fenv.h> directly; include <fenv.h> instead."

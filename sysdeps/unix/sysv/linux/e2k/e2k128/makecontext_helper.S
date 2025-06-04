@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 	.global makecontext_helper
 	.type makecontext_helper, @function
 makecontext_helper:
@@ -26,7 +8,13 @@ makecontext_helper:
 
 	movtd %r4, %ctpr1
 
+#if __iset__ < 7
 	aptoap %r0, 0x30, %b[0]
+#else /* __iset__ >= 7  */
+	/* To be FIXED to match the above APTOAP!  */
+	movtq %r0, %b[0]
+	adds %b[0], 0x30, %b[0]
+#endif /* __set__ >= 7  */
 
 	/* Get the first 4 register arguments (not counting the one on %qb[0])
 	   to the target function from our incoming registers and ...  */

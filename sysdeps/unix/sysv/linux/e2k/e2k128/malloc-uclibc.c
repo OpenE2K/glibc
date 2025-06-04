@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain.  Use, modify, and
@@ -853,27 +835,72 @@ static int __malloc_largebin_index(size_t sz)
 
 /* Make pointer with user size */
 void* mem2pmem(void *p, size_t size) {
-        size_t __index = ((descriptor*)(&p))->index;
-        void * ret;
-	ret = __builtin_e2k_create_ap_subarray (p, __index, size);
-        return ret;
+  void * ret;
+#if __iset__ < 7 || defined __elbrus_maket32c__
+  ret = __builtin_e2k_create_ap_subarray (p, 0, size);
+#else /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+  _Pragma ("no_asm_inline")
+  __asm__ ("subarrc %1, %2, %0" : "=r" (ret) : "r" (p), "r" (size - 1));
+#endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+  return ret;
 }
+
+#if __iset__ >= 7 && ! defined __elbrus_maket32c__
+void* mem2pmem_with_color(void *p, size_t size, unsigned long color) {
+  void * ret;
+
+  while (1)
+    {
+      _Pragma ("no_asm_inline")
+      __asm__ ("subarrc %1, %2, %0" : "=r" (ret) : "r" (p), "r" (size - 1));
+
+      unsigned long ptrc;
+      _Pragma ("no_asm_inline")
+	__asm__ ("getptrc %1, %0" : "=r" (ptrc) : "r" (ret));
+
+      if ((ptrc >> 60) == color)
+	break;
+      
+    }
+
+  return ret;
+}
+#endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+  
 
 void* pmem2mem(void *mem, mstate av)
 {
     mprotptr region = av->mmaped_region;
     size_t mem_addr = (size_t)mem;
     while (region != NULL) {
-	if (mem >= region &&
-	     mem_addr < (size_t) region + ((descriptor *) &region)->size)
-	    return (char *) region - (size_t) region + (size_t) mem;
+#if __iset__ < 7
+      unsigned int __size = ((descriptor *)(&region))->size;
+#else /* __iset__ >= 7  */
+      size_t __size;
+      asm ("getmi %1, %0" : "=r" (__size) : "r" (region));
+      __size += 1;
+#endif /* __iset__ >= 7  */
+
+	if (mem_addr >= (size_t) region &&
+	    mem_addr < (size_t) region + __size)
+	  return (char *) region + (mem_addr - (size_t) region);
 	region = region->fd;
     }
     /* We should never be here. */
     if (IF_PM_DBG_MODE_CHECK) {
+      {
+#if __iset__ < 7
+	unsigned int __size = ((descriptor *)(&mem))->size;
+#else /* __iset__ >= 7  */
+	size_t __size;
+	asm ("getmi %1, %0" : "=r" (__size) : "r" (mem));
+	__size += 1;
+#endif /* __iset__ >= 7  */
+
 	printf("ERROR: protected memory structure looks corrupted\n");
 	printf("%s:%d: failed to map %p (size 0x%x) to region\n",
-	       __FILE__, __LINE__, mem, ((descriptor *) &mem)->size);
+	       __FILE__, __LINE__, mem, (unsigned int) __size);
+      }
     }
     assert(0);
     return NULL;
@@ -1324,6 +1351,9 @@ static void* malloc_1(size_t bytes, int lock)
     for (i = 0; i < (alloc_bytes >> 3); i++)
       __asm__ ("stapd,sm %0, 0x0, %1\n" :
 	       : "r" (&(((unsigned long *) retval)[i])), "r" (empty_value));
+
+    for (i = (alloc_bytes >> 3) << 3; i < alloc_bytes; i++)
+      ((unsigned char *) retval)[i] = 0;
 
     retval = mem2pmem(retval, bytes);
     return retval;

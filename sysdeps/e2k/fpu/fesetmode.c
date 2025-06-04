@@ -1,6 +1,4 @@
-/* Copyright (c) 2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2018 ZAO "MCST". All rights reserved. */
 
 /* Install given floating-point control modes. */
 

@@ -84,10 +84,26 @@ typedef unsigned long long int	uint_fast64_t;
 /* Types for `void *' pointers.  */
 #if __WORDSIZE == 64
 # ifndef __intptr_t_defined
+#  if __INTPTR_WIDTH__ == 128
+#   ifdef __MCST_INTPTR_DYNAMIC__
+typedef __intdescr_t	intptr_t;
+#   else /* ! __MCST_INTPTR_DYNAMIC__  */
+typedef __int128_t		intptr_t;
+#   endif /* ! __MCST_INTPTR_DYNAMIC__  */
+#  else /* __INTPTR_WIDTH__ != 128  */
 typedef long int		intptr_t;
+#  endif /* __INTPTR_WIDTH__ != 128  */
 #  define __intptr_t_defined
 # endif
+# if __INTPTR_WIDTH__ == 128
+#  ifdef __MCST_INTPTR_DYNAMIC__
+typedef __uintdescr_t	uintptr_t;
+#  else /* ! __MCST_INTPTR_DYNAMIC__  */
+typedef __uint128_t		uintptr_t;
+#  endif /* ! __MCST_INTPTR_DYNAMIC__  */
+# else /* __INTPTR_WIDTH__ != 128  */
 typedef unsigned long int	uintptr_t;
+# endif /* __INTPTR_WIDTH__ != 128  */
 #else
 # ifndef __intptr_t_defined
 typedef int			intptr_t;

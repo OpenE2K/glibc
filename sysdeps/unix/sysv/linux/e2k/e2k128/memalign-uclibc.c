@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain.  Use, modify, and
@@ -146,8 +128,27 @@ void* memalign(size_t alignment, size_t bytes)
 
  DONE:
     __MALLOC_UNLOCK;
+
+    size_t i;
+    /* This is an intentionally uninitialized EV.  */
+    unsigned long empty_value;
+
+    /* Fill in EMPTY_VALUE with diagnostics. No idea how it could be set to a
+       real EV in case of disabled CLW.  */
+    __asm__ ("ldapd,sm %1, 0x0, %0\n" : "=r" (empty_value) : "r" (NULL));
+
+    /* An attempt to fill in the allocated buffer with EMPTY_VALUEs in C could
+       result in exc_illegal_operand if compiler generated non-speculative
+       instructions.  */
+    for (i = 0; i < (bytes >> 3); i++)
+      __asm__ ("stapd,sm %0, 0x0, %1\n" :
+	       : "r" (&(((unsigned long *) retval)[i])), "r" (empty_value));
+
+    for (i = (bytes >> 3) << 3; i < bytes; i++)
+      ((unsigned char *) retval)[i] = 0;
+
     retval = mem2pmem(retval, bytes);
-	return retval;
+    return retval;
 }
 weak_alias(memalign, aligned_alloc)
 libc_hidden_def(memalign)

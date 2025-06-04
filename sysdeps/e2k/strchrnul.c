@@ -1,6 +1,6 @@
-/* Copyright (c) 2019 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
+/* Copyright (c) 2019 ZAO "MCST". All rights reserved.
  *
+ * @(#) $Id: strchrnul.c 5319 2019-03-14 15:02:52Z vlog $
  */
 
 #include <string.h>

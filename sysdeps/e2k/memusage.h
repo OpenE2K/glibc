@@ -1,5 +1,6 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
-   Copyright (C) 2000 Free Software Foundation, Inc.
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
+/* Copyright (C) 2000 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or

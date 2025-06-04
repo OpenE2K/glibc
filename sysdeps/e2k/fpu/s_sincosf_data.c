@@ -1,6 +1,4 @@
-/* Copyright (c) 2019 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2019 ZAO "MCST". All rights reserved. */
 
 #include <stdint.h>
 

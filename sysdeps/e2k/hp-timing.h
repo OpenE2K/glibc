@@ -1,6 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 /* High precision, low overhead timing functions.  E2K version.
-   Copyright (c) 2016 AO MCST.
    Copyright (C) 1998-2014 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

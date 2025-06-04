@@ -1,6 +1,4 @@
-/* Copyright (c) 2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2018 ZAO "MCST". All rights reserved. */
 
 #include <math.h>
 #include <math_private.h>
@@ -71,9 +69,7 @@ __ieee754_scalbl (LD x, LD fn)
   if (fn >= 50000) k = 50000;
   else if (fn <= -50000) k = -50000;
   else k = (int) fn;
-#pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (x) : "r" (k));
-  return x;
+  return __builtin_e2k_fxscalesx (x, k);
 
 # endif /* __iset__ <= 3 */
 }

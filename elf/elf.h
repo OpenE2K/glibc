@@ -824,6 +824,8 @@ typedef struct
 #define NT_MIPS_FP_MODE	0x801		/* MIPS floating-point mode.  */
 #define NT_MIPS_MSA	0x802		/* MIPS SIMD registers.  */
 
+#define NT_E2K_DEBUG_REGS	0x36000 /* E2K debug registers.  */
+
 /* Legal values for the note segment descriptor types for object files.  */
 
 #define NT_VERSION	1		/* Contains a version string.  */
@@ -3645,6 +3647,9 @@ enum
 #define E_E2K_MACH_12C	    21	/* -mtune=elbrus-12c code.  */
 #define E_E2K_MACH_16C	    22	/* -mtune=elbrus-16c code.  */
 #define E_E2K_MACH_2C3	    23	/* -mtune=elbrus-2c3 code.  */
+#define E_E2K_MACH_48C	    24  /* -mtune=elbrus-48c code.  */
+#define E_E2K_MACH_8V7	    25  /* -mtune=elbrus-8v7 code.  */
+#define E_E2K_MACH_MAKET32C 26  /* -mtune=elbrus-maket32c code.  */
 
 /* E2k relocs.  */
 

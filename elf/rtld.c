@@ -110,6 +110,15 @@ rtld_timer_accum (hp_timing_t *sum, hp_timing_t start)
 # define rtld_timer_accum(sum, start)
 #endif
 
+#if defined __e2k__ && defined __ptr128__
+# if __iset__ < 7
+#  define GDTOAP "gdtoap"
+# else /* __iset__ >= 7  */
+#  define GDTOAP "gdincr"
+# endif /* __iset__ >= 7  */
+#endif /* defined __e2k__ && defined __ptr128__  */
+
+
 /* Avoid PLT use for our local calls at startup.  */
 extern __typeof (__mempcpy) __mempcpy attribute_hidden;
 
@@ -639,12 +648,12 @@ _dl_start (void *arg)
      places in generic code.  */
   bootstrap_map.l_ld = ({
       void *res;
-      __asm__ ("gdtoap %1, %0\n\t"
+      __asm__ (GDTOAP " %1, %0\n\t"
 	       : "=r" (res) : "r" (elf_machine_dynamic ()));
       res;
     });
 
-  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (bootstrap_map.l_gd));
+  __asm__ (GDTOAP " 0x0, %0\n\t" : "=r" (bootstrap_map.l_gd));
 
   /* If this is left uninitialized, we'll fail when calling `elf_machine_rela
      ()' from `elf_dynamic_do_Rel ()' during ld.so bootstrap.  */

@@ -80,11 +80,6 @@ ifeq ($(config-machine),e2k128)
 # sysdep_routines in sysdeps/mach/hurd/Makefile to make it be compiled from
 # sysdeps/mach/hurd/mremap.c when making glibc for Hurd.
 sysdep_routines += mount mremap
-
-# Let speculative loads be emitted in PM for potentially out-of-bounds
-# `va_arg's in sysdeps/unix/sysv/linux/prctl.c so as to avoid
-# exc_array_bounds (Bug #147448).
-CFLAGS-prctl.c += -mprot-all
 endif
 
 CFLAGS-gethostid.c = -fexceptions

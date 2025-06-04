@@ -1,6 +1,4 @@
-/* Copyright (c) 2016-2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016-2018 ZAO "MCST". All rights reserved. */
 
 /*****************************************************/
 /*                                                   */
@@ -25,6 +23,7 @@ typedef short int           SI;
 typedef long int            LI;
 typedef long long           LL;
 typedef unsigned long long  ULL;
+
 
 typedef union {
   LD value;
@@ -93,11 +92,17 @@ _Pragma ("asm_inline")                                        \
 #define __inline_sqrtl(__xx)                                  \
   ({  long double __rr = __xx, __tmp;                         \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrtixx %1, %0" : "=r" (__tmp) : "r" (__rr));     \
+  __asm ("fxsqrtixx %1, %0"				      \
+	 : "=" XR_CONSTRAINT (__tmp)			      \
+	 : XR_CONSTRAINT (__rr));			      \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrtuxx %1, %0, %0" : "+r" (__tmp) : "r" (__rr)); \
+  __asm ("fxsqrtuxx %1, %0, %0"				      \
+	 : "+" XR_CONSTRAINT (__tmp)			      \
+	 : XR_CONSTRAINT (__rr));			      \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrttxx %0, %1, %0" : "+r" (__rr) : "r" (__tmp)); \
+  __asm ("fxsqrttxx %0, %1, %0"				      \
+	 : "+" XR_CONSTRAINT (__rr)			      \
+	 : XR_CONSTRAINT (__tmp));			      \
   __rr; })
 
 #define ffabs __builtin_fabsf

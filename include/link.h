@@ -380,9 +380,9 @@ struct link_map
     size_t range_num;
     struct range
     {
-      uintptr_t min;
-      uintptr_t max;
-      uintptr_t align;
+      size_t min;
+      size_t max;
+      size_t align;
       long delta;
       /* Is there any point in tracking CUD (i.e. non-GD) ranges in ld.so
 	 taking into account that all PLs are exclusively produced by selfinit

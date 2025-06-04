@@ -255,12 +255,15 @@
    __builtin_add_overflow_p etc. are not treated as integral constant
    expressions even when all arguments are.  */
 # define _GL_HAS_BUILTIN_OVERFLOW_P 0
+#elif defined __LCC__ && defined __sparc__ && ! defined __arch64__
+/* The deficient implementation of `__builtin_add_overflow_p ()' in
+   `lccs_il -m32' does not support 64-bit values in spite of its
+   presence.  */
+# define _GL_HAS_BUILTIN_OVERFLOW_P 0
 #elif defined __has_builtin
 # define _GL_HAS_BUILTIN_OVERFLOW_P __has_builtin (__builtin_mul_overflow_p)
 #else
-/* LCC does not currently support __builtin_{add,sub}_overflow_p ()
-   builtins.  */
-# define _GL_HAS_BUILTIN_OVERFLOW_P (7 <= __GNUC__ && ! defined __LCC__)
+# define _GL_HAS_BUILTIN_OVERFLOW_P (7 <= __GNUC__)
 #endif
 
 /* The _GL*_OVERFLOW macros have the same restrictions as the

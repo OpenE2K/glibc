@@ -120,7 +120,13 @@ __libc_setup_tls (void)
      in static and dynamic cases.  */
   main_map->l_phdr = GL(dl_phdr);
   main_map->l_phnum = GL(dl_phnum);
-  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (main_map->l_gd));
+
+# if __iset__ < 7
+#  define GDTOAP "gdtoap"
+# else
+#  define GDTOAP "gdincr"
+# endif
+  __asm__ (GDTOAP " 0x0, %0\n\t" : "=r" (main_map->l_gd));
 #endif
 
   __tls_pre_init_tp ();
@@ -137,7 +143,7 @@ __libc_setup_tls (void)
 	  ElfW(Addr) tls_off = get_offset (main_map, phdr->p_vaddr);
 	  initimage = ({
 	      void *res;
-	      __asm__ ("gdtoap %1, %0\n\t" : "=r" (res) : "r" (tls_off));
+	      __asm__ (GDTOAP " %1, %0\n\t" : "=r" (res) : "r" (tls_off));
 	      res;
 	    });
 #else

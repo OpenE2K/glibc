@@ -1,5 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* Atomic operations.  e2k32 version.
-   Copyright (c) 2016 AO MCST. All rights reserved.
    Copyright (C) 2003, 2004, 2006 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2003.
@@ -41,8 +42,8 @@ typedef uint64_t uatomic64_t;
 typedef int_fast64_t atomic_fast64_t;
 typedef uint_fast64_t uatomic_fast64_t;
 
-typedef intptr_t atomicptr_t;
-typedef uintptr_t uatomicptr_t;
+typedef long atomicptr_t;
+typedef unsigned long uatomicptr_t;
 typedef intmax_t atomic_max_t;
 typedef uintmax_t uatomic_max_t;
 

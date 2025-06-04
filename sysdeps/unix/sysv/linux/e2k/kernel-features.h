@@ -74,10 +74,6 @@
 #define __ASSUME_STAT64_SYSCALL		1
 #define __ASSUME_FCNTL64		1
 
-/* E2K only supports ipc syscall.  */
-#undef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-#undef __ASSUME_SYSVIPC_DEFAULT_IPC_64
-
 #if defined __ptr128__
 # undef __ASSUME_RENAMEAT2
 #endif /* defined __ptr128__  */

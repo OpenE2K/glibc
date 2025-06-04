@@ -108,7 +108,8 @@ fstatat64_time64_stat (int fd, const char *file, struct __stat64_t64 *buf,
 			     flag);
 
 #  if defined __e2k__ && (defined __ptr128__ || defined __ptr64__)
-  __cp_kstat_stat64_t64 (&kst, buf);
+  if (r == 0)
+    __cp_kstat_stat64_t64 (&kst, buf);
 #  endif
 # elif defined __NR_fstatat64
 #  if STAT64_IS_KERNEL_STAT64

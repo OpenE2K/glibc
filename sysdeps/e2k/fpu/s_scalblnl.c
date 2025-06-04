@@ -1,6 +1,4 @@
-/* Copyright (c) 2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2018 ZAO "MCST". All rights reserved. */
 
 #include <math.h>
 #include <math_private.h>
@@ -56,9 +54,7 @@ LD __scalblnl (LD x, long int n)
 
 # else /* __iset__ <= 3 */
 
-#pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (x) : "r" (n));
-  return x;
+  return __builtin_e2k_fxscalesx (x, n);
 
 # endif /* __iset__ <= 3 */
 }

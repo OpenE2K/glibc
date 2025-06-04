@@ -135,7 +135,7 @@ typedef int greg_t;
 #endif / * __WORDSIZE == 32 * /
 */
 
-#define NGREG	612 /* asm/user.h: sizeof (struct user_regs_struct) / sizeof (greg_t) */
+#define NGREG	615 /* asm/user.h: sizeof (struct user_regs_struct) / sizeof (greg_t) */
 typedef unsigned long long greg_t;
 
 typedef greg_t  gregset_t[NGREG];

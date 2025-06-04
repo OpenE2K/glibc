@@ -1,26 +1,9 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 #ifndef dl_machine_128_h
 #define dl_machine_128_h
 
 #include <dl-static-tls.h>
 #include <dl-machine-rel.h>
+#include <cpu-features.c>
 
 typedef struct
 {
@@ -240,6 +223,21 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
      in `link_map'? Presumably it makes little difference if the library
      contains no dynamic calls.  */
   return lazy;
+}
+
+/* We define an initialization function.  This is called very early in
+   _dl_sysdep_start.  */
+#define DL_PLATFORM_INIT dl_platform_init ()
+
+static inline void __attribute__ ((unused))
+dl_platform_init (void)
+{
+#ifdef SHARED
+  /* init_cpu_features has been called early from __libc_start_main in
+     static executable.  */
+  init_cpu_features ();
+#endif
+
 }
 
 /* Fixup a PLT entry to bounce directly to the function at VALUE.  */

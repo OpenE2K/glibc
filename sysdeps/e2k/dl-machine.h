@@ -1,5 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* Machine-dependent ELF dynamic relocation inline functions.  e2k version.
-   Copyright (c) 2016 AO MCST.
    Copyright (C) 1995-2005, 2006 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -331,14 +332,18 @@ _start2 (void)								\
   char **argv, **envp;							\
   ElfW(Addr) entry_point;						\
 									\
-  extern void _dl_init (struct link_map *main_map, int argc, char **argv, char **env); \
-                                                                        \
+									\
+  extern  int __cpu_init (void);					\
+  __cpu_init ();							\
+									\
   entry_point = _dl_start (fp);                                         \
   _fix_user_stack (fp);                                                 \
 									\
   argc = *fp;								\
   argv = (char**)(fp + 1);						\
   envp = argv + argc + 1;						\
+									\
+extern void _dl_init (struct link_map *main_map, int argc, char **argv, char **env); \
 									\
   /* For most other architectures _dl_init( *_rtld_local,...) call is	\
      performed in assembler here. Do the same for E2K in C.  */		\

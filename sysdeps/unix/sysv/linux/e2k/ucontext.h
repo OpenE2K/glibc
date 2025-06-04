@@ -53,7 +53,7 @@ extern int makecontext_e2k (ucontext_t *__ucp, void (*__func) (void),
 
 /* Free HW stacks associated with the given context. This is a E2k-specific
    function as well.  */
-extern void freecontext_e2k (ucontext_t *ucp);
+extern int freecontext_e2k (ucontext_t *ucp);
 
 __END_DECLS
 

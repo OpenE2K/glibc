@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 /* mpn_mul_1 -- Multiply a limb vector with a single limb and
    store the product in a second limb vector. */

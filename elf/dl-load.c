@@ -1754,6 +1754,11 @@ open_verify (const char *name, int fd,
       unsigned int osversion;
       size_t maplength;
 
+#if defined _LINUX_E2K32_SYSDEP_H || defined _LINUX_E2K64_SYSDEP_H	\
+  || defined _LINUX_E2K128_SYSDEP_H
+      char incompat_machine[256];
+#endif
+
       /* We successfully opened the file.  Now verify it is a file
 	 we can use.  */
       __set_errno (0);
@@ -1847,6 +1852,11 @@ open_verify (const char *name, int fd,
 	  else if (!VALID_ELF_OSABI (ehdr->e_ident[EI_OSABI]))
 #endif /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
 	    errstring = N_("ELF file OS ABI invalid");
+#if defined _LINUX_E2K32_SYSDEP_H || defined _LINUX_E2K64_SYSDEP_H	\
+  || defined _LINUX_E2K128_SYSDEP_H
+	  else if (!VALID_ELF_MACHINE (ehdr, incompat_machine))
+	    errstring = incompat_machine;
+#endif /* _LINUX_E2K{32,64,128}_SYSDEP_H  */
 	  else if (!VALID_ELF_ABIVERSION (ehdr->e_ident[EI_OSABI],
 					  ehdr->e_ident[EI_ABIVERSION]))
 	    errstring = N_("ELF file ABI version invalid");

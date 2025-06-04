@@ -1,5 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* E2k-specific definitions for profiling support.
-   Copyright (c) 2016 AO MCST.
    Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

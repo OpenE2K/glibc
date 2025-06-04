@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 /*
  * fpclassify(x) returns classification value corresponding to argument;

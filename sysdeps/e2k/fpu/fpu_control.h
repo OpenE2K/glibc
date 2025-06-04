@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 /* FPU control word bits.  E2K version. */
 

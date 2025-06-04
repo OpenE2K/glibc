@@ -1,5 +1,6 @@
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+
 /* Thread-local storage handling in the ELF dynamic linker.  E2K version.
-   Copyright (c) 2016 AO MCST.
    Copyright (C) 2003 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

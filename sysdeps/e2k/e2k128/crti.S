@@ -1,8 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
-
-
 #ifndef PREINIT_FUNCTION
 # define PREINIT_FUNCTION __gmon_start__
 #endif
@@ -28,8 +23,16 @@
 _init:
     {
       setwd wsz = WSZ, nfx = 0x1
+#if __iset__ < 7
       ldgdq  0x0, PREINIT_FUNCTION@PL_GOT, %r0
+#else /* __iset__ >= 7  */
+      addd 0x0, _GLOBAL_OFFSET_TABLE_, %r0
+#endif /* __iset__ >= 7  */
     }
+
+#if __iset__ >= 7
+    ldgdq  %r0, PREINIT_FUNCTION@PL_GOT, %r0
+#endif /* __iset__ >= 7  */
 	
 #if PREINIT_FUNCTION_WEAK
 

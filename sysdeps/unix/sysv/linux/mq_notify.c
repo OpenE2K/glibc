@@ -126,9 +126,10 @@ static LIST_HEAD (descr_list);
 static int descr_list_lock = LLL_LOCK_INITIALIZER;
 
 
-static unsigned long
-addr_from_descr (void *descr, unsigned long addr)
+unsigned long
+addr_from_descr (void *descr)
 {
+  unsigned long addr = (unsigned long) descr;
   if (addr)
     {
       descr_list_t *dl = malloc (sizeof (*dl));
@@ -143,20 +144,8 @@ addr_from_descr (void *descr, unsigned long addr)
   return addr;
 }
 
-static unsigned long
-addr_from_ap (void *ap)
-{
-  return addr_from_descr (ap, (unsigned long) ap);
-}
 
-static unsigned long
-addr_from_pl (void (*pl) (void))
-{
-  return addr_from_descr (pl, (unsigned long) pl);
-}
-
-
-static void *
+void *
 descr_from_addr (unsigned long addr)
 {
   list_t *l;
@@ -354,9 +343,9 @@ __mq_notify (mqd_t mqdes, const struct sigevent *notification)
 
 #if defined __ptr128__
   unsigned long *kdata = (unsigned long *) &data;
-  kdata[NOTIFY_DATA_FCT_OFFSET] = addr_from_pl ((void (*) (void)) data.fct);
-  kdata[NOTIFY_DATA_PARAM_OFFSET] = addr_from_ap (data.param.sival_ptr);
-  kdata[NOTIFY_DATA_ATTR_OFFSET]  = addr_from_ap (data.attr);
+  kdata[NOTIFY_DATA_FCT_OFFSET] = addr_from_descr (data.fct);
+  kdata[NOTIFY_DATA_PARAM_OFFSET] = addr_from_descr (data.param.sival_ptr);
+  kdata[NOTIFY_DATA_ATTR_OFFSET]  = addr_from_descr (data.attr);
 #endif /* defined __ptr128__  */
 
 

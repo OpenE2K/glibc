@@ -1,6 +1,4 @@
-/* Copyright (c) 2016-2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016-2018 ZAO "MCST". All rights reserved. */
 
 #include <string.h>
 #include <e2kintrin.h>

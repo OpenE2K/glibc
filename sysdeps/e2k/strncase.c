@@ -1,6 +1,6 @@
-/* Copyright (c) 2015-2021 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
+ * @(#) $Id: strncase.c 2101 2014-05-13 11:24:32Z vlog $
  */
 
 /* Compare at most N characters of two strings without taking care for the case. */

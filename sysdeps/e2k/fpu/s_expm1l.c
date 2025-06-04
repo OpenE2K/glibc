@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 #include <math.h>
 #include <math_private.h>
@@ -64,10 +62,8 @@ LD __expm1l (LD X)
     arg.twolong.short0 += k;
     hi.twolong.short0 += k;
 #else /* __iset__ < 4 */
-#pragma asm_inline
-    __asm ("fxscalesx %0,%1,%0" : "+r" (arg.value) : "r" (k));
-#pragma asm_inline
-    __asm ("fxscalesx %0,%1,%0" : "+r" (hi.value) : "r" (k));
+    arg.value = __builtin_e2k_fxscalesx (arg.value, k);
+    hi.value = __builtin_e2k_fxscalesx (hi.value, k);
 #endif /* __iset__ < 4 */
     if (k > 50) {
         X = arg.value - 1 + hi.value;    /* X >= 51*log(2) */

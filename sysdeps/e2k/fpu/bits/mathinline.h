@@ -1,6 +1,4 @@
-/* Copyright (c) 2016-2021 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016-2021 ZAO "MCST". All rights reserved. */
 
 #ifndef _MATH_H
 # error "Never use <bits/mathinline.h> directly; include <math.h> instead."
@@ -11,6 +9,15 @@
 # else
 #  define __MATH_INLINE __extern_inline
 # endif  /* __cplusplus */
+
+/* Choose between "x" and "r" constraints for 16-byte vector types and `long
+   double' depending on the compiler in use according to Bug #148762.  */
+#if defined __LCC__ && __LCC__ >= 128
+# define XR_CONSTRAINT "x"
+#else /* !(defined __LCC__ && __LCC__ >= 128)  */
+# define XR_CONSTRAINT "r"
+#endif /* !(defined __LCC__ && __LCC__ >= 128)  */
+
 
 #ifdef __GNUC__
 
@@ -44,11 +51,11 @@ _Pragma ("asm_inline")                                        \
 # define __inline_sqrtl(__xx) \
   long double __tmp;                                          \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrtixx %1, %0" : "=r" (__tmp) : "r" (__xx));     \
+  __asm ("fxsqrtixx %1, %0" : "=" XR_CONSTRAINT (__tmp) : XR_CONSTRAINT (__xx));     \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrtuxx %1, %0, %0" : "+r" (__tmp) : "r" (__xx)); \
+  __asm ("fxsqrtuxx %1, %0, %0" : "+" XR_CONSTRAINT (__tmp) : XR_CONSTRAINT (__xx)); \
 _Pragma ("asm_inline")                                        \
-  __asm ("fxsqrttxx %0, %1, %0" : "+r" (__xx) : "r" (__tmp)); \
+  __asm ("fxsqrttxx %0, %1, %0" : "+" XR_CONSTRAINT (__xx) : XR_CONSTRAINT (__tmp)); \
   return __xx
 
 #if defined __USE_ISOC99 && (!__GNUC_PREREQ (3, 0) || defined __LCC__)
@@ -81,7 +88,7 @@ _Pragma ("asm_inline")                                                \
 _Pragma ("asm_inline")                                                \
             asm ("fxcmpudxf %[src1_name], %[src2_name], %[dst_name]"  \
                 : [dst_name] "=r" (__r)                               \
-                : [src1_name] "r" (__x), [src2_name] "r" (__y));      \
+                : [src1_name] XR_CONSTRAINT (__x), [src2_name] XR_CONSTRAINT (__y));      \
         }                                                             \
         __r; })
 
@@ -246,7 +253,7 @@ __NTH (__fpclassifyl (long double __x))
 #  ifndef __NO_MATH_INLINES
 __inline_mathcode (long double, fabsl, \
 _Pragma ("asm_inline")                 \
-  __asm ("movxa %0,%0" : "+r" (__x));  \
+  __asm ("movxa %0,%0" : "+" XR_CONSTRAINT (__x));  \
   return __x;)
 
 #   if defined __FAST_MATH__
@@ -379,7 +386,7 @@ __MATH_INLINE long double
 __NTH (__scalbnl (long double __x, int __n))
 {
 #pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (__x) : "ri" (__n));
+  __asm ("fxscalesx %0,%1,%0" : "+" XR_CONSTRAINT (__x) : "ri" (__n));
   return __x;
 }
 
@@ -515,7 +522,7 @@ __MATH_INLINE long double
 __NTH (scalbnl (long double __x, int __n))
 {
 #pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (__x) : "ri" (__n));
+  __asm ("fxscalesx %0,%1,%0" : "+" XR_CONSTRAINT (__x) : "ri" (__n));
   return __x;
 }
 
@@ -551,7 +558,7 @@ __NTH (scalblnl (long double __x, long int __n))
   else if (__n < -50000) __n = -50000;
 #endif /* __ptr64__ */
 #pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (__x) : "ri" (__n));
+  __asm ("fxscalesx %0,%1,%0" : "+" XR_CONSTRAINT (__x) : "ri" (__n));
   return __x;
 }
 
@@ -989,7 +996,7 @@ __MATH_INLINE long double
 __NTH (ldexpl (long double __x, int __exp))
 {
 #pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (__x) : "ri" (__exp));
+  __asm ("fxscalesx %0,%1,%0" : "+" XR_CONSTRAINT (__x) : "ri" (__exp));
   return __x;
 }
 

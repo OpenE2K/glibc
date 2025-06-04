@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 #include <asm/errno.h>
 #include <sysdep.h>
 
@@ -68,7 +50,12 @@ __clone:
         cmpedb,0 %dr10, 0, %pred0
 
 	/* Verify the child_stack.  */
+#if __iset__ < 7
         getva,0 %qr4, %r5, %dr10
+#else /* __iset__ >= 7  */
+	getptr,0 %qr4, %dr10
+#endif /* __iset__ >= 7  */
+	
         cmpedb,0 %dr10, 0, %pred1
 
 	ct	%ctpr1 ? %pred0

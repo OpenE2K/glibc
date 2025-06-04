@@ -1,21 +1,3 @@
-/* Copyright (c) 2009-2024 AO MCST.
-   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain.  Use, modify, and
@@ -509,16 +491,31 @@ void delete_region(void *p, mstate av)
     mprotptr curregion, prevregion;
 
     curregion = av->mmaped_region;
+#if __iset__ < 7
+    unsigned int __size;
+    __size = ((descriptor *) (&curregion))->size;
+#else /* __iset__ >= 7  */
+    size_t __size;
+    asm ("getmi %1, %0" : "=r" (__size) : "r" (curregion));
+    __size += 1;
+#endif /* __iset__ >= 7  */
+
     if ((char *) p >= (char *) curregion && (char *) p <
-	    (char *) curregion + ((descriptor *) &curregion)->size) {
+	    (char *) curregion + __size) {
 	av->mmaped_region = curregion->fd;
         return;
     }
     prevregion = curregion;
     curregion = curregion->fd;
     while (curregion != NULL) {
+#if __iset__ < 7
+      __size = ((descriptor *) (&curregion))->size;
+#else /* __iset__ >= 7  */
+      asm ("getmi %1, %0" : "=r" (__size) : "r" (curregion));
+      __size += 1;
+#endif /* __iset__ >= 7  */
 	if ((char *) p >= (char *) curregion && (char *) p <
-	        (char *) curregion + ((descriptor *) &curregion)->size) {
+	        (char *) curregion + __size) {
 	    prevregion->fd = curregion->fd;
 	    return;
 	};

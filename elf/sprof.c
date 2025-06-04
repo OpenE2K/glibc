@@ -473,11 +473,19 @@ load_shobj (const char *name)
 	    /* `uintptr_t' assumed by PRIxPTR format specifier doesn't coincide
 	       with the `Elf32_Addr' type of `l_addr' in Protected Mode, which
 	       is why this cast is required.  */
-	    (uintptr_t)
+	    (unsigned long)
 #endif
 	    map->l_addr,
-	    __ELF_NATIVE_CLASS == 32 ? 10 : 18, result->lowpc,
-	    __ELF_NATIVE_CLASS == 32 ? 10 : 18, result->highpc);
+	    __ELF_NATIVE_CLASS == 32 ? 10 : 18,
+#if defined __ptr128__
+	    (unsigned long)
+#endif
+	    result->lowpc,
+	    __ELF_NATIVE_CLASS == 32 ? 10 : 18,
+#if defined __ptr128__
+	    (unsigned long)
+#endif
+	    result->highpc);
 
   textsize = result->highpc - result->lowpc;
   result->kcountsize = textsize / HISTFRACTION;

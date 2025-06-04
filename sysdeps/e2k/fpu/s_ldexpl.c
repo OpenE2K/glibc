@@ -1,6 +1,4 @@
-/* Copyright (c) 2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2018 ZAO "MCST". All rights reserved. */
 
 #include <math.h>
 #include <math_private.h>
@@ -56,8 +54,7 @@ LD __ldexpl(LD value, int exp)
 
 # else /* __iset__ <= 3 */
 
-#pragma asm_inline
-  __asm ("fxscalesx %0,%1,%0" : "+r" (value) : "r" (exp));
+  value = __builtin_e2k_fxscalesx (value, exp);
   X.value = value;
   k = X.twolong.short0 & 0x7fff;                     /* extract exponent */
   if (__glibc_unlikely (k == 0 || k == 0x7fff))

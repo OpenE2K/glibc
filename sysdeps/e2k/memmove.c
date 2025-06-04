@@ -1,6 +1,4 @@
-/* Copyright (c) 2016-2022 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016-2022 ZAO "MCST". All rights reserved. */
 
 /* Copy memory to memory until the specified number of bytes
    has been copied.  Overlap is handled correctly. */

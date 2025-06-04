@@ -1,6 +1,6 @@
-/* Copyright (c) 2015-2018 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
+/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
  *
+ * @(#) $Id: strchr.c 2068 2014-04-23 11:56:36Z vlog $
  */
 
 #include <string.h>

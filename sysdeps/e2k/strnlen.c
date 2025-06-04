@@ -1,6 +1,6 @@
-/* Copyright (c) 2015-2021 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
+/* Copyright (c) 2015-2021 ZAO "MCST". All rights reserved.
  *
+ * @(#) $Id: strnlen.c 2202 2014-06-10 16:05:22Z vlog $
  */
 
 #include <string.h>

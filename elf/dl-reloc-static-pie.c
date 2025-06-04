@@ -34,6 +34,12 @@
 
 /* Relocate static executable with PIE.  */
 
+#if __iset__ < 7
+# define GDTOAP "gdtoap"
+#else /* __iset__ >= 7  */
+# define GDTOAP "gdincr"
+#endif /* __iset__ >= 7  */
+
 void
 _dl_relocate_static_pie (void)
 {
@@ -48,12 +54,12 @@ _dl_relocate_static_pie (void)
 #else /* defined __e2k__ && defined __ptr128__  */
   main_map->l_ld = ({
       void *res;
-      __asm__ ("gdtoap %1, %0\n\t"
+      __asm__ (GDTOAP " %1, %0\n\t"
 	       : "=r" (res) : "r" (elf_machine_dynamic ()));
       res;
     });
 
-  __asm__ ("gdtoap 0x0, %0\n\t" : "=r" (main_map->l_gd));
+  __asm__ (GDTOAP " 0x0, %0\n\t" : "=r" (main_map->l_gd));
 #endif /* defined __e2k__ && defined __ptr128__  */
 
 

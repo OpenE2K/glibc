@@ -1,3 +1,4 @@
+/* Copyright (c) 2021 ZAO "MCST". All rights reserved. */
 
 #ifdef DONT_USE_FAST_RAND
 
@@ -9,7 +10,6 @@
  * With own structures & without syncronisation */
 
 /*
-   Copyright (c) 2021 AO MCST.
    Copyright (C) 1995-2018 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or

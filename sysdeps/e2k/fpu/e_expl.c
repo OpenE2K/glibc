@@ -1,6 +1,4 @@
-/* Copyright (c) 2016 AO MCST. All rights reserved.
- * Distributed under the terms of MIT License.
- */
+/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
 
 #include "f2c.h"
 
@@ -57,9 +55,7 @@ LD __ieee754_expl (LD X)
     else
         return arg.value;
 #else /* __iset__ < 4 */
-#pragma asm_inline
-    __asm ("fxscalesx %0,%1,%0" : "+r" (arg.value) : "r" (k));
-    return arg.value;
+  return __builtin_e2k_fxscalesx (arg.value, k);
 #endif /* __iset__ < 4 */
 }
 
