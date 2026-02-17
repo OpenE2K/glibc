@@ -22,11 +22,6 @@
 
 #include <bits/wordsize.h>
 
-#define O_SYNC		010000
-
-
-
-
 #if __WORDSIZE == 64
 # define F_GETLK64	5	/* Get record locking info.  */
 # define F_SETLK64	6	/* Set record locking info (non-blocking).  */

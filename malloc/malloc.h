@@ -72,10 +72,12 @@ extern void *memalign (size_t __alignment, size_t __size)
 extern void *valloc (size_t __size) __THROW __attribute_malloc__
      __attribute_alloc_size__ ((1)) __wur __attr_dealloc_free;
 
+#if ! (defined __e2k__ && defined __ptr128__)
 /* Equivalent to valloc(minimum-page-that-holds(n)), that is, round up
    __size to nearest pagesize. */
 extern void *pvalloc (size_t __size) __THROW __attribute_malloc__
   __wur __attr_dealloc_free;
+#endif
 
 /* SVID2/XPG mallinfo structure */
 
@@ -93,6 +95,7 @@ struct mallinfo
   int keepcost; /* top-most, releasable (via malloc_trim) space */
 };
 
+#if ! (defined __e2k__ && defined __ptr128__)
 /* SVID2/XPG mallinfo2 structure which can handle allocations
    bigger than 4GB.  */
 
@@ -109,12 +112,15 @@ struct mallinfo2
   size_t fordblks; /* total free space */
   size_t keepcost; /* top-most, releasable (via malloc_trim) space */
 };
+#endif
 
 /* Returns a copy of the updated current mallinfo. */
 extern struct mallinfo mallinfo (void) __THROW __MALLOC_DEPRECATED;
 
+#if ! (defined __e2k__ && defined __ptr128__)
 /* Returns a copy of the updated current mallinfo. */
 extern struct mallinfo2 mallinfo2 (void) __THROW;
+#endif
 
 /* SVID2/XPG mallopt options */
 #ifndef M_MXFAST
@@ -147,15 +153,19 @@ extern int mallopt (int __param, int __val) __THROW;
    system. Return 1 if successful, else 0. */
 extern int malloc_trim (size_t __pad) __THROW;
 
+#if ! (defined __e2k__ && defined __ptr128__)
 /* Report the number of usable allocated bytes associated with allocated
    chunk __ptr. */
 extern size_t malloc_usable_size (void *__ptr) __THROW;
+#endif
 
 /* Prints brief summary statistics on stderr. */
 extern void malloc_stats (void) __THROW;
 
+#if ! (defined __e2k__ && defined __ptr128__)
 /* Output information about state of allocator to stream FP.  */
 extern int malloc_info (int __options, FILE *__fp) __THROW;
+#endif
 
 __END_DECLS
 #endif /* malloc.h */

@@ -107,7 +107,7 @@ void *memset(void *mem, int c, size_t len)
     long long cc = __builtin_e2k_pshufb (c, c, 0); /* 00000000 */
     __v2di qval = __builtin_e2k_qppackdl (cc, cc);
 
-#if __iset__ <= 5
+#if __iset__ <= 5 || defined(__elbrus_maket32c__)
 
     __v2di *qp = (__v2di *) ((size_t) ac & ~15);
     size_t len1, diff;

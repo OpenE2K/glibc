@@ -236,6 +236,8 @@ struct user_regs_struct {
 	unsigned long long dimar2;
 	unsigned long long dimar3;
 
+	unsigned long long rndpr;
+
 /* 
  * Please, include new fields below 
  */

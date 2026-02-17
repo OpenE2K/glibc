@@ -22,9 +22,12 @@
 int
 __getcontext (ucontext_t *ucp)
 {
+  asm ("rrd %%cr0.lo, %0" : "=r" (ucp->uc_mcontext.cr0_lo));
   asm ("rrd %%cr0.hi, %0" : "=r" (ucp->uc_mcontext.cr0_hi));
   asm ("rrd %%cr1.lo, %0" : "=r" (ucp->uc_mcontext.cr1_lo));
   asm ("rrd %%cr1.hi, %0" : "=r" (ucp->uc_mcontext.cr1_hi));
+  asm ("rrd %%usd.lo, %0" : "=r" (ucp->uc_mcontext.usd_lo));
+  asm ("rrd %%usd.hi, %0" : "=r" (ucp->uc_mcontext.usd_hi));
 
   return INLINE_VSYSCALL_ONLY (getcontext, 2, ucp, _NSIG / 8);
 }

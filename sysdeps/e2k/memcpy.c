@@ -146,7 +146,7 @@ void *memcpy(void * restrict dst, const void * restrict src, size_t len)
     }
 
 
-#elif __iset__ <= 5
+#elif __iset__ <= 5 || defined(__elbrus_maket32c__)
 
     __v2di * restrict qsp, qsrc0, qsrc1, qsrc, qshift;
     __v2di * restrict qdp = (__v2di *) ((size_t) ac & ~15);
@@ -217,6 +217,14 @@ void *memcpy(void * restrict dst, const void * restrict src, size_t len)
 
     } else { /* массив никуда не влезает */
 
+        if (!((size_t) qsp & 16)) { /* выравнивание чтений на 32 байта */
+            E2K_ALIGN_DATA128 (qsp[0], qsp[1], qsrc, qshift);
+            __builtin_e2k_st_128_nt (qsrc, qdp);
+	    qsp++;
+	    qdp++;
+	    ll--;
+        }
+
 #ifdef __ptr64__
 
 #define BIGSIZE 0x8000000
@@ -224,41 +232,27 @@ void *memcpy(void * restrict dst, const void * restrict src, size_t len)
         int ii, isize;
 
 #pragma loop count (1)
-        for (i = 0; i < (ll >> 1); i += isize) {
-            isize = ((ll >> 1) - i) > BIGSIZE ? BIGSIZE : (ll >> 1) - i;
+        for (i = 0; i < ll; i += isize) {
+            isize = (ll - i) > BIGSIZE ? BIGSIZE : ll - i;
 
-#pragma unroll (1) /* 1 такт */
+#pragma unroll (4) /* 2 такта */
 #pragma loop count (1000)
             for (ii = 0; ii < isize; ii++)
             {
                 E2K_ALIGN_DATA128 (qsp[ii], qsp[ii + 1], qsrc, qshift);
                 __builtin_e2k_st_128_nt (qsrc, qdp + ii);
-                E2K_ALIGN_DATA128 (qsp1[ii], qsp1[ii + 1], qsrc, qshift);
-                __builtin_e2k_st_128_nt (qsrc, qdp1 + ii);
             }
             qsp += isize;
             qdp += isize;
-            qsp1 += isize;
-            qdp1 += isize;
-        }
-        if (ll & 1) {
-            E2K_ALIGN_DATA128 (qsp1[0], qsp1[1], qsrc, qshift);
-            __builtin_e2k_st_128_nt (qsrc, qdp1);
         }
 
 #else  /* __ptr64__ */
 
-#pragma unroll (1) /* 1 такт */
+#pragma unroll (4) /* 2 такта */
 #pragma loop count (1000)
-        for (i = 0; i < (ll >> 1); i++) {
+        for (i = 0; i < ll; i++) {
             E2K_ALIGN_DATA128 (qsp[i], qsp[i + 1], qsrc, qshift);
             __builtin_e2k_st_128_nt (qsrc, qdp + i);
-            E2K_ALIGN_DATA128 (qsp1[i], qsp1[i + 1], qsrc, qshift);
-            __builtin_e2k_st_128_nt (qsrc, qdp1 + i);
-        }
-        if (ll & 1) {
-            E2K_ALIGN_DATA128 (qsp[ll - 1], qsp[ll], qsrc, qshift);
-            __builtin_e2k_st_128_nt (qsrc, qdp + ll - 1);
         }
 
 #endif /* __ptr64__ */

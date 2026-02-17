@@ -109,7 +109,7 @@ __bzero (void *s,
 
     __v2di qval = (__v2di) {0, 0};
 
-#if __iset__ <= 5
+#if __iset__ <= 5 || defined(__elbrus_maket32c__)
 
     __v2di *qp = (__v2di *) ((size_t) ac & ~15);
     size_t len1, diff;

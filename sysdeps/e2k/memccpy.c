@@ -1,6 +1,6 @@
 /* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
  *
- * @(#) $Id: memccpy.c 6493 2024-05-07 08:50:26Z vlog $
+ * @(#) $Id: memccpy.c 6710 2025-06-17 21:02:33Z vlog $
  */
 
 #include <string.h>
@@ -164,7 +164,7 @@ __memccpy (void * restrict dest, const void * restrict src, int c_in, size_t n)
   }
 
 
-#elif __iset__ <= 5
+#elif __iset__ <= 5 || defined(__elbrus_maket32c__)
 
 #define __CMP(mask, x) /* bytes with 'c_in' -> bit mask */                    \
     (mask) = __builtin_e2k_qpsgn2mskb (__builtin_e2k_qpcmpeqb (x, qcharmask))

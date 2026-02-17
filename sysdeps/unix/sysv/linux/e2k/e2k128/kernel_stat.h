@@ -1,12 +1,12 @@
 struct kernel_stat
 {
-    unsigned long long int st_dev;
+    unsigned int st_dev;
     unsigned long long int st_ino;
     unsigned int st_mode;
     unsigned int st_nlink;
     unsigned int st_uid;
     unsigned int st_gid;
-    unsigned long long int st_rdev;
+    unsigned int st_rdev;
     unsigned long long int st_size;
     unsigned long long int st_blksize;
     unsigned long long int st_blocks;

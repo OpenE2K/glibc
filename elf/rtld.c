@@ -850,8 +850,15 @@ match_version (const char *string, struct link_map *map)
     /* The file has no symbol versioning.  */
     return 0;
 
+#if ! defined __ptr128__
   def = (ElfW(Verdef) *) ((char *) map->l_addr
 			  + map->l_info[VERDEFTAG]->d_un.d_ptr);
+#else /* defined __ptr128__  */
+  def = (ElfW(Verdef) *) ((char *) map->l_gd
+			  + get_offset (map,
+					map->l_info[VERDEFTAG]->d_un.d_ptr));
+#endif /* defined __ptr128__  */
+
   while (1)
     {
       ElfW(Verdaux) *aux = (ElfW(Verdaux) *) ((char *) def + def->vd_aux);
@@ -2555,7 +2562,13 @@ dl_main (const ElfW(Phdr) *phdr,
 		    continue;
 
 		  strtab = (const void *) D_PTR (map, l_info[DT_STRTAB]);
+
+#if ! defined __ptr128__
 		  ent = (ElfW(Verneed) *) (map->l_addr + dyn->d_un.d_ptr);
+#else /* defined __ptr128__  */
+		  ent = (ElfW(Verneed) *) (map->l_gd
+					   + get_offset (map, dyn->d_un.d_ptr));
+#endif /* defined __ptr128__  */
 
 		  if (first)
 		    {

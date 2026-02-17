@@ -238,7 +238,7 @@ memmove (a1const void *a1,
         }
 
 
-#elif __iset__ <= 5
+#elif __iset__ <= 5 || defined(__elbrus_maket32c__)
 
         __v2di * restrict qsp, qsrc0, qsrc1, qsrc, qshift;
         __v2di * restrict qdp = (__v2di *) ((size_t) ac & ~15);
@@ -604,7 +604,7 @@ memmove (a1const void *a1,
         }
 
 
-#elif __iset__ <= 5
+#elif __iset__ <= 5 || defined(__elbrus_maket32c__)
 
         __v2di * restrict qsp, qsrc0, qsrc1, qsrc, qshift;
         __v2di * restrict qdp = (__v2di *) ((size_t) ac & ~15);

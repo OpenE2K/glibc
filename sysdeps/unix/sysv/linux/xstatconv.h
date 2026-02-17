@@ -15,8 +15,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
-
-#if !STAT_IS_KERNEL_STAT
+#if !STAT_IS_KERNEL_STAT && ! (defined __e2k__ && defined __ptr32__)
 extern int __xstat_conv (int vers, struct kernel_stat *kbuf, void *ubuf)
   attribute_hidden;
 extern int __xstat64_conv (int vers, struct kernel_stat *kbuf, void *ubuf)

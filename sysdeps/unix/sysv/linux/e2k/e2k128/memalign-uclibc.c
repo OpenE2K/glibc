@@ -129,23 +129,7 @@ void* memalign(size_t alignment, size_t bytes)
  DONE:
     __MALLOC_UNLOCK;
 
-    size_t i;
-    /* This is an intentionally uninitialized EV.  */
-    unsigned long empty_value;
-
-    /* Fill in EMPTY_VALUE with diagnostics. No idea how it could be set to a
-       real EV in case of disabled CLW.  */
-    __asm__ ("ldapd,sm %1, 0x0, %0\n" : "=r" (empty_value) : "r" (NULL));
-
-    /* An attempt to fill in the allocated buffer with EMPTY_VALUEs in C could
-       result in exc_illegal_operand if compiler generated non-speculative
-       instructions.  */
-    for (i = 0; i < (bytes >> 3); i++)
-      __asm__ ("stapd,sm %0, 0x0, %1\n" :
-	       : "r" (&(((unsigned long *) retval)[i])), "r" (empty_value));
-
-    for (i = (bytes >> 3) << 3; i < bytes; i++)
-      ((unsigned char *) retval)[i] = 0;
+    fill_in_with_bad_empties (retval, bytes);
 
     retval = mem2pmem(retval, bytes);
     return retval;
