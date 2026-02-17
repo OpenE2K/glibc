@@ -835,32 +835,26 @@ static int __malloc_largebin_index(size_t sz)
 
 /* Make pointer with user size */
 void* mem2pmem(void *p, size_t size) {
-  void * ret;
+  void * ret =
 #if __iset__ < 7 || defined __elbrus_maket32c__
-  ret = __builtin_e2k_create_ap_subarray (p, 0, size);
+    __builtin_e2k_create_ap_subarray
 #else /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
-  _Pragma ("no_asm_inline")
-  __asm__ ("subarrc %1, %2, %0" : "=r" (ret) : "r" (p), "r" (size - 1));
+    __builtin_e2k_create_ap_subarray_color
 #endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
+    (p, 0, size);
+
   return ret;
 }
 
 #if __iset__ >= 7 && ! defined __elbrus_maket32c__
-void* mem2pmem_with_color(void *p, size_t size, unsigned long color) {
+void* mem2pmem_with_color(void *p, size_t size, unsigned int color) {
   void * ret;
 
   while (1)
     {
-      _Pragma ("no_asm_inline")
-      __asm__ ("subarrc %1, %2, %0" : "=r" (ret) : "r" (p), "r" (size - 1));
-
-      unsigned long ptrc;
-      _Pragma ("no_asm_inline")
-	__asm__ ("getptrc %1, %0" : "=r" (ptrc) : "r" (ret));
-
-      if ((ptrc >> 60) == color)
+      ret = __builtin_e2k_create_ap_subarray_color (p, 0, size);
+      if (__builtin_e2k_get_ap_color (ret) == color)
 	break;
-      
     }
 
   return ret;
@@ -1313,9 +1307,6 @@ DONE:
 static void* malloc_1(size_t bytes, int lock)
 {
     void *retval;
-    /* This is an intentionally uninitialized EV.  */
-    unsigned long empty_value;
-    size_t i;
     size_t alloc_bytes = ((bytes + 7) & 0xfffffffffffffff8UL);
 
     if (bytes > 0x7fffffff) {
@@ -1326,10 +1317,6 @@ static void* malloc_1(size_t bytes, int lock)
 	__set_errno(ENOMEM);
 	return NULL;
     }
-
-    /* Fill in EMPTY_VALUE with diagnostics. No idea how it could be set to a
-       real EV in case of disabled CLW.  */
-    __asm__ ("ldapd,sm %1, 0x0, %0\n" : "=r" (empty_value) : "r" (NULL));
 
     /* Handle a possible overflow during the evaluation of alloc_bytes. This
        also prevents the erroneous creation of a subarray of a huge size
@@ -1345,15 +1332,7 @@ static void* malloc_1(size_t bytes, int lock)
     /* Delete poiters to next and prev chunk in list */
     memset(retval, 0, 32);
 
-    /* An attempt to fill in the allocated buffer with EMPTY_VALUEs in C could
-       result in exc_illegal_operand if compiler generated non-speculative
-       instructions.  */
-    for (i = 0; i < (alloc_bytes >> 3); i++)
-      __asm__ ("stapd,sm %0, 0x0, %1\n" :
-	       : "r" (&(((unsigned long *) retval)[i])), "r" (empty_value));
-
-    for (i = (alloc_bytes >> 3) << 3; i < alloc_bytes; i++)
-      ((unsigned char *) retval)[i] = 0;
+    fill_in_with_bad_empties (retval, alloc_bytes);
 
     retval = mem2pmem(retval, bytes);
     return retval;

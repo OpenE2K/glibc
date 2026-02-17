@@ -98,6 +98,8 @@ __xstat_conv (int vers, struct kernel_stat *kbuf, void *ubuf)
 }
 #endif
 
+#if ! (defined __e2k__ && defined __ptr32__)
+
 int
 __xstat64_conv (int vers, struct kernel_stat *kbuf, void *ubuf)
 {
@@ -170,6 +172,8 @@ __xstat64_conv (int vers, struct kernel_stat *kbuf, void *ubuf)
   return 0;
 #endif
 }
+
+#endif /* ! (defined __e2k__ && defined __ptr32__)  */
 
 int
 __xstat32_conv (int vers, struct stat64 *kbuf, struct stat *buf)

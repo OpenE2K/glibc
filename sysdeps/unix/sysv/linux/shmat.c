@@ -27,7 +27,11 @@ void *
 shmat (int shmid, const void *shmaddr, int shmflg)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+# if !(defined __e2k__ && defined __ptr128__)
   return (void*) INLINE_SYSCALL_CALL (shmat, shmid, shmaddr, shmflg);
+# else /* defined __e2k__ && defined __ptr128__  */
+  return (void*) INLINE_BOGUS_SYSCALL (shmat, 3, shmid, shmaddr, shmflg);
+# endif /* defined __e2k__ && defined __ptr128__  */
 #else
   unsigned long resultvar;
   void *raddr;

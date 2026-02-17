@@ -115,11 +115,9 @@ void* realloc(void* oldmem, size_t bytes)
 
 #ifdef __PROTECTED__
     void* user_oldmem = oldmem;
+    size_t user_oldsize = __builtin_e2k_get_ap_size (user_oldmem);
 #if __iset__ >= 7 && ! defined __elbrus_maket32c__
-    unsigned long oldcolor;
-    _Pragma ("no_asm_inline")
-    __asm__ ("getptrc %1, %0" : "=r" (oldcolor) : "r" (user_oldmem));
-    oldcolor >>= 60;
+    unsigned int oldcolor = __builtin_e2k_get_ap_color (user_oldmem);
 #endif /* __iset__ >= 7 && ! defined __elbrus_maket32c__  */
 
     oldmem = pmem2mem(oldmem, av);
@@ -141,8 +139,6 @@ void* realloc(void* oldmem, size_t bytes)
 	       return to user previous big descriptor */
 	    /* Return previous big descriptor */
 	    retval = oldmem;	/* oldmem, not oldchunk */
-	    bytes = oldsize - (sizeof(size_t)); /* chunksize except size of
-						   allocated chunk's head */
 	    goto DONE;
 #endif
 	}
@@ -375,6 +371,8 @@ void* realloc(void* oldmem, size_t bytes)
  DONE:
     __MALLOC_UNLOCK;
 #ifdef __PROTECTED__
+    if (bytes > user_oldsize)
+      fill_in_with_bad_empties (retval + user_oldsize, bytes - user_oldsize);
 # if __iset__ >= 7 && ! defined __elbrus_maket32c__
     /* Take care of preserving the color unless the relocated buffer changed
        its location in memory with respect to the original one so as to save

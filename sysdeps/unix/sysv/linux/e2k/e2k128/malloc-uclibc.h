@@ -1093,3 +1093,48 @@ extern void __do_check_malloc_state(void) attribute_hidden;
 #include <assert.h>
 
 #endif
+
+#ifdef __PROTECTED__
+static __always_inline void
+fill_in_with_bad_empties (void *buf, size_t count)
+{
+  register unsigned long bad_empty_value;
+  _Pragma ("no_asm_inline")
+    __asm__ __volatile__ ("ord 0, 0x0bad0bad0bad0bad, %0\n"
+			  "puttagd %0, 0x5, %0\n"
+			  : "=r" (bad_empty_value));
+  while (count > 0)
+    {
+      /* An attempt to fill in the allocated buffer with EMPTY_VALUEs in C could
+	 result in exc_illegal_operand if compiler generated non-speculative
+	 instructions.  */
+      if (count >= 8 && (((unsigned long) buf) & 0x7) == 0)
+	{
+	  __asm__ ("stapd,sm %0, 0x0, %1\n" :
+		   : "r" (buf), "r" (bad_empty_value));
+	  buf += 8;
+	  count -= 8;
+	}
+      else if (count >= 4 && (((unsigned long) buf) & 0x3) == 0)
+ 	{
+	  __asm__ ("stapw,sm %0, 0x0, %1\n" :
+		   : "r" (buf), "r" (bad_empty_value));
+	  buf += 4;
+	  count -= 4;
+	}
+      else if (count >= 2 && (((unsigned long) buf) & 0x1) == 0)
+	{
+	  *((unsigned short *) buf) = 0x0bad;
+	  buf += 2;
+	  count -= 2;
+	}
+      else
+	{
+	  *((unsigned char *) buf)
+	    = (((unsigned long) buf) & 0x1) == 0 ? 0xad : 0x0b;
+	  buf += 1;
+	  count -= 1;
+	}
+    }
+}
+#endif /* __PROTECTED__  */

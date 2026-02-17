@@ -11,9 +11,7 @@ makecontext_helper:
 #if __iset__ < 7
 	aptoap %r0, 0x30, %b[0]
 #else /* __iset__ >= 7  */
-	/* To be FIXED to match the above APTOAP!  */
-	movtq %r0, %b[0]
-	adds %b[0], 0x30, %b[0]
+	apincr %r0, 0x30, %b[0]
 #endif /* __set__ >= 7  */
 
 	/* Get the first 4 register arguments (not counting the one on %qb[0])

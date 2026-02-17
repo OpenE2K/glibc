@@ -121,7 +121,7 @@ strcpy (char * restrict dest,
   *dstp = '\0';
 
 
-#elif __iset__ <= 5
+#elif __iset__ <= 5 || defined(__elbrus_maket32c__)
 
 #define __CMP(mask, x) /* zero bytes -> bit mask */                       \
     (mask) = __builtin_e2k_qpsgn2mskb (__builtin_e2k_qpcmpeqb (x, qzero))
