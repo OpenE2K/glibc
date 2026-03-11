@@ -25,20 +25,7 @@ static int
 setsockopt_syscall (int fd, int level, int optname, const void *optval,
 		    socklen_t len)
 {
-#if defined __ptr128__
-  struct
-  {
-    long int a;
-    long int b;
-    long int c;
-    void *d;
-    long int e;
-  }
-  args = {(long int) fd, (long int) level, (long int) optname,
-	  (void *) optval, (long int) len};
-
-  return INLINE_SYSCALL (socketcall, 2, SOCKOP_setsockopt, &args);
-#elif defined __ASSUME_SETSOCKOPT_SYSCALL
+#if defined __ASSUME_SETSOCKOPT_SYSCALL
   return INLINE_SYSCALL_CALL (setsockopt, fd, level, optname, optval, len);
 #else
   return SOCKETCALL (setsockopt, fd, level, optname, optval, len);

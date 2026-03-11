@@ -1,7 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* Machine-dependent ELF indirect relocation functions.
    E2K version.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 2016 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

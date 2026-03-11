@@ -1,4 +1,6 @@
-/* Copyright (c) 2018 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2018 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 /* e2k is currently lacking sfp-machine.h header required by this
    implementation.  */

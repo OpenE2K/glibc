@@ -1,6 +1,5 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* memcopy.h -- definitions for memory copy functions.  Generic C version.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 1991-2016 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Torbjorn Granlund (tege@sics.se).

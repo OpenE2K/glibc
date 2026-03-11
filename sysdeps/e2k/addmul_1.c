@@ -1,4 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 /* mpn_addmul_1 -- multiply the S1_SIZE long limb vector pointed to by S1_PTR
    by S2_LIMB, add the S1_SIZE least significant limbs of the product to the

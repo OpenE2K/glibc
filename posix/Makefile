@@ -470,3 +470,9 @@ tst-wordexp-reuse-ENV += MALLOC_TRACE=$(objpfx)tst-wordexp-reuse.mtrace \
 $(objpfx)tst-wordexp-reuse-mem.out: $(objpfx)tst-wordexp-reuse.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-wordexp-reuse.mtrace > $@; \
 	$(evaluate-test)
+
+ifeq ($(compile-with-lcc),yes)
+# Specify these options in CFLAGS because of the inability of LCC to apply them
+# locally via `#pragma GCC diagnostic's.
+CFLAGS-tst-dir.c += -Wno-deprecated-declarations
+endif

@@ -1,6 +1,7 @@
-/* Copyright (c) 2020 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2020 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
  *
- * @(#) $Id: memrchr.c 6493 2024-05-07 08:50:26Z vlog $
+ * @(#) $Id: memrchr.c 6783 2026-01-27 15:09:02Z malakhov $
  */
 
 /* memrchr -- find the last occurrence of a byte in a memory block. */

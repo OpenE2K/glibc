@@ -1,4 +1,5 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2018 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
  *
  * @(#) $Id: strspn.c 2101 2014-05-13 11:24:32Z vlog $
  */

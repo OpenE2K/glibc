@@ -1,3 +1,7 @@
+/* Copyright (c) 2009-2024 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
+
 #ifndef PREINIT_FUNCTION
 # define PREINIT_FUNCTION __gmon_start__
 #endif

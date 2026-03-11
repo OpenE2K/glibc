@@ -8,4 +8,5 @@ endif
 
 ifeq ($(subdir),csu)
 extra-objs += rstart.o
+CPPFLAGS-start.os += -DIN_START_OS
 endif

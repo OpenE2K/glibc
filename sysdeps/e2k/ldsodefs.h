@@ -1,6 +1,5 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* Run-time dynamic linker data structures for loaded ELF shared objects.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 1995-2012 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

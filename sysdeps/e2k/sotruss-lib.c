@@ -1,6 +1,5 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* Override generic sotruss-lib.c to define actual functions for E2K.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 2012-2017 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

@@ -1,4 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 /* ilogb(double x)
  * return the binary exponent of non-zero x

@@ -1,4 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 /* mpn_add_n -- Add two limb vectors of equal, non-zero length. */
 

@@ -436,11 +436,7 @@ extern int __malloc_lock;
  (mmap((addr), (size), (prot), MAP_PRIVATE|MAP_ANONYMOUS|_MAP_UNINITIALIZED, 0, 0))
 
 #ifdef __PROTECTED__
-# define DEFAULT_LIST_DESCRIPTORS_TO_FREE_THRESHOLD 1024
-#endif
-
-#ifdef __PROTECTED__
-# define DEFAULT_LIST_DESCRIPTORS_TO_FREE_THRESHOLD		1024
+# define DEFAULT_LIST_DESCRIPTORS_TO_FREE_THRESHOLD		1
 	/* default size of the clean descriptor list */
 # define CLEAN_DESCRIPTOL_LIST_SIZE "PM_CLEAN_DESCRIPTOL_LIST_SIZE"
 	/* name of the env.var to setup list size */

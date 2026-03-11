@@ -1,4 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016 AO MCST.
+ * Distributed under the terms of MIT License.
+ */
 
 /* e_atan2l.c -- long double version of e_atan2.c.
  * Conversion to long double by Ulrich Drepper,

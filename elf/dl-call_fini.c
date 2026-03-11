@@ -34,10 +34,27 @@ _dl_call_fini (void *closure_map)
   ElfW(Dyn) *fini_array = map->l_info[DT_FINI_ARRAY];
   if (fini_array != NULL)
     {
-      ElfW(Addr) *array = (ElfW(Addr) *) (map->l_addr
-                                          + fini_array->d_un.d_ptr);
+#if ! defined __ptr128__
+      ElfW(Addr)
+#else
+	fini_t
+#endif
+	*array =
+#if ! defined __ptr128__
+	(ElfW(Addr) *) (map->l_addr
+			+ fini_array->d_un.d_ptr);
+#else /* defined __ptr128__  */
+	(fini_t *) (map->l_gd
+		    + get_offset (map, map->l_info[DT_FINI_ARRAY]->d_un.d_ptr));
+#endif /* defined __ptr128__  */
       size_t sz = (map->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
-                   / sizeof (ElfW(Addr)));
+                   / sizeof (
+#if ! defined __ptr128__
+			     ElfW(Addr)
+#else /* defined __ptr128__  */
+			     fini_t
+#endif /* defined __ptr128__  */
+			     ));
 
       while (sz-- > 0)
         ((fini_t) array[sz]) ();
@@ -46,5 +63,14 @@ _dl_call_fini (void *closure_map)
   /* Next try the old-style destructor.  */
   ElfW(Dyn) *fini = map->l_info[DT_FINI];
   if (fini != NULL)
-    DL_CALL_DT_FINI (map, ((void *) map->l_addr + fini->d_un.d_ptr));
+    DL_CALL_DT_FINI (map, (
+#if ! defined __ptr128__
+			   /* What's the point in this idiotic cast
+			      inappropriate for PM-specific
+			      implementation of DL_CALL_DT_FINI?
+			      It's not used when invoking this
+			      macro from `elf/dl-fini.c'.  */
+			   (void *)
+#endif /* ! defined __ptr128__  */
+			   map->l_addr + fini->d_un.d_ptr));
 }

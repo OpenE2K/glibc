@@ -458,7 +458,15 @@ static ElfW(Addr) _dl_start_final (void *arg,
 #endif
 
 /* These are defined magically by the linker.  */
-extern const ElfW(Ehdr) __ehdr_start attribute_hidden;
+extern const ElfW(Ehdr) __ehdr_start
+#if defined __ptr128__
+/* This symbol is used to get access to rtld Program Headers below (see
+   rtld_phdr) lying beyond ElfW(Ehdr) object it describes. To avoid `exc_
+   array_bounds' make it describe an array of such objects of unspecified
+   size.  */
+  []
+#endif /* defined __ptr128__  */
+  attribute_hidden;
 extern char _etext[] attribute_hidden;
 extern char _end[] attribute_hidden;
 
@@ -508,6 +516,8 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
 #endif
   _dl_setup_hash (&GL(dl_rtld_map));
   GL(dl_rtld_map).l_real = &GL(dl_rtld_map);
+
+#if ! defined __ptr128__
   GL(dl_rtld_map).l_map_start = (ElfW(Addr)) &__ehdr_start;
   GL(dl_rtld_map).l_map_end = (ElfW(Addr)) _end;
 #else /* defined __ptr128__  */
@@ -515,8 +525,8 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
      to let this file compile. Presumably e2k-linux-ld should be made to produce
      some non-standard symbols in PM to initialize `l_{text,data}_{start,end}'
      correctly.  */
-    GL(dl_rtld_map).l_data_start = (ElfW(Addr)) _begin;
-    GL(dl_rtld_map).l_data_end = (ElfW(Addr)) _end;
+  GL(dl_rtld_map).l_data_start = (ElfW(Addr)) &__ehdr_start;
+  GL(dl_rtld_map).l_data_end = (ElfW(Addr)) _end;
 #endif /* defined __ptr128__  */
 #if ! defined __ptr128__
     /* This is incorrect in principle in PM because `_etext' belongs to the
@@ -618,11 +628,7 @@ _dl_start (void *arg)
      is a Copy/Paste of the analogous one in `dl_main ()' (note that the
      latter is not disabled in PM because the repetition of these actions
      should make no harm).  */
-  const ElfW(Ehdr) *rtld_ehdr;
-  extern const ElfW(Ehdr) __ehdr_start[]
-    __attribute__ ((visibility ("hidden")));
-
-  rtld_ehdr = &__ehdr_start[0];
+  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start[0];
 
   assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
   assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
@@ -1526,7 +1532,11 @@ rtld_setup_phdr (void)
      symbol __ehdr_start to point to our own ELF header if it is
      visible in a segment that also includes the phdrs.  */
 
-  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start;
+  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start
+#if defined __ptr128__
+    [0]
+#endif /* defined __ptr128__  */
+    ;
   assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
   assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
 

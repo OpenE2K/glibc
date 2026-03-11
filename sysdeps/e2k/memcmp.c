@@ -1,4 +1,5 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2018 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
  *
  * @(#) $Id: memcmp.c 2218 2014-06-16 13:57:59Z vlog $
  */

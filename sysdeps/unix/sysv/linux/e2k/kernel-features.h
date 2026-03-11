@@ -20,72 +20,18 @@
 #ifndef _KERNEL_FEATURES_H
 #define _KERNEL_FEATURES_H 1
 
-#define __ASSUME_SOCKETCALL		1
+# define __ASSUME_SOCKET_SYSCALL             1
+# define __ASSUME_SOCKETPAIR_SYSCALL         1
+# define __ASSUME_BIND_SYSCALL               1
+# define __ASSUME_LISTEN_SYSCALL             1
+# define __ASSUME_GETSOCKNAME_SYSCALL        1
+# define __ASSUME_GETPEERNAME_SYSCALL        1
+# define __ASSUME_SHUTDOWN_SYSCALL           1
 
 #include_next <kernel-features.h>
-
-/* All of the 7 underlying `__ASSUME_*'s should be defined if the new PM ABI
-   and syscall interface are used at least. Moreover, it should be clarified
-   if they are supported by relevant kernel versions (i.e. the ones glibc
-   is intended to be used with) in ordinary modes.  */
-#if ! defined __ptr128__
-/* Due to some obscure reasons `__NR_{recv,send}msg' syscalls are missing from
-   E2K Linux Kernel, whereas `sysdeps/unix/sysv/linux/kernel-features.h' defines
-   the following macros by default nowadays.  */
-# undef __ASSUME_RECVMSG_SYSCALL
-# undef __ASSUME_SENDMSG_SYSCALL
-#endif /* ! defined __ptr128__  */
-
-#if ! defined __ptr128__
-# undef __ASSUME_ACCEPT_SYSCALL
-# undef __ASSUME_ACCEPT4_SYSCALL
-# undef __ASSUME_RECVFROM_SYSCALL
-# undef __ASSUME_CONNECT_SYSCALL
-# undef __ASSUME_SENDTO_SYSCALL
-#endif /* ! defined __ptr128__  */
-
-/* These ones stayed undefined in the generic kernel-features.h by virtue of
-   'defined __e2k__' conditionals. Now that they are getting rid of such
-   conditionals in the generic kernel-features.h (see commit
-   5e7698c6f152c93a73ee4140ad23f7171aa79ce0) undefine them here explicitly.
-   FIXME: to be revisited. Probably we may define some of these macros now that
-   we work in linux-2.6.33 environment at E2K.  */
-
-/* At E2k we have `signalfd4' syscall starting from linux-2.6.33 (see
-   Bug #66978).  */
-#if __LINUX_KERNEL_VERSION < 0x020621
-# undef __ASSUME_SIGNALFD4
-#endif
-
-#undef __ASSUME_AT_RANDOM
-
-
-
-
-/* These ones used to be defined in the generic kernel-features.h for E2K (i.e.
-   under '#ifdef __e2k__' conditional) accompanied by the following comment:
-   
-   Linux at E2k starts from version 2.4.0.
-
-   Move them here. FIXME: find out whether these macros really make any sense
-   nowadays. Maybe they lead to duplication.  */
-#define __ASSUME_TRUNCATE64_SYSCALL	1
-#define __ASSUME_MMAP2_SYSCALL		1
-#define __ASSUME_STAT64_SYSCALL		1
-#define __ASSUME_FCNTL64		1
-
-#if defined __ptr128__
-# undef __ASSUME_RENAMEAT2
-#endif /* defined __ptr128__  */
 
 #if defined __ptr32__
 # define __ASSUME_SYSVIPC_BROKEN_MODE_T
 #endif /* defined __ptr32__  */
-
-#if defined __ptr128__
-
-# define __ASSUME_GETPEERNAME_SYSCALL	1
-
-#endif /* defined __ptr128__  */
 
 #endif /* _KERNEL_FEATURES_H */

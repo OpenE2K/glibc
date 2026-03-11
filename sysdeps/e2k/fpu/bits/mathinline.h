@@ -1,4 +1,6 @@
-/* Copyright (c) 2016-2021 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016-2021 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 #ifndef _MATH_H
 # error "Never use <bits/mathinline.h> directly; include <math.h> instead."

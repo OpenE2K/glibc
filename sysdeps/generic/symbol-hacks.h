@@ -1,7 +1,12 @@
 /* Some compiler optimizations may transform loops into memset/memmove
    calls and without proper declaration it may generate PLT calls.  */
+
+/* These hacks are NOT relevant in start.os becoming the part of exported to
+   user Scrt1.o and gcrt1.o (ExtBug #9872). The reason for why this issue has
+   not shown itself up on any architectures except for e2k is that start.* is
+   typically implemented in assembler rather than in C.  */
 #if !defined __ASSEMBLER__ && IS_IN (libc) && defined SHARED \
-    && !defined LIBC_NONSHARED
+    && !defined LIBC_NONSHARED && !defined IN_START_OS
 asm ("memmove = __GI_memmove");
 asm ("memset = __GI_memset");
 asm ("memcpy = __GI_memcpy");

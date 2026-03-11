@@ -1,4 +1,6 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 /* Return minimum numeric value of X and Y. */
 

@@ -17,8 +17,8 @@
 
 #define DL_CALL_DT_FINI(map, start)				\
   {								\
-    fini_t fini = (fini_t) get_pl (map, start - map->l_addr);	\
-    fini ();							\
+    fini_t finifn = (fini_t) get_pl (map, start - map->l_addr);	\
+    finifn ();							\
   }
 
 #define VALID_ELF_FLAGS(flg) (((flg) & EF_E2K_PM) != 0)

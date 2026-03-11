@@ -26,18 +26,7 @@
 int
 __getsockname (int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
-#if defined __ptr128__
-  struct
-  {
-    long int a;
-    void *b;
-    void *c;
-  }
-  args = {(long int) fd, (void *) addr.__sockaddr__, (void *) len};
-
-  return INLINE_SYSCALL (socketcall, 2, SOCKOP_getsockname, &args);
-
-#elif defined __ASSUME_GETSOCKNAME_SYSCALL
+#if defined __ASSUME_GETSOCKNAME_SYSCALL
   return INLINE_SYSCALL (getsockname, 3, fd, addr.__sockaddr__, len);
 #else
   return SOCKETCALL (getsockname, fd, addr.__sockaddr__, len);

@@ -1,6 +1,7 @@
-/* Copyright (c) 2015-2018 ZAO "MCST". All rights reserved.
+/* Copyright (c) 2015-2018 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
  *
- * @(#) $Id: memccpy.c 6710 2025-06-17 21:02:33Z vlog $
+ * @(#) $Id: memccpy.c 6783 2026-01-27 15:09:02Z malakhov $
  */
 
 #include <string.h>

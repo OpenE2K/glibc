@@ -1,4 +1,6 @@
-/* Copyright (c) 2016-2019 ZAO "MCST". All rights reserved. */
+/* Copyright (c) 2016-2019 AO MCST. All rights reserved.
+ * Distributed under the terms of MIT License.
+ */
 
 #include "f2c.h"
 #include <e2kintrin.h>

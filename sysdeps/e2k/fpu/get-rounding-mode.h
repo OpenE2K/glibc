@@ -1,6 +1,5 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* Determine floating-point rounding mode within libc.  E2K version.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 2012-2015 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 

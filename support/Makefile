@@ -258,7 +258,7 @@ CFLAGS-xmkdirp.c += -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64
 # 32-bit platforms.
 CFLAGS-temp_file.c += -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64
 
-ifeq (,$(CXX))
+# ifeq (,$(CXX))
 LINKS_DSO_PROGRAM = links-dso-program-c
 # else
 # LINKS_DSO_PROGRAM = links-dso-program

@@ -1,6 +1,5 @@
-/* Copyright (c) 2016 ZAO "MCST". All rights reserved. */
-
 /* Machine-dependent ELF dynamic relocation inline functions.  e2k version.
+   Copyright (c) 2016 AO MCST.
    Copyright (C) 1995-2005, 2006 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
