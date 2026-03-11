@@ -25,18 +25,48 @@
 #include <stdio.h>
 #include <sys/rseq.h>
 
+/* 32 is the initially required value for the area size.  The
+   actually used rseq size may be less (20 bytes initially).  */
+#define RSEQ_AREA_SIZE_INITIAL 32
+#define RSEQ_AREA_SIZE_INITIAL_USED 20
+
+/* The variables are in .data.relro but are not yet write-protected.  */
+extern unsigned int _rseq_size attribute_hidden;
+extern ptrdiff_t _rseq_offset attribute_hidden;
+
 #ifdef RSEQ_SIG
 static inline bool
 rseq_register_current_thread (struct pthread *self, bool do_rseq)
 {
   if (do_rseq)
     {
+      unsigned int size;
+#if IS_IN (rtld)
+      /* Use the hidden symbol in ld.so.  */
+      size = _rseq_size;
+#else
+      size = __rseq_size;
+#endif
+      if (size < RSEQ_AREA_SIZE_INITIAL)
+        /* The initial implementation used only 20 bytes out of 32,
+           but still expected size 32.  */
+        size = RSEQ_AREA_SIZE_INITIAL;
+
+      /* Initialize the rseq fields that are read by the kernel on
+         registration, there is no guarantee that struct pthread is
+         cleared on all architectures.  */
+      THREAD_SETMEM (self, rseq_area.cpu_id, RSEQ_CPU_ID_UNINITIALIZED);
+      THREAD_SETMEM (self, rseq_area.cpu_id_start, 0);
+      THREAD_SETMEM (self, rseq_area.rseq_cs, 0);
+      THREAD_SETMEM (self, rseq_area.flags, 0);
+
       int ret = INTERNAL_SYSCALL_CALL (rseq, &self->rseq_area,
-                                       sizeof (self->rseq_area),
-                                       0, RSEQ_SIG);
+                                       size, 0, RSEQ_SIG);
       if (!INTERNAL_SYSCALL_ERROR_P (ret))
         return true;
     }
+  /* When rseq is disabled by tunables or the registration fails, inform
+     userspace by setting 'cpu_id' to RSEQ_CPU_ID_REGISTRATION_FAILED.  */
   THREAD_SETMEM (self, rseq_area.cpu_id, RSEQ_CPU_ID_REGISTRATION_FAILED);
   return false;
 }

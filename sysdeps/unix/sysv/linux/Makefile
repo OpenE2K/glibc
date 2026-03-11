@@ -139,6 +139,7 @@ tests += tst-clone tst-clone2 tst-clone3 tst-fanotify tst-personality \
   tst-scm_rights \
   tst-epoll \
   tst-getauxval \
+  tst-linux-mremap1 \
   # tests
 
 # Test for the symbol version of fcntl that was replaced in glibc 2.28.
@@ -338,6 +339,8 @@ sysdep_headers += netinet/if_fddi.h netinet/if_tr.h \
 		  netrom/netrom.h netpacket/packet.h netrose/rose.h \
 		  neteconet/ec.h netiucv/iucv.h
 sysdep_routines += netlink_assert_response
+
+CFLAGS-check_pf.c += -fexceptions
 endif
 
 # Don't compile the ctype glue code, since there is no old non-GNU C library.
@@ -378,6 +381,7 @@ endif
 
 ifeq ($(subdir),elf)
 sysdep-rtld-routines += dl-brk dl-sbrk dl-getcwd dl-openat64 dl-opendir
+dl-routines += dl-rseq-symbols
 
 libof-lddlibc4 = lddlibc4
 

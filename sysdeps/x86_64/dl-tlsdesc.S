@@ -61,7 +61,7 @@ _dl_tlsdesc_return:
 _dl_tlsdesc_undefweak:
 	_CET_ENDBR
 	movq	8(%rax), %rax
-	subq	%fs:0, %rax
+	sub	%fs:0, %RAX_LP
 	ret
 	cfi_endproc
 	.size	_dl_tlsdesc_undefweak, .-_dl_tlsdesc_undefweak
@@ -102,7 +102,7 @@ _dl_tlsdesc_dynamic:
 	/* Preserve call-clobbered registers that we modify.
 	   We need two scratch regs anyway.  */
 	movq	%rsi, -16(%rsp)
-	movq	%fs:DTV_OFFSET, %rsi
+	mov	%fs:DTV_OFFSET, %RSI_LP
 	movq	%rdi, -8(%rsp)
 	movq	TLSDESC_ARG(%rax), %rdi
 	movq	(%rsi), %rax
@@ -116,7 +116,7 @@ _dl_tlsdesc_dynamic:
 	addq	TLSDESC_MODOFF(%rdi), %rax
 .Lret:
 	movq	-16(%rsp), %rsi
-	subq	%fs:0, %rax
+	sub	%fs:0, %RAX_LP
 	movq	-8(%rsp), %rdi
 	ret
 .Lslow:

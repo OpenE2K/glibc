@@ -119,6 +119,9 @@ typedef struct link_map *lookup_t;
    DT_PREINIT_ARRAY.  */
 typedef void (*dl_init_t) (int, char **, char **);
 
+/* Type of a constructor function, in DT_FINI, DT_FINI_ARRAY.  */
+typedef void (*fini_t) (void);
+
 /* On some architectures a pointer to a function is not just a pointer
    to the actual code of the function but rather an architecture
    specific descriptor. */
@@ -1165,9 +1168,16 @@ extern void _dl_init (struct link_map *main_map, int argc, char **argv,
    initializer functions have completed.  */
 extern void _dl_fini (void) attribute_hidden;
 
-/* Sort array MAPS according to dependencies of the contained objects.  */
+/* Invoke the DT_FINI_ARRAY and DT_FINI destructors for MAP, which
+   must be a struct link_map *.  Can be used as an argument to
+   _dl_catch_exception.  */
+void _dl_call_fini (void *map) attribute_hidden;
+
+/* Sort array MAPS according to dependencies of the contained objects.
+   If FORCE_FIRST, MAPS[0] keeps its place even if the dependencies
+   say otherwise.  */
 extern void _dl_sort_maps (struct link_map **maps, unsigned int nmaps,
-			   unsigned int skip, bool for_fini) attribute_hidden;
+			   bool force_first, bool for_fini) attribute_hidden;
 
 /* The dynamic linker calls this function before and having changing
    any shared object mappings.  The `r_state' member of `struct r_debug'
@@ -1374,8 +1384,23 @@ extern void _dl_add_to_slotinfo (struct link_map *l, bool do_add)
 
 /* Update slot information data for at least the generation of the
    module with the given index.  */
-extern struct link_map *_dl_update_slotinfo (unsigned long int req_modid)
+extern struct link_map *_dl_update_slotinfo (unsigned long int req_modid,
+					     size_t gen)
      attribute_hidden;
+
+/* The last TLS module ID that is initially loaded, plus 1.  TLS
+   addresses for modules with IDs lower than that can be obtained from
+   the DTV even if its generation is outdated.  */
+extern size_t _dl_tls_initial_modid_limit attribute_hidden attribute_relro;
+
+/* Compute _dl_tls_initial_modid_limit.  To be called after initial
+   relocation.  */
+void _dl_tls_initial_modid_limit_setup (void) attribute_hidden;
+
+/* Number of threads currently in a TLS update.  This is used to
+   detect reentrant __tls_get_addr calls without a per-thread
+   flag.  */
+extern unsigned int _dl_tls_threads_in_update attribute_hidden;
 
 /* Look up the module's TLS block as for __tls_get_addr,
    but never touch anything.  Return null if it's not allocated yet.  */

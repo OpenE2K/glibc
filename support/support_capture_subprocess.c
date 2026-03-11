@@ -21,12 +21,17 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
+#include <scratch_buffer.h>
+#include <stdio_ext.h>
 #include <stdlib.h>
+#include <string.h>
 #include <support/check.h>
 #include <support/xunistd.h>
 #include <support/xsocket.h>
 #include <support/xspawn.h>
 #include <support/support.h>
+#include <support/temp_file.h>
 #include <support/test-driver.h>
 
 static void
@@ -108,100 +113,88 @@ support_capture_subprogram (const char *file, char *const argv[])
 /* Copies the executable into a restricted directory, so that we can
    safely make it SGID with the TARGET group ID.  Then runs the
    executable.  */
-static int
-copy_and_spawn_sgid (char *child_id, gid_t gid)
+static void
+copy_and_spawn_sgid (const char *child_id, gid_t gid)
 {
-  char *dirname = xasprintf ("%s/tst-tunables-setuid.%jd",
-			     test_dir, (intmax_t) getpid ());
+  char *dirname = support_create_temp_directory ("tst-glibc-sgid-");
   char *execname = xasprintf ("%s/bin", dirname);
-  int infd = -1;
-  int outfd = -1;
-  int ret = 1, status = 1;
+  add_temp_file (execname);
 
-  TEST_VERIFY (mkdir (dirname, 0700) == 0);
-  if (support_record_failure_is_failed ())
-    goto err;
-
-  infd = open ("/proc/self/exe", O_RDONLY);
-  if (infd < 0)
+  if (access ("/proc/self/exe", R_OK) != 0)
     FAIL_UNSUPPORTED ("unsupported: Cannot read binary from procfs\n");
 
-  outfd = open (execname, O_WRONLY | O_CREAT | O_EXCL, 0700);
-  TEST_VERIFY (outfd >= 0);
-  if (support_record_failure_is_failed ())
-    goto err;
+  support_copy_file ("/proc/self/exe", execname);
 
-  char buf[4096];
-  for (;;)
-    {
-      ssize_t rdcount = read (infd, buf, sizeof (buf));
-      TEST_VERIFY (rdcount >= 0);
-      if (support_record_failure_is_failed ())
-	goto err;
-      if (rdcount == 0)
-	break;
-      char *p = buf;
-      char *end = buf + rdcount;
-      while (p != end)
-	{
-	  ssize_t wrcount = write (outfd, buf, end - p);
-	  if (wrcount == 0)
-	    errno = ENOSPC;
-	  TEST_VERIFY (wrcount > 0);
-	  if (support_record_failure_is_failed ())
-	    goto err;
-	  p += wrcount;
-	}
-    }
-  TEST_VERIFY (fchown (outfd, getuid (), gid) == 0);
-  if (support_record_failure_is_failed ())
-    goto err;
-  TEST_VERIFY (fchmod (outfd, 02750) == 0);
-  if (support_record_failure_is_failed ())
-    goto err;
-  TEST_VERIFY (close (outfd) == 0);
-  if (support_record_failure_is_failed ())
-    goto err;
-  TEST_VERIFY (close (infd) == 0);
-  if (support_record_failure_is_failed ())
-    goto err;
+  if (chown (execname, getuid (), gid) != 0)
+    FAIL_UNSUPPORTED ("cannot change group of \"%s\" to %jd: %m",
+		      execname, (intmax_t) gid);
+
+  if (chmod (execname, 02750) != 0)
+    FAIL_UNSUPPORTED ("cannot make \"%s\" SGID: %m ", execname);
 
   /* We have the binary, now spawn the subprocess.  Avoid using
      support_subprogram because we only want the program exit status, not the
      contents.  */
-  ret = 0;
-  infd = outfd = -1;
 
-  char * const args[] = {execname, child_id, NULL};
+  char * const args[] = {execname, (char *) child_id, NULL};
+  int status = support_subprogram_wait (args[0], args);
 
-  status = support_subprogram_wait (args[0], args);
+  free (execname);
+  free (dirname);
 
-err:
-  if (outfd >= 0)
-    close (outfd);
-  if (infd >= 0)
-    close (infd);
-  if (execname != NULL)
+  if (WIFEXITED (status))
     {
-      unlink (execname);
-      free (execname);
+      if (WEXITSTATUS (status) == 0)
+	return;
+      else
+	exit (WEXITSTATUS (status));
     }
-  if (dirname != NULL)
-    {
-      rmdir (dirname);
-      free (dirname);
-    }
-
-  if (ret != 0)
-    FAIL_EXIT1("Failed to make sgid executable for test\n");
-
-  return status;
+  else
+    FAIL_EXIT1 ("subprogram failed with status %d", status);
 }
 
-int
-support_capture_subprogram_self_sgid (char *child_id)
+/* Returns true if a group with NAME has been found, and writes its
+   GID to *TARGET.  */
+static bool
+find_sgid_group (gid_t *target, const char *name)
 {
-  gid_t target = 0;
+  /* Do not use getgrname_r because it does not work in statically
+     linked binaries if the system libc is different.  */
+  FILE *fp = fopen ("/etc/group", "rce");
+  if (fp == NULL)
+    return false;
+  __fsetlocking (fp, FSETLOCKING_BYCALLER);
+
+  bool ok = false;
+  struct scratch_buffer buf;
+  scratch_buffer_init (&buf);
+  while (true)
+    {
+      struct group grp;
+      struct group *result = NULL;
+      int status = fgetgrent_r (fp, &grp, buf.data, buf.length, &result);
+      if (status == 0 && result != NULL)
+	{
+	  if (strcmp (result->gr_name, name) == 0)
+	    {
+	      *target = result->gr_gid;
+	      ok = true;
+	      break;
+	    }
+	}
+      else if (errno != ERANGE)
+	break;
+      else if (!scratch_buffer_grow (&buf))
+	break;
+    }
+  scratch_buffer_free (&buf);
+  fclose (fp);
+  return ok;
+}
+
+void
+support_capture_subprogram_self_sgid (const char *child_id)
+{
   const int count = 64;
   gid_t groups[count];
 
@@ -213,6 +206,7 @@ support_capture_subprogram_self_sgid (char *child_id)
 		     (intmax_t) getuid ());
 
   gid_t current = getgid ();
+  gid_t target = current;
   for (int i = 0; i < ret; ++i)
     {
       if (groups[i] != current)
@@ -222,11 +216,18 @@ support_capture_subprogram_self_sgid (char *child_id)
 	}
     }
 
-  if (target == 0)
-    FAIL_UNSUPPORTED("Could not find a suitable GID for user %jd\n",
-		     (intmax_t) getuid ());
+  if (target == current)
+    {
+      /* If running as root, try to find a harmless group for SGID.  */
+      if (getuid () != 0
+	  || (!find_sgid_group (&target, "nogroup")
+	      && !find_sgid_group (&target, "bin")
+	      && !find_sgid_group (&target, "daemon")))
+	FAIL_UNSUPPORTED("Could not find a suitable GID for user %jd\n",
+			 (intmax_t) getuid ());
+    }
 
-  return copy_and_spawn_sgid (child_id, target);
+  copy_and_spawn_sgid (child_id, target);
 }
 
 void

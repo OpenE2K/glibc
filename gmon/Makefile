@@ -1,4 +1,5 @@
-# Copyright (C) 1995-2022 Free Software Foundation, Inc.
+# Copyright (C) 1995-2023 Free Software Foundation, Inc.
+# Copyright The GNU Toolchain Authors.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -25,7 +26,7 @@ include ../Makeconfig
 headers	:= sys/gmon.h sys/gmon_out.h sys/profil.h
 routines := gmon mcount profil sprofil prof-freq
 
-tests	= tst-sprofil tst-gmon
+tests	= tst-sprofil tst-gmon tst-mcleanup
 ifeq ($(build-profile),yes)
 tests	+= tst-profile-static
 tests-static	+= tst-profile-static
@@ -54,6 +55,14 @@ CRT-tst-gmon := $(csu-objpfx)g$(start-installed-name)
 tst-gmon-ENV := GMON_OUT_PREFIX=$(objpfx)tst-gmon.data
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-gmon-gprof.out
+endif
+
+CFLAGS-tst-mcleanup.c := -fno-omit-frame-pointer -pg
+tst-mcleanup-no-pie = yes
+CRT-tst-mcleanup := $(csu-objpfx)g$(start-installed-name)
+tst-mcleanup-ENV := GMON_OUT_PREFIX=$(objpfx)tst-mcleanup.data
+ifeq ($(run-built-tests),yes)
+tests-special += $(objpfx)tst-mcleanup.out
 endif
 
 CFLAGS-tst-gmon-static.c := $(PIE-ccflag) -fno-omit-frame-pointer -pg
@@ -102,6 +111,18 @@ $(noprof:%=$(objpfx)%.op): %.op: %.o
 $(objpfx)tst-gmon.out: clean-tst-gmon-data
 clean-tst-gmon-data:
 	rm -f $(objpfx)tst-gmon.data.*
+
+$(objpfx)tst-mcount-overflow.o: clean-tst-mcount-overflow-data
+clean-tst-mcount-overflow-data:
+	rm -f $(objpfx)tst-mcount-overflow.data.*
+
+$(objpfx)tst-mcount-overflow-check.out: tst-mcount-overflow-check.sh $(objpfx)tst-mcount-overflow.out
+	$(SHELL) $< $(objpfx)tst-mcount-overflow > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-mcleanup.out: clean-tst-mcleanup-data
+clean-tst-mcleanup-data:
+	rm -f $(objpfx)tst-mcleanup.data.*
 
 $(objpfx)tst-gmon-gprof.out: tst-gmon-gprof.sh $(objpfx)tst-gmon.out
 	$(SHELL) $< $(GPROF) $(objpfx)tst-gmon $(objpfx)tst-gmon.data.* > $@; \

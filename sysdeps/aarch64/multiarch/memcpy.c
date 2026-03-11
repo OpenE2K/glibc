@@ -29,31 +29,38 @@
 extern __typeof (__redirect_memcpy) __libc_memcpy;
 
 extern __typeof (__redirect_memcpy) __memcpy_generic attribute_hidden;
-extern __typeof (__redirect_memcpy) __memcpy_simd attribute_hidden;
 extern __typeof (__redirect_memcpy) __memcpy_thunderx attribute_hidden;
 extern __typeof (__redirect_memcpy) __memcpy_thunderx2 attribute_hidden;
-extern __typeof (__redirect_memcpy) __memcpy_falkor attribute_hidden;
-# if HAVE_AARCH64_SVE_ASM
 extern __typeof (__redirect_memcpy) __memcpy_a64fx attribute_hidden;
-# endif
+extern __typeof (__redirect_memcpy) __memcpy_sve attribute_hidden;
+extern __typeof (__redirect_memcpy) __memcpy_mops attribute_hidden;
 
-libc_ifunc (__libc_memcpy,
-            (IS_THUNDERX (midr)
-	     ? __memcpy_thunderx
-	     : (IS_FALKOR (midr) || IS_PHECDA (midr)
-		? __memcpy_falkor
-		: (IS_THUNDERX2 (midr) || IS_THUNDERX2PA (midr)
-		   ? __memcpy_thunderx2
-		   : (IS_NEOVERSE_N1 (midr) || IS_NEOVERSE_N2 (midr)
-		      || IS_NEOVERSE_V1 (midr)
-		      ? __memcpy_simd
-# if HAVE_AARCH64_SVE_ASM
-		     : (IS_A64FX (midr) && sve
-			? __memcpy_a64fx
-			: __memcpy_generic))))));
-# else
-		     : __memcpy_generic)))));
-# endif
+static inline __typeof (__redirect_memcpy) *
+select_memcpy_ifunc (void)
+{
+  INIT_ARCH ();
+
+  if (mops)
+    return __memcpy_mops;
+
+  if (sve && HAVE_AARCH64_SVE_ASM)
+    {
+      if (IS_A64FX (midr))
+	return __memcpy_a64fx;
+      return prefer_sve_ifuncs ? __memcpy_sve : __memcpy_generic;
+    }
+
+  if (IS_THUNDERX (midr))
+    return __memcpy_thunderx;
+
+  if (IS_THUNDERX2 (midr) || IS_THUNDERX2PA (midr))
+    return __memcpy_thunderx2;
+
+  return __memcpy_generic;
+}
+
+libc_ifunc (__libc_memcpy, select_memcpy_ifunc ());
+
 # undef memcpy
 strong_alias (__libc_memcpy, memcpy);
 #endif

@@ -40,12 +40,16 @@ routines := \
   inet_pton \
   ns_makecanon \
   ns_name_compress \
+  ns_name_length_uncompressed \
   ns_name_ntop \
   ns_name_pack \
   ns_name_pton \
   ns_name_skip \
   ns_name_uncompress \
   ns_name_unpack \
+  ns_rr_cursor_init \
+  ns_rr_cursor_next \
+  ns_samebinaryname \
   ns_samename \
   nsap_addr \
   nss_dns_functions \
@@ -88,19 +92,36 @@ tests += \
   tst-ns_name_pton \
   tst-res_hconf_reorder \
   tst-res_hnok \
+  tst-resolv-aliases \
   tst-resolv-basic \
   tst-resolv-binary \
+  tst-resolv-byaddr \
   tst-resolv-edns \
+  tst-resolv-invalid-cname \
   tst-resolv-network \
   tst-resolv-nondecimal \
   tst-resolv-res_init-multi \
   tst-resolv-search \
+  tst-resolv-semi-failure \
+  tst-resolv-short-response \
   tst-resolv-trailing \
 
 # This test calls __res_context_send directly, which is not exported
 # from libresolv.
 tests-internal += tst-resolv-txnid-collision
 tests-static += tst-resolv-txnid-collision
+
+# Likewise for __ns_samebinaryname.
+tests-internal += tst-ns_samebinaryname
+tests-static += tst-ns_samebinaryname
+
+# Likewise for __ns_name_length_uncompressed.
+tests-internal += tst-ns_name_length_uncompressed
+tests-static += tst-ns_name_length_uncompressed
+
+# Likewise for struct ns_rr_cursor and its functions.
+tests-internal += tst-ns_rr_cursor
+tests-static += tst-ns_rr_cursor
 
 # These tests need libdl.
 ifeq (yes,$(build-shared))
@@ -256,8 +277,10 @@ $(objpfx)tst-resolv-ai_idn.out: $(gen-locales)
 $(objpfx)tst-resolv-ai_idn-latin1.out: $(gen-locales)
 $(objpfx)tst-resolv-ai_idn-nolibidn2.out: \
   $(gen-locales) $(objpfx)tst-no-libidn2.so
+$(objpfx)tst-resolv-aliases: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-basic: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-binary: $(objpfx)libresolv.so $(shared-thread-library)
+$(objpfx)tst-resolv-byaddr: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-edns: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-network: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-res_init: $(objpfx)libresolv.so
@@ -265,10 +288,16 @@ $(objpfx)tst-resolv-res_init-multi: $(objpfx)libresolv.so \
   $(shared-thread-library)
 $(objpfx)tst-resolv-res_init-thread: $(objpfx)libresolv.so \
   $(shared-thread-library)
+$(objpfx)tst-resolv-invalid-cname: $(objpfx)libresolv.so \
+  $(shared-thread-library)
 $(objpfx)tst-resolv-nondecimal: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-qtypes: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-rotate: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-search: $(objpfx)libresolv.so $(shared-thread-library)
+$(objpfx)tst-resolv-semi-failure: $(objpfx)libresolv.so \
+  $(shared-thread-library)
+$(objpfx)tst-resolv-short-response: $(objpfx)libresolv.so \
+  $(shared-thread-library)
 $(objpfx)tst-resolv-trailing: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-threads: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-txnid-collision: $(objpfx)libresolv.a \

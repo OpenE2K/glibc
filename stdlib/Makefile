@@ -84,6 +84,7 @@ tests := \
   test-a64l \
   test-at_quick_exit-race \
   test-atexit-race \
+  test-atexit-recursive \
   test-bz22786 \
   test-canon \
   test-canon2 \
@@ -131,6 +132,7 @@ tests := \
   tst-setcontext7 \
   tst-setcontext8 \
   tst-setcontext9 \
+  tst-setenv-environ \
   tst-strfmon_l \
   tst-strfrom \
   tst-strfrom-locale \

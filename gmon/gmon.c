@@ -97,11 +97,8 @@ __moncontrol (int mode)
 {
   struct gmonparam *p = &_gmonparam;
 
-  /* Don't change the state if we ran into an error.  */
-  if (p->state == GMON_PROF_ERROR)
-    return;
-
-  if (mode)
+  /* Treat start request as stop if error or gmon not initialized. */
+  if (mode && p->state != GMON_PROF_ERROR && p->tos != NULL)
     {
       /* start */
       __profil((void *) p->kcount, p->kcountsize, p->lowpc, s_scale);
@@ -111,7 +108,9 @@ __moncontrol (int mode)
     {
       /* stop */
       __profil(NULL, 0, 0, 0);
-      p->state = GMON_PROF_OFF;
+      /* Don't change the state if we ran into an error. */
+      if (p->state != GMON_PROF_ERROR)
+        p->state = GMON_PROF_OFF;
     }
 }
 libc_hidden_def (__moncontrol)
@@ -124,6 +123,19 @@ __monstartup (u_long lowpc, u_long highpc)
   int o;
   char *cp;
   struct gmonparam *p = &_gmonparam;
+  long int minarcs, maxarcs;
+
+  /* No tunables, we use hardcoded defaults */
+  minarcs = MINARCS;
+  maxarcs = MAXARCS;
+
+  /*
+   * If we are incorrectly called twice in a row (without an
+   * intervening call to _mcleanup), ignore the second call to
+   * prevent leaking memory.
+   */
+  if (p->tos != NULL)
+      return;
 
   /*
    * round lowpc and highpc to multiples of the density we're using
@@ -132,6 +144,8 @@ __monstartup (u_long lowpc, u_long highpc)
   p->lowpc = ROUNDDOWN(lowpc, HISTFRACTION * sizeof(HISTCOUNTER));
   p->highpc = ROUNDUP(highpc, HISTFRACTION * sizeof(HISTCOUNTER));
   p->textsize = p->highpc - p->lowpc;
+  /* This looks like a typo, but it's here to align the p->froms
+     section.  */
   p->kcountsize = ROUNDUP(p->textsize / HISTFRACTION, sizeof(*p->froms));
   p->hashfraction = HASHFRACTION;
   p->log_hashfraction = -1;
@@ -142,12 +156,12 @@ __monstartup (u_long lowpc, u_long highpc)
 	 instead of integer division.  Precompute shift amount. */
       p->log_hashfraction = ffs(p->hashfraction * sizeof(*p->froms)) - 1;
   }
-  p->fromssize = p->textsize / HASHFRACTION;
+  p->fromssize = ROUNDUP(p->textsize / HASHFRACTION, sizeof(*p->froms));
   p->tolimit = p->textsize * ARCDENSITY / 100;
-  if (p->tolimit < MINARCS)
-    p->tolimit = MINARCS;
-  else if (p->tolimit > MAXARCS)
-    p->tolimit = MAXARCS;
+  if (p->tolimit < minarcs)
+    p->tolimit = minarcs;
+  else if (p->tolimit > maxarcs)
+    p->tolimit = maxarcs;
   p->tossize = p->tolimit * sizeof(struct tostruct);
 
   cp = calloc (p->kcountsize + p->fromssize + p->tossize, 1);
@@ -440,9 +454,14 @@ _mcleanup (void)
 {
   __moncontrol (0);
 
-  if (_gmonparam.state != GMON_PROF_ERROR)
+  if (_gmonparam.state != GMON_PROF_ERROR && _gmonparam.tos != NULL)
     write_gmon ();
 
   /* free the memory. */
   free (_gmonparam.tos);
+
+  /* reset buffer to initial state for safety */
+  memset(&_gmonparam, 0, sizeof _gmonparam);
+  /* somewhat confusingly, ON=0, OFF=3 */
+  _gmonparam.state = GMON_PROF_OFF;
 }

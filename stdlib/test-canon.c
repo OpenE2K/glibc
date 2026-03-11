@@ -174,7 +174,9 @@ do_test (int argc, char ** argv)
 	  continue;
 	}
 
-      if (!check_path (buf, tests[i].out ? tests[i].out : tests[i].resolved))
+      /* Verify buf contents if the call succeeded or failed with ENOENT.  */
+      if ((result != NULL || errno == ENOENT)
+	  && !check_path (buf, tests[i].out ? tests[i].out : tests[i].resolved))
 	{
 	  printf ("%s: flunked test %d (expected resolved `%s', got `%s')\n",
 		  argv[0], i, tests[i].out ? tests[i].out : tests[i].resolved,

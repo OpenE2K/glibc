@@ -608,10 +608,13 @@ link-libc-rpath-link = -Wl,-rpath-link=$(rpath-link)
 # before the expansion of LDLIBS-* variables).
 
 # Tests use -Wl,-rpath instead of -Wl,-rpath-link for
-# build-hardcoded-path-in-tests.
+# build-hardcoded-path-in-tests.  Add -Wl,--disable-new-dtags to force
+# DT_RPATH instead of DT_RUNPATH which only applies to DT_NEEDED entries
+# in the executable and doesn't applies to DT_NEEDED entries in shared
+# libraries which are loaded via DT_NEEDED entries in the executable.
 ifeq (yes,$(build-hardcoded-path-in-tests))
-link-libc-tests-rpath-link = $(link-libc-rpath)
-link-test-modules-rpath-link = $(link-libc-rpath)
+link-libc-tests-rpath-link = $(link-libc-rpath) -Wl,--disable-new-dtags
+link-test-modules-rpath-link = $(link-libc-rpath) -Wl,--disable-new-dtags
 else
 link-libc-tests-rpath-link = $(link-libc-rpath-link)
 link-test-modules-rpath-link =
@@ -943,7 +946,7 @@ endif
 # Use 64 bit time_t support for installed programs
 installed-modules = nonlib nscd lddlibc4 ldconfig locale_programs \
 		    iconvprogs libnss_files libnss_compat libnss_db libnss_hesiod \
-		    libutil libpcprofile libSegFault
+		    libutil libpcprofile libSegFault libnsl
 +extra-time-flags = $(if $(filter $(installed-modules),\
                            $(in-module)),-D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64)
 

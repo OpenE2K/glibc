@@ -635,7 +635,7 @@ _IO_sputbackc (FILE *fp, int c)
 {
   int result;
 
-  if (fp->_IO_read_ptr > fp->_IO_read_base
+  if (fp->_IO_read_ptr > fp->_IO_read_base && !_IO_in_backup (fp)
       && (unsigned char)fp->_IO_read_ptr[-1] == (unsigned char)c)
     {
       fp->_IO_read_ptr--;
@@ -795,6 +795,12 @@ _IO_unbuffer_all (void)
       if (__glibc_unlikely (_IO_vtable_offset (fp) != 0))
 	legacy = 1;
 #endif
+
+      /* Free up the backup area if it was ever allocated.  */
+      if (_IO_have_backup (fp))
+	_IO_free_backup_area (fp);
+      if (!legacy && fp->_mode > 0 && _IO_have_wbackup (fp))
+	_IO_free_wbackup_area (fp);
 
       if (! (fp->_flags & _IO_UNBUFFERED)
 	  /* Iff stream is un-orientated, it wasn't used. */

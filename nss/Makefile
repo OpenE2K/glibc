@@ -56,21 +56,32 @@ extra-objs		+= $(makedb-modules:=.o)
 
 tests-static            = tst-field
 tests-internal		= tst-field
-tests			= test-netdb test-digits-dots tst-nss-getpwent bug17079 \
-			  tst-nss-test1 \
-			  tst-nss-test2 \
-			  tst-nss-test4 \
-			  tst-nss-test5 \
-			  tst-nss-test_errno
-xtests			= bug-erange
 
-tests-container = \
-			  tst-nss-compat1 \
-			  tst-nss-test3 \
-			  tst-nss-files-hosts-long \
-			  tst-nss-db-endpwent \
-			  tst-nss-db-endgrent \
-			  tst-reload1 tst-reload2
+tests := \
+  bug17079 \
+  test-digits-dots \
+  test-netdb \
+  tst-nss-getpwent \
+  tst-nss-test1 \
+  tst-nss-test2 \
+  tst-nss-test4 \
+  tst-nss-test5 \
+  tst-nss-test_errno \
+# tests
+
+xtests = bug-erange
+
+tests-container := \
+  tst-nss-compat1 \
+  tst-nss-db-endgrent \
+  tst-nss-db-endpwent \
+  tst-nss-files-hosts-long \
+  tst-nss-gai-actions \
+  tst-nss-test3 \
+  tst-reload1 \
+  tst-reload2 \
+  tst-nss-gai-hv2-canonname \
+# tests-container
 
 # Tests which need libdl
 ifeq (yes,$(build-shared))
@@ -133,7 +144,17 @@ libnss_compat-inhibit-o	= $(filter-out .os,$(object-suffixes))
 ifeq ($(build-static-nss),yes)
 tests-static		+= tst-nss-static
 endif
-extra-test-objs		+= nss_test1.os nss_test2.os nss_test_errno.os
+extra-test-objs		+= nss_test1.os nss_test2.os nss_test_errno.os \
+			   nss_test_gai_hv2_canonname.os
+
+ifeq ($(run-built-tests),yes)
+ifneq (no,$(PERL))
+tests-special += $(objpfx)mtrace-tst-nss-gai-hv2-canonname.out
+endif
+endif
+
+generated += mtrace-tst-nss-gai-hv2-canonname.out \
+		tst-nss-gai-hv2-canonname.mtrace
 
 include ../Rules
 
@@ -168,11 +189,15 @@ rtld-tests-LDFLAGS += -Wl,--dynamic-list=nss_test.ver
 libof-nss_test1 = extramodules
 libof-nss_test2 = extramodules
 libof-nss_test_errno = extramodules
+libof-nss_test_gai_hv2_canonname = extramodules
 $(objpfx)/libnss_test1.so: $(objpfx)nss_test1.os $(link-libc-deps)
 	$(build-module)
 $(objpfx)/libnss_test2.so: $(objpfx)nss_test2.os $(link-libc-deps)
 	$(build-module)
 $(objpfx)/libnss_test_errno.so: $(objpfx)nss_test_errno.os $(link-libc-deps)
+	$(build-module)
+$(objpfx)/libnss_test_gai_hv2_canonname.so: \
+  $(objpfx)nss_test_gai_hv2_canonname.os $(link-libc-deps)
 	$(build-module)
 $(objpfx)nss_test2.os : nss_test1.c
 # Use the nss_files suffix for these objects as well.
@@ -183,10 +208,14 @@ $(objpfx)/libnss_test2.so$(libnss_files.so-version): $(objpfx)/libnss_test2.so
 $(objpfx)/libnss_test_errno.so$(libnss_files.so-version): \
   $(objpfx)/libnss_test_errno.so
 	$(make-link)
+$(objpfx)/libnss_test_gai_hv2_canonname.so$(libnss_files.so-version): \
+  $(objpfx)/libnss_test_gai_hv2_canonname.so
+	$(make-link)
 $(patsubst %,$(objpfx)%.out,$(tests) $(tests-container)) : \
 	$(objpfx)/libnss_test1.so$(libnss_files.so-version) \
 	$(objpfx)/libnss_test2.so$(libnss_files.so-version) \
-	$(objpfx)/libnss_test_errno.so$(libnss_files.so-version)
+	$(objpfx)/libnss_test_errno.so$(libnss_files.so-version) \
+	$(objpfx)/libnss_test_gai_hv2_canonname.so$(libnss_files.so-version)
 
 ifeq (yes,$(have-thread-library))
 $(objpfx)tst-cancel-getpwuid_r: $(shared-thread-library)
@@ -194,6 +223,17 @@ endif
 
 $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
 $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so
+
+tst-nss-gai-hv2-canonname-ENV = \
+		MALLOC_TRACE=$(objpfx)tst-nss-gai-hv2-canonname.mtrace \
+		LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
+$(objpfx)mtrace-tst-nss-gai-hv2-canonname.out: \
+  $(objpfx)tst-nss-gai-hv2-canonname.out
+	{ test -r $(objpfx)tst-nss-gai-hv2-canonname.mtrace \
+	|| ( echo "tst-nss-gai-hv2-canonname.mtrace does not exist"; exit 77; ) \
+	&& $(common-objpfx)malloc/mtrace \
+	$(objpfx)tst-nss-gai-hv2-canonname.mtrace; } > $@; \
+	$(evaluate-test)
 
 # Disable DT_RUNPATH on NSS tests so that the glibc internal NSS
 # functions can load testing NSS modules via DT_RPATH.
@@ -203,3 +243,4 @@ LDFLAGS-tst-nss-test3 = -Wl,--disable-new-dtags
 LDFLAGS-tst-nss-test4 = -Wl,--disable-new-dtags
 LDFLAGS-tst-nss-test5 = -Wl,--disable-new-dtags
 LDFLAGS-tst-nss-test_errno = -Wl,--disable-new-dtags
+LDFLAGS-tst-nss-test_gai_hv2_canonname = -Wl,--disable-new-dtags

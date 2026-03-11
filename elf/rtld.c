@@ -457,8 +457,8 @@ static ElfW(Addr) _dl_start_final (void *arg,
 				   struct dl_start_final_info *info);
 #endif
 
-/* These defined magically in the linker script.  */
-extern char _begin[] attribute_hidden;
+/* These are defined magically by the linker.  */
+extern const ElfW(Ehdr) __ehdr_start attribute_hidden;
 extern char _etext[] attribute_hidden;
 extern char _end[] attribute_hidden;
 
@@ -508,9 +508,7 @@ _dl_start_final (void *arg, struct dl_start_final_info *info)
 #endif
   _dl_setup_hash (&GL(dl_rtld_map));
   GL(dl_rtld_map).l_real = &GL(dl_rtld_map);
-
-#if ! defined __ptr128__
-  GL(dl_rtld_map).l_map_start = (ElfW(Addr)) _begin;
+  GL(dl_rtld_map).l_map_start = (ElfW(Addr)) &__ehdr_start;
   GL(dl_rtld_map).l_map_end = (ElfW(Addr)) _end;
 #else /* defined __ptr128__  */
   /* FIXME: these ones are setup in a rather meaningless way for now so as just
@@ -939,6 +937,8 @@ init_tls (size_t naudit)
   if (tcbp == NULL)
     _dl_fatal_printf ("\
 cannot allocate TLS data structures for initial thread\n");
+
+  _dl_tls_initial_modid_limit_setup ();
 
   /* Store for detection of the special case by __tls_get_addr
      so it knows not to pass this dtv to the normal realloc.  */
@@ -1516,6 +1516,60 @@ rtld_setup_main_map (struct link_map *main_map)
   return has_interp;
 }
 
+/* Set up the program header information for the dynamic linker
+   itself.  It can be accessed via _r_debug and dl_iterate_phdr
+   callbacks, and it is used by _dl_find_object.  */
+static void
+rtld_setup_phdr (void)
+{
+  /* Starting from binutils-2.23, the linker will define the magic
+     symbol __ehdr_start to point to our own ELF header if it is
+     visible in a segment that also includes the phdrs.  */
+
+  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start;
+  assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
+  assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
+
+  const ElfW(Phdr) *rtld_phdr = (const void *) rtld_ehdr + rtld_ehdr->e_phoff;
+
+  GL(dl_rtld_map).l_phdr = rtld_phdr;
+  GL(dl_rtld_map).l_phnum = rtld_ehdr->e_phnum;
+
+
+  GL(dl_rtld_map).l_contiguous = 1;
+  /* The linker may not have produced a contiguous object.  The kernel
+     will load the object with actual gaps (unlike the glibc loader
+     for shared objects, which always produces a contiguous mapping).
+     See similar logic in rtld_setup_main_map above.  */
+  {
+    ElfW(Addr) expected_load_address = 0;
+    for (const ElfW(Phdr) *ph = rtld_phdr; ph < &rtld_phdr[rtld_ehdr->e_phnum];
+	 ++ph)
+      if (ph->p_type == PT_LOAD)
+	{
+	  ElfW(Addr) mapstart = ph->p_vaddr & ~(GLRO(dl_pagesize) - 1);
+	  if (GL(dl_rtld_map).l_contiguous && expected_load_address != 0
+	      && expected_load_address != mapstart)
+	    GL(dl_rtld_map).l_contiguous = 0;
+	  ElfW(Addr) allocend = ph->p_vaddr + ph->p_memsz;
+	  /* The next expected address is the page following this load
+	     segment.  */
+	  expected_load_address = ((allocend + GLRO(dl_pagesize) - 1)
+				   & ~(GLRO(dl_pagesize) - 1));
+	}
+  }
+
+  /* PT_GNU_RELRO is usually the last phdr.  */
+  size_t cnt = rtld_ehdr->e_phnum;
+  while (cnt-- > 0)
+    if (rtld_phdr[cnt].p_type == PT_GNU_RELRO)
+      {
+	GL(dl_rtld_map).l_relro_addr = rtld_phdr[cnt].p_vaddr;
+	GL(dl_rtld_map).l_relro_size = rtld_phdr[cnt].p_memsz;
+	break;
+      }
+}
+
 /* Adjusts the contents of the stack and related globals for the user
    entry point.  The ld.so processed skip_args arguments and bumped
    _dl_argv and _dl_argc accordingly.  Those arguments are removed from
@@ -2055,46 +2109,7 @@ dl_main (const ElfW(Phdr) *phdr,
   if (GLRO(dl_use_load_bias) == (ElfW(Addr)) -2)
     GLRO(dl_use_load_bias) = main_map->l_addr == 0 ? -1 : 0;
 
-  /* Starting from binutils-2.23, the linker will define the magic symbol
-     __ehdr_start to point to our own ELF header if it is visible in a
-     segment that also includes the phdrs.  If that's not available, we use
-     the old method that assumes the beginning of the file is part of the
-     lowest-addressed PT_LOAD segment.  */
-  extern const ElfW(Ehdr) __ehdr_start
-#if defined __ptr128__
-    /* This symbol is used to get access to rtld Program Headers below (see
-       rtld_phdr) lying beyond ElfW(Ehdr) object it describes. To avoid `exc_
-       array_bounds' make it describe an array of such objects of unspecified
-       size.  */
-    []
-#endif /* defined __ptr128__  */
-    __attribute__ ((visibility ("hidden")));
-
-  /* Set up the program header information for the dynamic linker
-     itself.  It is needed in the dl_iterate_phdr callbacks.  */
-  const ElfW(Ehdr) *rtld_ehdr = &__ehdr_start
-#if defined __ptr128__
-    [0]
-#endif /* defined __ptr128__  */    
-    ;
-  assert (rtld_ehdr->e_ehsize == sizeof *rtld_ehdr);
-  assert (rtld_ehdr->e_phentsize == sizeof (ElfW(Phdr)));
-
-  const ElfW(Phdr) *rtld_phdr = (const void *) rtld_ehdr + rtld_ehdr->e_phoff;
-
-  GL(dl_rtld_map).l_phdr = rtld_phdr;
-  GL(dl_rtld_map).l_phnum = rtld_ehdr->e_phnum;
-
-
-  /* PT_GNU_RELRO is usually the last phdr.  */
-  size_t cnt = rtld_ehdr->e_phnum;
-  while (cnt-- > 0)
-    if (rtld_phdr[cnt].p_type == PT_GNU_RELRO)
-      {
-	GL(dl_rtld_map).l_relro_addr = rtld_phdr[cnt].p_vaddr;
-	GL(dl_rtld_map).l_relro_size = rtld_phdr[cnt].p_memsz;
-	break;
-      }
+  rtld_setup_phdr ();
 
   /* Add the dynamic linker to the TLS list if it also uses TLS.  */
   if (GL(dl_rtld_map).l_tls_blocksize != 0)

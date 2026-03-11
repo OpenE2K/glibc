@@ -75,6 +75,31 @@
 /* Default for dl_tls_static_optional.  */
 #define OPTIONAL_TLS 512
 
+/* Used to count the number of threads currently executing dynamic TLS
+   updates.  Used to avoid recursive malloc calls in __tls_get_addr
+   for an interposed malloc that uses global-dynamic TLS (which is not
+   recommended); see _dl_tls_allocate_active checks.  This could be a
+   per-thread flag, but would need TLS access in the dynamic linker.  */
+unsigned int _dl_tls_threads_in_update;
+
+static inline void
+_dl_tls_allocate_begin (void)
+{
+  atomic_fetch_add_relaxed (&_dl_tls_threads_in_update, 1);
+}
+
+static inline void
+_dl_tls_allocate_end (void)
+{
+  atomic_fetch_add_relaxed (&_dl_tls_threads_in_update, -1);
+}
+
+static inline bool
+_dl_tls_allocate_active (void)
+{
+  return atomic_load_relaxed (&_dl_tls_threads_in_update) > 0;
+}
+
 /* Compute the static TLS surplus based on the namespace count and the
    TLS space that can be used for optimizations.  */
 static inline int
@@ -160,6 +185,7 @@ _dl_assign_tls_modid (struct link_map *l)
 	      {
 		/* Mark the entry as used, so any dependency see it.  */
 		atomic_store_relaxed (&runp->slotinfo[result - disp].map, l);
+		atomic_store_relaxed (&runp->slotinfo[result - disp].gen, 0);
 		break;
 	      }
 
@@ -430,12 +456,18 @@ _dl_allocate_tls_storage (void)
   size += TLS_PRE_TCB_SIZE;
 #endif
 
-  /* Perform the allocation.  Reserve space for the required alignment
-     and the pointer to the original allocation.  */
+  /* Reserve space for the required alignment and the pointer to the
+     original allocation.  */
   size_t alignment = GLRO (dl_tls_static_align);
+
+  /* Perform the allocation.  */
+  _dl_tls_allocate_begin ();
   void *allocated = malloc (size + alignment + sizeof (void *));
   if (__glibc_unlikely (allocated == NULL))
-    return NULL;
+    {
+      _dl_tls_allocate_end ();
+      return NULL;
+    }
 
   /* Perform alignment and allocate the DTV.  */
 #if TLS_TCB_AT_TP
@@ -477,6 +509,8 @@ _dl_allocate_tls_storage (void)
   result = allocate_dtv (result);
   if (result == NULL)
     free (allocated);
+
+  _dl_tls_allocate_end ();
   return result;
 }
 
@@ -494,6 +528,7 @@ _dl_resize_dtv (dtv_t *dtv, size_t max_modid)
   size_t newsize = max_modid + DTV_SURPLUS;
   size_t oldsize = dtv[-1].counter;
 
+  _dl_tls_allocate_begin ();
   if (dtv == GL(dl_initial_dtv))
     {
       /* This is the initial dtv that was either statically allocated in
@@ -513,6 +548,7 @@ _dl_resize_dtv (dtv_t *dtv, size_t max_modid)
       if (newp == NULL)
 	oom ();
     }
+  _dl_tls_allocate_end ();
 
   newp[0].counter = newsize;
 
@@ -687,7 +723,9 @@ allocate_dtv_entry (size_t alignment, size_t size)
   if (powerof2 (alignment) && alignment <= _Alignof (max_align_t))
     {
       /* The alignment is supported by malloc.  */
+      _dl_tls_allocate_begin ();
       void *ptr = malloc (size);
+      _dl_tls_allocate_end ();
       return (struct dtv_pointer) { ptr, ptr };
     }
 
@@ -699,7 +737,10 @@ allocate_dtv_entry (size_t alignment, size_t size)
 
   /* Perform the allocation.  This is the pointer we need to free
      later.  */
+  _dl_tls_allocate_begin ();
   void *start = malloc (alloc_size);
+  _dl_tls_allocate_end ();
+
   if (start == NULL)
     return (struct dtv_pointer) {};
 
@@ -732,57 +773,57 @@ allocate_and_init (struct link_map *map)
 
 
 struct link_map *
-_dl_update_slotinfo (unsigned long int req_modid)
+_dl_update_slotinfo (unsigned long int req_modid, size_t new_gen)
 {
   struct link_map *the_map = NULL;
   dtv_t *dtv = THREAD_DTV ();
 
-  /* The global dl_tls_dtv_slotinfo array contains for each module
-     index the generation counter current when the entry was created.
+  /* CONCURRENCY NOTES:
+
+     The global dl_tls_dtv_slotinfo_list array contains for each module
+     index the generation counter current when that entry was updated.
      This array never shrinks so that all module indices which were
-     valid at some time can be used to access it.  Before the first
-     use of a new module index in this function the array was extended
-     appropriately.  Access also does not have to be guarded against
-     modifications of the array.  It is assumed that pointer-size
-     values can be read atomically even in SMP environments.  It is
-     possible that other threads at the same time dynamically load
-     code and therefore add to the slotinfo list.  This is a problem
-     since we must not pick up any information about incomplete work.
-     The solution to this is to ignore all dtv slots which were
-     created after the one we are currently interested.  We know that
-     dynamic loading for this module is completed and this is the last
-     load operation we know finished.  */
-  unsigned long int idx = req_modid;
+     valid at some time can be used to access it.  Concurrent loading
+     and unloading of modules can update slotinfo entries or extend
+     the array.  The updates happen under the GL(dl_load_tls_lock) and
+     finish with the release store of the generation counter to
+     GL(dl_tls_generation) which is synchronized with the load of
+     new_gen in the caller.  So updates up to new_gen are synchronized
+     but updates for later generations may not be.
+
+     Here we update the thread dtv from old_gen (== dtv[0].counter) to
+     new_gen generation.  For this, each dtv[i] entry is either set to
+     an unallocated state (set), or left unmodified (nop).  Where (set)
+     may resize the dtv first if modid i >= dtv[-1].counter. The rules
+     for the decision between (set) and (nop) are
+
+     (1) If slotinfo entry i is concurrently updated then either (set)
+         or (nop) is valid: TLS access cannot use dtv[i] unless it is
+         synchronized with a generation > new_gen.
+
+     Otherwise, if the generation of slotinfo entry i is gen and the
+     loaded module for this entry is map then
+
+     (2) If gen <= old_gen then do (nop).
+
+     (3) If old_gen < gen <= new_gen then
+         (3.1) if map != 0 then (set)
+         (3.2) if map == 0 then either (set) or (nop).
+
+     Note that (1) cannot be reliably detected, but since both actions
+     are valid it does not have to be.  Only (2) and (3.1) cases need
+     to be distinguished for which relaxed mo access of gen and map is
+     enough: their value is synchronized when it matters.
+
+     Note that a relaxed mo load may give an out-of-thin-air value since
+     it is used in decisions that can affect concurrent stores.  But this
+     should only happen if the OOTA value causes UB that justifies the
+     concurrent store of the value.  This is not expected to be an issue
+     in practice.  */
   struct dtv_slotinfo_list *listp = GL(dl_tls_dtv_slotinfo_list);
 
-  while (idx >= listp->len)
+  if (dtv[0].counter < new_gen)
     {
-      idx -= listp->len;
-      listp = listp->next;
-    }
-
-  if (dtv[0].counter < listp->slotinfo[idx].gen)
-    {
-      /* CONCURRENCY NOTES:
-
-	 Here the dtv needs to be updated to new_gen generation count.
-
-	 This code may be called during TLS access when GL(dl_load_tls_lock)
-	 is not held.  In that case the user code has to synchronize with
-	 dlopen and dlclose calls of relevant modules.  A module m is
-	 relevant if the generation of m <= new_gen and dlclose of m is
-	 synchronized: a memory access here happens after the dlopen and
-	 before the dlclose of relevant modules.  The dtv entries for
-	 relevant modules need to be updated, other entries can be
-	 arbitrary.
-
-	 This e.g. means that the first part of the slotinfo list can be
-	 accessed race free, but the tail may be concurrently extended.
-	 Similarly relevant slotinfo entries can be read race free, but
-	 other entries are racy.  However updating a non-relevant dtv
-	 entry does not affect correctness.  For a relevant module m,
-	 max_modid >= modid of m.  */
-      size_t new_gen = listp->slotinfo[idx].gen;
       size_t total = 0;
       size_t max_modid  = atomic_load_relaxed (&GL(dl_tls_max_dtv_idx));
       assert (max_modid >= req_modid);
@@ -795,20 +836,21 @@ _dl_update_slotinfo (unsigned long int req_modid)
 	    {
 	      size_t modid = total + cnt;
 
-	      /* Later entries are not relevant.  */
+	      /* Case (1) for all later modids.  */
 	      if (modid > max_modid)
 		break;
 
 	      size_t gen = atomic_load_relaxed (&listp->slotinfo[cnt].gen);
 
+	      /* Case (1).  */
 	      if (gen > new_gen)
-		/* Not relevant.  */
 		continue;
 
-	      /* If the entry is older than the current dtv layout we
-		 know we don't have to handle it.  */
+	      /* Case (2) or (1).  */
 	      if (gen <= dtv[0].counter)
 		continue;
+
+	      /* Case (3) or (1).  */
 
 	      /* If there is no map this means the entry is empty.  */
 	      struct link_map *map
@@ -816,10 +858,11 @@ _dl_update_slotinfo (unsigned long int req_modid)
 	      /* Check whether the current dtv array is large enough.  */
 	      if (dtv[-1].counter < modid)
 		{
+		  /* Case (3.2) or (1).  */
 		  if (map == NULL)
 		    continue;
 
-		  /* Resize the dtv.  */
+		  /* Resizing the dtv aborts on failure: bug 16134.  */
 		  dtv = _dl_resize_dtv (dtv, max_modid);
 
 		  assert (modid <= dtv[-1].counter);
@@ -830,10 +873,21 @@ _dl_update_slotinfo (unsigned long int req_modid)
 		}
 
 	      /* If there is currently memory allocate for this
-		 dtv entry free it.  */
+		 dtv entry free it.  Note: this is not AS-safe.  */
 	      /* XXX Ideally we will at some point create a memory
 		 pool.  */
-	      free (dtv[modid].pointer.to_free);
+	      /* Avoid calling free on a null pointer.  Some mallocs
+		 incorrectly use dynamic TLS, and depending on how the
+		 free function was compiled, it could call
+		 __tls_get_addr before the null pointer check in the
+		 free implementation.  Checking here papers over at
+		 least some dynamic TLS usage by interposed mallocs.  */
+	      if (dtv[modid].pointer.to_free != NULL)
+		{
+		  _dl_tls_allocate_begin ();
+		  free (dtv[modid].pointer.to_free);
+		  _dl_tls_allocate_end ();
+		}
 	      dtv[modid].pointer.val = TLS_DTV_UNALLOCATED;
 	      dtv[modid].pointer.to_free = NULL;
 
@@ -925,9 +979,9 @@ tls_get_addr_tail (GET_ADDR_ARGS, dtv_t *dtv, struct link_map *the_map)
 
 static struct link_map *
 __attribute_noinline__
-update_get_addr (GET_ADDR_ARGS)
+update_get_addr (GET_ADDR_ARGS, size_t gen)
 {
-  struct link_map *the_map = _dl_update_slotinfo (GET_ADDR_MODULE);
+  struct link_map *the_map = _dl_update_slotinfo (GET_ADDR_MODULE, gen);
   dtv_t *dtv = THREAD_DTV ();
 
   void *p = dtv[GET_ADDR_MODULE].pointer.val;
@@ -957,12 +1011,29 @@ __tls_get_addr (GET_ADDR_ARGS)
   dtv_t *dtv = THREAD_DTV ();
 
   /* Update is needed if dtv[0].counter < the generation of the accessed
-     module.  The global generation counter is used here as it is easier
-     to check.  Synchronization for the relaxed MO access is guaranteed
-     by user code, see CONCURRENCY NOTES in _dl_update_slotinfo.  */
+     module, but the global generation counter is easier to check (which
+     must be synchronized up to the generation of the accessed module by
+     user code doing the TLS access so relaxed mo read is enough).  */
   size_t gen = atomic_load_relaxed (&GL(dl_tls_generation));
   if (__glibc_unlikely (dtv[0].counter != gen))
-    return update_get_addr (GET_ADDR_PARAM);
+    {
+      if (_dl_tls_allocate_active ()
+	  && GET_ADDR_MODULE < _dl_tls_initial_modid_limit)
+	  /* This is a reentrant __tls_get_addr call, but we can
+	     satisfy it because it's an initially-loaded module ID.
+	     These TLS slotinfo slots do not change, so the
+	     out-of-date generation counter does not matter.  However,
+	     if not in a TLS update, still update_get_addr below, to
+	     get off the slow path eventually.  */
+	;
+      else
+	{
+	  /* Update DTV up to the global generation, see CONCURRENCY NOTES
+	     in _dl_update_slotinfo.  */
+	  gen = atomic_load_acquire (&GL(dl_tls_generation));
+	  return update_get_addr (GET_ADDR_PARAM, gen);
+	}
+    }
 
   void *p = dtv[GET_ADDR_MODULE].pointer.val;
 
@@ -971,7 +1042,7 @@ __tls_get_addr (GET_ADDR_ARGS)
 
   return (char *) p + GET_ADDR_OFFSET;
 }
-#endif
+#endif /* SHARED */
 
 
 /* Look up the module's TLS block as for __tls_get_addr,
@@ -1020,6 +1091,25 @@ _dl_tls_get_addr_soft (struct link_map *l)
   return data;
 }
 
+size_t _dl_tls_initial_modid_limit;
+
+void
+_dl_tls_initial_modid_limit_setup (void)
+{
+  struct dtv_slotinfo_list *listp = GL(dl_tls_dtv_slotinfo_list);
+  size_t idx;
+  for (idx = 0; idx < listp->len; ++idx)
+    {
+      struct link_map *l = listp->slotinfo[idx].map;
+      if (l == NULL
+	  /* The object can be unloaded, so its modid can be
+	     reassociated.  */
+	  || !(l->l_type == lt_executable || l->l_type == lt_library))
+	break;
+    }
+  _dl_tls_initial_modid_limit = idx;
+}
+
 
 void
 _dl_add_to_slotinfo (struct link_map *l, bool do_add)
@@ -1052,9 +1142,11 @@ _dl_add_to_slotinfo (struct link_map *l, bool do_add)
 	 the first slot.  */
       assert (idx == 0);
 
+      _dl_tls_allocate_begin ();
       listp = (struct dtv_slotinfo_list *)
 	malloc (sizeof (struct dtv_slotinfo_list)
 		+ TLS_SLOTINFO_SURPLUS * sizeof (struct dtv_slotinfo));
+      _dl_tls_allocate_end ();
       if (listp == NULL)
 	{
 	  /* We ran out of memory while resizing the dtv slotinfo list.  */

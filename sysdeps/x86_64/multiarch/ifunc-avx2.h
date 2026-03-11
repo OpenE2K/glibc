@@ -30,7 +30,9 @@ IFUNC_SELECTOR (void)
   const struct cpu_features* cpu_features = __get_cpu_features ();
 
   if (CPU_FEATURE_USABLE_P (cpu_features, AVX2)
+      && CPU_FEATURE_USABLE_P (cpu_features, BMI1)
       && CPU_FEATURE_USABLE_P (cpu_features, BMI2)
+      && CPU_FEATURE_USABLE_P (cpu_features, LZCNT)
       && CPU_FEATURES_ARCH_P (cpu_features, AVX_Fast_Unaligned_Load))
     {
       if (CPU_FEATURE_USABLE_P (cpu_features, AVX512VL)

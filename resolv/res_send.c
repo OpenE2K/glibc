@@ -942,9 +942,11 @@ send_dg(res_state statp,
 		seconds /= statp->nscount;
 	if (seconds <= 0)
 		seconds = 1;
-	bool single_request_reopen = (statp->options & RES_SNGLKUPREOP) != 0;
-	bool single_request = (((statp->options & RES_SNGLKUP) != 0)
-			       | single_request_reopen);
+	bool single_request_reopen = ((statp->options & RES_SNGLKUPREOP)
+				      || (statp->_flags & RES_F_SNGLKUPREOP));
+	bool single_request = ((statp->options & RES_SNGLKUP)
+			       || (statp->_flags & RES_F_SNGLKUP)
+			       || single_request_reopen);
 	int save_gotsomewhere = *gotsomewhere;
 
 	int retval;
@@ -1001,14 +1003,14 @@ send_dg(res_state statp,
 		       have received the first answer.  */
 		    if (!single_request)
 		      {
-			statp->options |= RES_SNGLKUP;
+			statp->_flags |= RES_F_SNGLKUP;
 			single_request = true;
 			*gotsomewhere = save_gotsomewhere;
 			goto retry;
 		      }
 		    else if (!single_request_reopen)
 		      {
-			statp->options |= RES_SNGLKUPREOP;
+			statp->_flags |= RES_F_SNGLKUPREOP;
 			single_request_reopen = true;
 			*gotsomewhere = save_gotsomewhere;
 			__res_iclose (statp, false);
@@ -1192,19 +1194,30 @@ send_dg(res_state statp,
 		}
 
 		/* Check for the correct header layout and a matching
-		   question.  */
+		   question.  Some recursive resolvers send REFUSED
+		   without copying back the question section
+		   (producing a response that is only HFIXEDSZ bytes
+		   long).  Skip query matching in this case.  */
+		bool thisansp_error = (anhp->rcode == SERVFAIL ||
+				       anhp->rcode == NOTIMP ||
+				       anhp->rcode == REFUSED);
+		bool skip_query_match = (*thisresplenp == HFIXEDSZ
+					 && ntohs (anhp->qdcount) == 0
+					 && thisansp_error);
 		int matching_query = 0; /* Default to no matching query.  */
 		if (!recvresp1
 		    && anhp->id == hp->id
-		    && __libc_res_queriesmatch (buf, buf + buflen,
-						*thisansp,
-						*thisansp + *thisanssizp))
+		    && (skip_query_match
+			|| __libc_res_queriesmatch (buf, buf + buflen,
+						    *thisansp,
+						    *thisansp + *thisanssizp)))
 		  matching_query = 1;
 		if (!recvresp2
 		    && anhp->id == hp2->id
-		    && __libc_res_queriesmatch (buf2, buf2 + buflen2,
-						*thisansp,
-						*thisansp + *thisanssizp))
+		    && (skip_query_match
+			|| __libc_res_queriesmatch (buf2, buf2 + buflen2,
+						    *thisansp,
+						    *thisansp + *thisanssizp)))
 		  matching_query = 2;
 		if (matching_query == 0)
 		  /* Spurious UDP packet.  Drop it and continue
@@ -1214,15 +1227,13 @@ send_dg(res_state statp,
 		    goto wait;
 		  }
 
-		if (anhp->rcode == SERVFAIL ||
-		    anhp->rcode == NOTIMP ||
-		    anhp->rcode == REFUSED) {
+		if (thisansp_error) {
 		next_ns:
 			if (recvresp1 || (buf2 != NULL && recvresp2)) {
 			  *resplen2 = 0;
 			  return resplen;
 			}
-			if (buf2 != NULL)
+			if (buf2 != NULL && !single_request)
 			  {
 			    /* No data from the first reply.  */
 			    resplen = 0;
