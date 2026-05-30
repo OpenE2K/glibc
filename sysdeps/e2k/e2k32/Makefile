@@ -1,3 +1,8 @@
+e2k32-cflags =
+
+CC += $(e2k32-cflags)
+CXX += $(e2k32-cflags)
+
 ifeq ($(subdir),elf)
 
 before-compile += $(objpfx)dl-machine.h

@@ -1,4 +1,18 @@
 ifeq (yes,$(compile-with-lcc))
+e2k-cflags = -fasm-entries-first -fno-strict-aliasing -fno-ipa-attrs
+e2k-cflags += -D__OPTIMIZE__ -U__NO_INLINE__ -masm-inline
+
+# See MCSTBug #60075 and MCSTBug #94443
+e2k-cflags += -Wno-builtin-functions-redefined -Wno-builtin-declaration-mismatch
+
+# These options are expected to suppress all currently known unreliable
+# warnings produced by optimizing LCC making `--enable-werror' glibc build
+# fail (MCSTBug #123898, Comment #0). They are attached unconditionally because
+# as stated in Comment #7 and below a class of warnings emitted by LCC
+# optimizer does not intersect with the one produced by EDG which is why
+# EDG warnings are not going to be unreasonably inhibited.
+e2k-cflags += -Wno-error=invalid-builtin-arg -Wno-error=maybe-uninitialized
+
 gnulib-arch = -llcc
 static-gnulib-arch = -llcc
 ifeq ($(config-machine),e2k128)
@@ -6,6 +20,9 @@ ifeq ($(config-machine),e2k128)
 static-gnulib-arch += -latomic
 endif # e2k128
 endif # compile-with-lcc
+
+CC += $(e2k-cflags)
+CXX += $(e2k-cflags)
 
 # The E2k `long double' is a distinct type we support.
 long-double-fcts = yes

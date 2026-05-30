@@ -41,7 +41,7 @@
 #ifdef __ASSEMBLER__
 
 #define __SYSCALL_ARG_REG(src, dst)		addd,sm 0x0, src, dst
-#define __SYSCALL_ARG_MEM(src1, src2, dst)	ldd src1, src2, dst
+#define __SYSCALL_ARG_MEM(src1, src2, dst)	ldd,sm src1, src2, dst
 
 #else /* not __ASSEMBLER__ */
 

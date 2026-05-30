@@ -60,7 +60,7 @@
 #ifdef __ASSEMBLER__
 
 #define __SYSCALL_ARG_REG(src, dst)		__MOVE_SPEC src, dst
-#define __SYSCALL_ARG_MEM(src1, src2, dst)	ldgdw src1, src2, dst
+#define __SYSCALL_ARG_MEM(src1, src2, dst)	ldgdw,sm src1, src2, dst
 
 #else /* not __ASSEMBLER__ */
 

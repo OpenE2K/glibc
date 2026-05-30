@@ -54,6 +54,22 @@ LIBC_PROG_BINUTILS
 
 # We need the C++ compiler only for testing.
 AC_PROG_CXX
+
+case $host_cpu in
+     e2k | e2k64)
+	CC="$CC -mptr64"
+	CXX="$CXX -mptr64"
+	;;
+     e2k32)
+	CC="$CC -mptr32"
+	CXX="$CXX -mptr32"
+	;;
+     e2k128)
+	CC="$CC -mptr128"
+	CXX="$CXX -mptr128"
+	;;
+esac
+
 # It's useless to us if it can't link programs (e.g. missing -lstdc++).
 AC_CACHE_CHECK([whether $CXX can link programs], libc_cv_cxx_link_ok, [dnl
 AC_LANG_PUSH([C++])

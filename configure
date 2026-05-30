@@ -3212,6 +3212,22 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+
+case $host_cpu in
+     e2k | e2k64)
+	CC="$CC -mptr64"
+	CXX="$CXX -mptr64"
+	;;
+     e2k32)
+	CC="$CC -mptr32"
+	CXX="$CXX -mptr32"
+	;;
+     e2k128)
+	CC="$CC -mptr128"
+	CXX="$CXX -mptr128"
+	;;
+esac
+
 # It's useless to us if it can't link programs (e.g. missing -lstdc++).
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX can link programs" >&5
