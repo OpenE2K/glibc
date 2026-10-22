@@ -71,7 +71,15 @@ endif # extra-optimizations
 
 else # Not compile-with-lcc
 
+# The E2K code is written for lcc, whose C is GCC 11's: GCC 14 and later
+# make these errors by default.
++cflags += -Wno-error=incompatible-pointer-types
+
 ifeq ($(subdir),math)
+# No FP operation runs speculatively: a program that clears or unmasks
+# FP exceptions would trap (SIGILL) on a speculative result (relcc2
+# spec/isa/speculation.md, "What lcc speculates").
++cflags += -mno-spec-fp
 CFLAGS-s_sinl.c += -fno-strict-aliasing
 CFLAGS-s_sin.c += -fno-strict-aliasing
 endif # Making in math/
