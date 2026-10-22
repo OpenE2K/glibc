@@ -1,41 +1,49 @@
+# lcc's -fno-spec-fp, GCC's -mno-spec-fp (the PoC GCC builds all of math
+# so anyway, sysdeps/e2k/Makefile).
+ifeq ($(compile-with-lcc),yes)
+e2k-no-spec-fp = -fno-spec-fp
+else
+e2k-no-spec-fp = -mno-spec-fp
+endif
+
 ifeq ($(subdir),math)
 # See Bug #105130, Comment #2 for why fraiseexcpt.c should be compiled with
 # -O0 on E2K. Or with -fno-spec-fp option
-CFLAGS-fraiseexcpt.c += -fno-spec-fp
+CFLAGS-fraiseexcpt.c += $(e2k-no-spec-fp)
 
 # See Bug #106328, Comment #4 for why s_fma/f/l.c should be compiled with
 # -O0 on E2K. Or with -fno-spec-fp option
-CFLAGS-s_fmaf.c += -fno-spec-fp
-CFLAGS-s_fma.c += -fno-spec-fp
-CFLAGS-s_fmal.c += -fno-spec-fp
+CFLAGS-s_fmaf.c += $(e2k-no-spec-fp)
+CFLAGS-s_fma.c += $(e2k-no-spec-fp)
+CFLAGS-s_fmal.c += $(e2k-no-spec-fp)
 
 # See Bug #118896
-CFLAGS-k_standardl.c += -fno-spec-fp
-CFLAGS-e_expf128.c += -fno-spec-fp
-CFLAGS-s_fadd.c += -fno-spec-fp
-CFLAGS-s_faddl.c += -fno-spec-fp
-CFLAGS-s_daddl.c += -fno-spec-fp
-CFLAGS-s_f32addf128.c += -fno-spec-fp
-CFLAGS-s_f64addf128.c += -fno-spec-fp
-CFLAGS-s_f64xaddf128.c += -fno-spec-fp
-CFLAGS-s_fdiv.c += -fno-spec-fp
-CFLAGS-s_fdivl.c += -fno-spec-fp
-CFLAGS-s_ddivl.c += -fno-spec-fp
-CFLAGS-s_f32divf128.c += -fno-spec-fp
-CFLAGS-s_f64divf128.c += -fno-spec-fp
-CFLAGS-s_f64xdivf128.c += -fno-spec-fp
-CFLAGS-s_fmul.c += -fno-spec-fp
-CFLAGS-s_fmull.c += -fno-spec-fp
-CFLAGS-s_dmull.c += -fno-spec-fp
-CFLAGS-s_f32mulf128.c += -fno-spec-fp
-CFLAGS-s_f64mulf128.c += -fno-spec-fp
-CFLAGS-s_f64xmulf128.c += -fno-spec-fp
-CFLAGS-s_fsub.c += -fno-spec-fp
-CFLAGS-s_fsubl.c += -fno-spec-fp
-CFLAGS-s_dsubl.c += -fno-spec-fp
-CFLAGS-s_f32subf128.c += -fno-spec-fp
-CFLAGS-s_f64subf128.c += -fno-spec-fp
-CFLAGS-s_f64xsubf128.c += -fno-spec-fp
+CFLAGS-k_standardl.c += $(e2k-no-spec-fp)
+CFLAGS-e_expf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_fadd.c += $(e2k-no-spec-fp)
+CFLAGS-s_faddl.c += $(e2k-no-spec-fp)
+CFLAGS-s_daddl.c += $(e2k-no-spec-fp)
+CFLAGS-s_f32addf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64addf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64xaddf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_fdiv.c += $(e2k-no-spec-fp)
+CFLAGS-s_fdivl.c += $(e2k-no-spec-fp)
+CFLAGS-s_ddivl.c += $(e2k-no-spec-fp)
+CFLAGS-s_f32divf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64divf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64xdivf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_fmul.c += $(e2k-no-spec-fp)
+CFLAGS-s_fmull.c += $(e2k-no-spec-fp)
+CFLAGS-s_dmull.c += $(e2k-no-spec-fp)
+CFLAGS-s_f32mulf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64mulf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64xmulf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_fsub.c += $(e2k-no-spec-fp)
+CFLAGS-s_fsubl.c += $(e2k-no-spec-fp)
+CFLAGS-s_dsubl.c += $(e2k-no-spec-fp)
+CFLAGS-s_f32subf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64subf128.c += $(e2k-no-spec-fp)
+CFLAGS-s_f64xsubf128.c += $(e2k-no-spec-fp)
 
 # See Bug #109049, #109054
 CFLAGS-e_hypot.c += -fno-rounding-math

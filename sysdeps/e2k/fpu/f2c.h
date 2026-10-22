@@ -17,6 +17,13 @@
 #include <math_private.h>
 #include <math-svid-compat.h>
 
+/* lcc's <bits/mathinline.h> defines it, which math.h includes only for
+   lcc: "x" holds a long double whole in one register, as the fx*
+   operations below want.  */
+#ifndef XR_CONSTRAINT
+# define XR_CONSTRAINT "x"
+#endif
+
 #define FL float
 #define DB double
 #define LD long double
