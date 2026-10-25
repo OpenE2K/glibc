@@ -101,7 +101,10 @@ strspn (const char *s,
 #pragma loop count (15)
   for (i = 0; i < len2; i++) { /* заполняем таблицу символами из accept */
     spec = ((unsigned char *) accept)[i];
-    val = 1LL << spec;
+    /* "& 63": E2K takes a shift count modulo 64, as lcc relies on,
+       but a count of 64 or more is undefined in C and GCC drops the
+       table words it would index (the bytes from 0x40 up).  */
+    val = 1LL << (spec & 63);
     if (spec & 0x80) {
       if (spec & 0x40) table3 |= val;
       else table2 |= val;
@@ -121,7 +124,7 @@ strspn (const char *s,
   while (1) { /* обрабатываем по 1 байту из s */
     spec = *((unsigned char *) p);
     p++;
-    if ((*((unsigned long long *) ((char *) table + ((spec >> 3) & 0x18))) & (1LL << spec)) == 0)
+    if ((*((unsigned long long *) ((char *) table + ((spec >> 3) & 0x18))) & (1LL << (spec & 63))) == 0)
       break;
   }
   return p - 1 - s;
