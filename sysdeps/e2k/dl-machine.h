@@ -550,14 +550,19 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
           break;
 
         case R_E2K_TLS_XX_DTPMOD:
-          *reloc_addr = sym_map->l_tls_modid;
+	  if (sym_map != NULL)
+	    *reloc_addr = sym_map->l_tls_modid;
           break;
         case R_E2K_TLS_XX_DTPREL:
-          *reloc_addr = value - sym_map->l_addr;
+	  if (sym_map != NULL)
+	    *reloc_addr = value - sym_map->l_addr;
           break;
         case R_E2K_TLS_XX_TPREL:
-          CHECK_STATIC_TLS (map, sym_map);
-          *reloc_addr = value + sym_map->l_tls_offset - sym_map->l_addr;
+	  if (sym != NULL)
+	    {
+	      CHECK_STATIC_TLS (map, sym_map);
+	      *reloc_addr = value + sym_map->l_tls_offset - sym_map->l_addr;
+	    }
           break;
         case R_E2K_XX_IRELATIVE:
           /* This presumably duplicates the related activity in `elf_machine_

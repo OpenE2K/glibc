@@ -100,23 +100,8 @@ runtime_compatible_host (uint32_t flg, char *errmsg)
 #endif /* ! defined __MCST_SUPPORT_ELBRUS_MAKET32C__  */
     ;
 
-  int iset;
-  /* __builtin_e2k_cpu_iset () could be more naturally used for this purpose
-     starting from rel-29-0 (Bug #162253).  */
-  if (__builtin_cpu_is ("elbrus-v7"))
-    iset = 7;
-  else if (__builtin_cpu_is ("elbrus-v6"))
-    iset = 6;
-  else if (__builtin_cpu_is ("elbrus-v5"))
-    iset = 5;
-  else if (__builtin_cpu_is ("elbrus-v4"))
-    iset = 4;
-  else if (__builtin_cpu_is ("elbrus-v3"))
-    iset = 3;
-  else
-    /* Processors of no other isets currently exist now that
-       elbrus-v1 has been dead for more than a decade.  */
-    iset = 2;
+  /* Get ISET of the processor we are executing on.  */
+  int iset = __builtin_e2k_get_cpu_iset ();
 
   switch (elf_mach)
     {
